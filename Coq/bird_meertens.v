@@ -5,6 +5,73 @@ Import ListNotations.
 
 Open Scope R_scope.
 
+(* tails' :: [a] -> [[a]]
+tails' [] = [[]]
+tails' xs@(_:xs') = xs : tails' xs' *)
+Fixpoint tails {A : Type} (xs : list A) : list (list A) :=
+  match xs with
+  | [] => [[]]
+  | _ :: xs' => xs :: tails xs'
+end.
+
+Fixpoint init {A : Type} (xs : list A) : option (list A) :=
+  match xs with
+  | [] => None
+  | [x] => Some []  (* The only initial segment of a single-element list is the empty list *)
+  | x :: xs' => 
+      match init xs' with
+      | None => Some []  (* Should not happen since xs' is part of a non-empty list *)
+      | Some xs'' => Some (x :: xs'')
+      end
+  end.
+
+(* Definition NonEmpty {A : Type} (xs : list A) : Prop := xs <> []. *)
+
+(* (* inits' :: [a] -> [[a]]
+inits' [] = [[]]
+inits' xs = inits' (init xs) ++ [xs] *)
+Fixpoint inits {A : Type} (xs : list A) : list (list A) :=
+  match xs with
+  | [] => [[]]
+  | xs' => match init xs' with
+    | None => [[]]
+    | Some i => app (inits i) [xs']
+  end
+end.
+
+Cannot guess decreasing argument of fix. *)
+
+(* Define a recursive function to reverse a list *)
+Fixpoint reverse {A : Type} (l : list A) : list A :=
+  match l with
+  | [] => []
+  | x :: xs => reverse xs ++ [x]
+  end.
+
+(* Reverse a list using an accumulator for efficiency *)
+Fixpoint reverse_acc {A : Type} (l acc : list A) : list A :=
+  match l with
+  | [] => acc
+  | x :: xs => reverse_acc xs (x :: acc)
+  end.
+
+(* Wrapper function to reverse a list by calling reverse_acc with an empty accumulator *)
+Definition reverse' {A : Type} (l : list A) : list A :=
+  reverse_acc l [].
+
+(* Define the inits function using reverse and tails *)
+Definition inits {A : Type} (xs : list A) : list (list A) :=
+  map (reverse) (tails (reverse xs)).
+
+(* Example list to evaluate *)
+Definition example_list := [1; 2; 3].
+
+(* Compute inits of the example list *)
+Definition computed_inits := inits example_list.
+
+(* Printing the computed inits for demonstration *)
+Eval compute in (inits example_list).
+
 (* segs :: [a] -> [[a]] *)
 (* segs = concat . map tails . inits *)
 Definition double : R -> R := fun x => 2*x.
