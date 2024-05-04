@@ -15,6 +15,14 @@ tails'' xs = if null xs then [[]] else xs : tails' (tail xs)
 tails''' :: [a] -> [[a]]
 tails''' = (++[[]]) . unfoldr (\xs -> if null xs then Nothing else Just (xs, tail xs))
 
+init' :: [a] -> Maybe [a]
+init' [] = Nothing  -- Empty list case
+init' [x] = Just []  -- Single element list case
+init' (x:xs) =
+  case init' xs of
+    Nothing -> Just []  -- This case should not happen in valid inputs
+    Just xs' -> Just $ x:xs'
+
 inits' :: [a] -> [[a]]
 inits' [] = [[]]  -- The inits of an empty list is a list containing the empty list.
 inits' xs = inits' (init xs) ++ [xs]
