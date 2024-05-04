@@ -120,27 +120,19 @@ Proof.
   reflexivity.
 Qed.
 
-(* The map promotion lemma *)
-Lemma map_concat_distrib : forall {A B : Type}, forall (f : A -> B), forall (l : list (list A)),
-  map f (concat l) = concat (map (map f) l).
-Proof.
-  induction l as [|x xs IH]; simpl.
-  - reflexivity. (* Base case: both sides are empty *)
-  - rewrite map_app. (* Apply map_app to rewrite map f (x ++ concat xs) *)
-    rewrite IH.    (* Apply the induction hypothesis *)
-    reflexivity.
-Qed.
-
-(* The map promotion lemma *)
-Lemma map_concat_distrib_2 : forall (g : list R -> list (list (list R))),
-  compose (map Rsum) (compose concat g) = compose concat (compose (map (map Rsum)) g).
+Lemma map_promotion : forall (f : (list R) -> R) (g : list R -> list (list (list R))),
+  compose (map f) (compose concat g) = compose concat (compose (map (map f)) g).
 Proof.
   intros.
   unfold compose.
   f_equal.
   apply functional_extensionality.
   intros.
-  apply (map_concat_distrib Rsum).
+  induction (g x0) as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - rewrite map_app. (* Apply map_app to rewrite map f (x ++ concat xs) *)
+    rewrite IH.    (* Apply the induction hypothesis *)
+    reflexivity.
 Qed.
 
 Theorem form2_eq_form3 : form2 = form3.
@@ -148,7 +140,7 @@ Proof.
   unfold form2.
   unfold form3.
   f_equal.
-  apply map_concat_distrib_2.
+  apply map_promotion.
 Qed.
 
 (* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
