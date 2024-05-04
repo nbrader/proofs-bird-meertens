@@ -1,7 +1,9 @@
 Require Import Coq.Program.Basics.
+Require Import Coq.Program.Combinators.
 Require Import Coq.Reals.Reals.
 Require Import Coq.Reals.Rminmax.
 Require Import Coq.Lists.List.
+Require Import Coq.Logic.FunctionalExtensionality.
 Import ListNotations.
 
 Open Scope R_scope.
@@ -108,7 +110,47 @@ Definition Rsum : list R -> R := fun xs => fold_right (fun x acc => x + acc) 0 x
 Definition form1 : (list R) -> option R := compose maximum (compose (map Rsum) segs).
 
 (* form2 = maximum . map sum . concat . map tails . inits *)
+Definition form2 : (list R) -> option R := compose maximum (compose (map Rsum) (compose concat (compose (map tails) inits))).
+
 (* form3 = maximum . concat . map (map sum) . map tails . inits *)
+Definition form3 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+
+Theorem form1_eq_form2 : form1 = form2.
+Proof.
+  reflexivity.
+Qed.
+
+(* The map promotion lemma *)
+Lemma map_concat_distrib : forall {A B : Type}, forall (f : A -> B), forall (l : list (list A)),
+  map f (concat l) = concat (map (map f) l).
+Proof.
+  induction l as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - rewrite map_app. (* Apply map_app to rewrite map f (x ++ concat xs) *)
+    rewrite IH.    (* Apply the induction hypothesis *)
+    reflexivity.
+Qed.
+
+(* The map promotion lemma *)
+Lemma map_concat_distrib_2 : forall (g : list R -> list (list (list R))),
+  compose (map Rsum) (compose concat g) = compose concat (compose (map (map Rsum)) g).
+Proof.
+  intros.
+  unfold compose.
+  f_equal.
+  apply functional_extensionality.
+  intros.
+  apply (map_concat_distrib Rsum).
+Qed.
+
+Theorem form2_eq_form3 : form2 = form3.
+Proof.
+  unfold form2.
+  unfold form3.
+  f_equal.
+  apply map_concat_distrib_2.
+Qed.
+
 (* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
 (* form5 = maximum . map (maximum . map sum . tails) . inits *)
 (* form6 = maximum . map (foldl (<#>) 0) . inits *)
