@@ -1,5 +1,6 @@
 Require Import Coq.Program.Basics.
 Require Import Coq.Reals.Reals.
+Require Import Coq.Reals.Rminmax.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
@@ -72,8 +73,7 @@ Definition computed_inits := inits example_list.
 (* Printing the computed inits for demonstration *)
 Eval compute in (inits example_list).
 
-(* segs :: [a] -> [[a]] *)
-(* segs = concat . map tails . inits *)
+
 Definition double : R -> R := fun x => 2*x.
 Definition inc : R -> R := fun x => x+1.
 Definition myFunc : R -> R := compose inc double.
@@ -89,8 +89,24 @@ Proof.
   ring.
 Qed.
 
+Definition concat {A : Type} : list (list A) -> list A := fun xs => fold_right (fun x acc => x ++ acc) [] xs.
+
+(* segs :: [a] -> [[a]] *)
+(* segs = concat . map tails . inits *)
+Definition segs {A : Type} : list A -> list (list A) := compose concat (compose (map tails) inits).
+
+Definition maximum : list R -> option R := fun xs => match xs with
+  | [] => None
+  | x' :: xs' => Some (fold_right (fun y acc => Rmax y acc) x' xs')
+end.
+
+Definition Rsum : list R -> R := fun xs => fold_right (fun x acc => x + acc) 0 xs.
+
+(* Forms of MaxSegSum *)
 (* form1, form2, form3, form4, form5, form6, form7, form8 :: (Ord a, Num a) => [a] -> a *)
 (* form1 = maximum . map sum . segs *)
+Definition form1 : (list R) -> option R := compose maximum (compose (map Rsum) segs).
+
 (* form2 = maximum . map sum . concat . map tails . inits *)
 (* form3 = maximum . concat . map (map sum) . map tails . inits *)
 (* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
