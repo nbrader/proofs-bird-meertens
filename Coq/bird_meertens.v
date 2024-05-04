@@ -104,6 +104,21 @@ end.
 
 Definition Rsum : list R -> R := fun xs => fold_right (fun x acc => x + acc) 0 xs.
 
+Definition fmapToOption {A B : Type} : forall (f : A -> B), option A -> option B := fun f mx => match mx with
+  | None => None
+  | Some x => Some (f x)
+end.
+
+Definition andThenOption {A B : Type} : forall (f : A -> option B), option A -> option B := fun f mx => match mx with
+  | None => None
+  | Some x => f x
+end.
+
+Definition sequenceOptions {A : Type} : list (option A) -> option (list A) := fold_right (fun mx acc => match mx with
+  | None => None
+  | Some x => andThenOption (fun y => Some (x :: y)) acc
+end) (Some []).
+
 (* Forms of MaxSegSum *)
 (* form1, form2, form3, form4, form5, form6, form7, form8 :: (Ord a, Num a) => [a] -> a *)
 (* form1 = maximum . map sum . segs *)
@@ -115,10 +130,25 @@ Definition form2 : (list R) -> option R := compose maximum (compose (map Rsum) (
 (* form3 = maximum . concat . map (map sum) . map tails . inits *)
 Definition form3 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
 
-Theorem form1_eq_form2 : form1 = form2.
-Proof.
-  reflexivity.
-Qed.
+(* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
+Definition form4 : (list R) -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map maximum) (compose (map (map Rsum)) (compose (map tails) inits)))).
+
+(* form5 = maximum . map (maximum . map sum . tails) . inits *)
+Definition form5 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+
+(* form6 = maximum . map (foldl (<#>) 0) . inits *)
+Definition form6 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+
+(* form7 = maximum . scanl (<#>) 0 *)
+Definition form7 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+
+(* form8 = fst . foldl (<.>) (0,0) *)
+Definition form8 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+
+
+(* x <#> y = (x + y) <|> 0 *)
+(* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
+(* x <|> y = max x y *)
 
 Lemma map_promotion : forall (f : (list R) -> R),
   compose (map f) concat = compose concat (map (map f)).
@@ -135,6 +165,12 @@ Proof.
     reflexivity.
 Qed.
 
+
+Theorem form1_eq_form2 : form1 = form2.
+Proof.
+  reflexivity.
+Qed.
+
 Theorem form2_eq_form3 : form2 = form3.
 Proof.
   unfold form2.
@@ -144,22 +180,3 @@ Proof.
   rewrite map_promotion.
   reflexivity.
 Qed.
-
-(* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
-(* form5 = maximum . map (maximum . map sum . tails) . inits *)
-(* form6 = maximum . map (foldl (<#>) 0) . inits *)
-(* form7 = maximum . scanl (<#>) 0 *)
-(* form8 = fst . foldl (<.>) (0,0) *)
-
-(* x <#> y = (x + y) <|> 0 *)
-(* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-(* x <|> y = max x y *)
-
-(* -- QuickCheck property to compare all forms *)
-(* prop_sameResults :: [Integer] -> Bool *)
-(* prop_sameResults xs = all (== head results) results *)
-  (* where results = [form1 xs, form2 xs, form3 xs, form4 xs, form5 xs, form6 xs, form7 xs, form8 xs] *)
-
-(* -- Run QuickCheck *)
-(* main :: IO () *)
-(* main = quickCheck prop_sameResults *)
