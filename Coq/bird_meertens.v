@@ -120,15 +120,15 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma map_promotion : forall (f : (list R) -> R) (g : list R -> list (list (list R))),
-  compose (map f) (compose concat g) = compose concat (compose (map (map f)) g).
+Lemma map_promotion : forall (f : (list R) -> R),
+  compose (map f) concat = compose concat (map (map f)).
 Proof.
   intros.
   unfold compose.
   f_equal.
   apply functional_extensionality.
   intros.
-  induction (g x0) as [|x xs IH]; simpl.
+  induction x0 as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - rewrite map_app. (* Apply map_app to rewrite map f (x ++ concat xs) *)
     rewrite IH.    (* Apply the induction hypothesis *)
@@ -140,7 +140,9 @@ Proof.
   unfold form2.
   unfold form3.
   f_equal.
-  apply map_promotion.
+  rewrite <- compose_assoc.
+  rewrite map_promotion.
+  reflexivity.
 Qed.
 
 (* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
