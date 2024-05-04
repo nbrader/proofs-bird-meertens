@@ -1,6 +1,8 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-20.5 script --package QuickCheck --package criterion --package deepseq
 
+-- run with "stack benchmark.hs"
+
 import Criterion.Main
 import Data.List
 import Control.DeepSeq (NFData)
