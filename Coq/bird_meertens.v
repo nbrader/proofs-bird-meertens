@@ -119,36 +119,39 @@ Definition sequenceOptions {A : Type} : list (option A) -> option (list A) := fo
   | Some x => andThenOption (fun y => Some (x :: y)) acc
 end) (Some []).
 
+
+(* x <#> y = (x + y) <|> 0 *)
+Definition RnonzeroSum : R -> R -> R := fun x y => Rmax (x + y) 0.
+
+(* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
+(* x <|> y = max x y *)
+
+
 (* Forms of MaxSegSum *)
 (* form1, form2, form3, form4, form5, form6, form7, form8 :: (Ord a, Num a) => [a] -> a *)
 (* form1 = maximum . map sum . segs *)
-Definition form1 : (list R) -> option R := compose maximum (compose (map Rsum) segs).
+Definition form1 : list R -> option R := compose maximum (compose (map Rsum) segs).
 
 (* form2 = maximum . map sum . concat . map tails . inits *)
-Definition form2 : (list R) -> option R := compose maximum (compose (map Rsum) (compose concat (compose (map tails) inits))).
+Definition form2 : list R -> option R := compose maximum (compose (map Rsum) (compose concat (compose (map tails) inits))).
 
 (* form3 = maximum . concat . map (map sum) . map tails . inits *)
-Definition form3 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+Definition form3 : list R -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
 
 (* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
-Definition form4 : (list R) -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map maximum) (compose (map (map Rsum)) (compose (map tails) inits)))).
+Definition form4 : list R -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map maximum) (compose (map (map Rsum)) (compose (map tails) inits)))).
 
 (* form5 = maximum . map (maximum . map sum . tails) . inits *)
-Definition form5 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+Definition form5 : list R -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map (compose maximum (compose (map Rsum) tails))) inits)).
 
 (* form6 = maximum . map (foldl (<#>) 0) . inits *)
-Definition form6 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+Definition form6 : list R -> option R := compose maximum (compose (map (fun xs => fold_left RnonzeroSum xs 0)) inits).
 
 (* form7 = maximum . scanl (<#>) 0 *)
-Definition form7 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+(* Definition form7 : list R -> option R :=  *)
 
 (* form8 = fst . foldl (<.>) (0,0) *)
-Definition form8 : (list R) -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
-
-
-(* x <#> y = (x + y) <|> 0 *)
-(* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-(* x <|> y = max x y *)
+(* Definition form8 : list R -> option R :=  *)
 
 Lemma map_promotion : forall (f : (list R) -> R),
   compose (map f) concat = compose concat (map (map f)).
