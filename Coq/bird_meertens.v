@@ -107,28 +107,18 @@ Fixpoint scanl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} 
     | x :: xs' => scanl f (f i x) xs'
     end.
 
-Definition maximum : list R -> option R := fun xs => match xs with
-  | [] => None
-  | x' :: xs' => Some (fold_right (fun y acc => Rmax y acc) x' xs')
+Definition maximum : list R -> R := fun xs => match xs with
+  | [] => 0 (* This would be incorrect for lists of negatives but:
+                1) We consider only lists of at least 1 positive and 1 negative because alternatives are trivial:
+                    - Lists without negatives have a MaxSegSum equal to the sum of the list
+                    - Lists without positives have a MaxSegSum equal to the least negative member 
+                2) segs, inits and scanl don't map to the empty list and the only way to get the empty list
+                      from map and concat is from the empty list and a list of empty lists respectively so nothing
+                      we can get from proceeding functions in the forms below will trigger this case anyway. *)
+  | x' :: xs' => (fold_right (fun y acc => Rmax y acc) x' xs')
 end.
 
 Definition Rsum : list R -> R := fun xs => fold_right (fun x acc => x + acc) 0 xs.
-
-Definition fmapToOption {A B : Type} : forall (f : A -> B), option A -> option B := fun f mx => match mx with
-  | None => None
-  | Some x => Some (f x)
-end.
-
-Definition andThenOption {A B : Type} : forall (f : A -> option B), option A -> option B := fun f mx => match mx with
-  | None => None
-  | Some x => f x
-end.
-
-Definition sequenceOptions {A : Type} : list (option A) -> option (list A) := fold_right (fun mx acc => match mx with
-  | None => None
-  | Some x => andThenOption (fun y => Some (x :: y)) acc
-end) (Some []).
-
 
 (* x <#> y = (x + y) <|> 0 *)
 Definition RnonzeroSum : R -> R -> R := fun x y => Rmax (x + y) 0.
@@ -142,28 +132,28 @@ end.
 (* Forms of MaxSegSum *)
 (* form1, form2, form3, form4, form5, form6, form7, form8 :: (Ord a, Num a) => [a] -> a *)
 (* form1 = maximum . map sum . segs *)
-Definition form1 : list R -> option R := compose maximum (compose (map Rsum) segs).
+Definition form1 : list R -> R := compose maximum (compose (map Rsum) segs).
 
 (* form2 = maximum . map sum . concat . map tails . inits *)
-Definition form2 : list R -> option R := compose maximum (compose (map Rsum) (compose concat (compose (map tails) inits))).
+Definition form2 : list R -> R := compose maximum (compose (map Rsum) (compose concat (compose (map tails) inits))).
 
 (* form3 = maximum . concat . map (map sum) . map tails . inits *)
-Definition form3 : list R -> option R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
+Definition form3 : list R -> R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
 
 (* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
-Definition form4 : list R -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map maximum) (compose (map (map Rsum)) (compose (map tails) inits)))).
+Definition form4 : list R -> R := compose maximum (compose (map maximum) (compose (map (map Rsum)) (compose (map tails) inits))).
 
 (* form5 = maximum . map (maximum . map sum . tails) . inits *)
-Definition form5 : list R -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map (compose maximum (compose (map Rsum) tails))) inits)).
+Definition form5 : list R -> R := compose maximum (compose (map (compose maximum (compose (map Rsum) tails))) inits).
 
 (* form6 = maximum . map (foldl (<#>) 0) . inits *)
-Definition form6 : list R -> option R := compose maximum (compose (map (foldl RnonzeroSum 0)) inits).
+Definition form6 : list R -> R := compose maximum (compose (map (foldl RnonzeroSum 0)) inits).
 
 (* form7 = maximum . scal (<#>) 0 *)
-Definition form7 : list R -> option R := compose maximum (scanl RnonzeroSum 0).
+Definition form7 : list R -> R := compose maximum (scanl RnonzeroSum 0).
 
 (* form8 = fst . foldl (<.>) (0,0) *)
-Definition form8 : list R -> option R := compose Some (compose fst (foldl RMaxSoFarAndPreviousNonzeroSum (0,0))).
+Definition form8 : list R -> R := compose fst (foldl RMaxSoFarAndPreviousNonzeroSum (0,0)).
 
 Lemma map_promotion : forall (f : (list R) -> R),
   compose (map f) concat = compose concat (map (map f)).
