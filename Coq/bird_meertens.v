@@ -98,11 +98,13 @@ Definition concat {A : Type} : list (list A) -> list A := fun xs => fold_right (
 (* segs = concat . map tails . inits *)
 Definition segs {A : Type} : list A -> list (list A) := compose concat (compose (map tails) inits).
 
-Fixpoint scan_left {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} : list B :=
+Definition foldl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) : B := fold_left f xs i.
+
+Fixpoint scanl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} : list B :=
   i ::
     match xs with
     | nil => nil
-    | x :: xs' => scan_left f (f i x) xs'
+    | x :: xs' => scanl f (f i x) xs'
     end.
 
 Definition maximum : list R -> option R := fun xs => match xs with
@@ -155,13 +157,13 @@ Definition form4 : list R -> option R := compose (andThenOption maximum) (compos
 Definition form5 : list R -> option R := compose (andThenOption maximum) (compose sequenceOptions (compose (map (compose maximum (compose (map Rsum) tails))) inits)).
 
 (* form6 = maximum . map (foldl (<#>) 0) . inits *)
-Definition form6 : list R -> option R := compose maximum (compose (map (fun xs => fold_left RnonzeroSum xs 0)) inits).
+Definition form6 : list R -> option R := compose maximum (compose (map (foldl RnonzeroSum 0)) inits).
 
 (* form7 = maximum . scal (<#>) 0 *)
-Definition form7 : list R -> option R := compose maximum (scan_left RnonzeroSum 0).
+Definition form7 : list R -> option R := compose maximum (scanl RnonzeroSum 0).
 
 (* form8 = fst . foldl (<.>) (0,0) *)
-Definition form8 : list R -> option R := compose Some (compose fst ((fun xs => fold_left RMaxSoFarAndPreviousNonzeroSum xs (0,0)))).
+Definition form8 : list R -> option R := compose Some (compose fst (foldl RMaxSoFarAndPreviousNonzeroSum (0,0))).
 
 Lemma map_promotion : forall (f : (list R) -> R),
   compose (map f) concat = compose concat (map (map f)).
