@@ -111,7 +111,8 @@ Definition maximum : list R -> R := fun xs => match xs with
   | [] => 0 (* This would be incorrect for lists of negatives but:
                 1) We consider only lists of at least 1 positive and 1 negative because alternatives are trivial:
                     - Lists without negatives have a MaxSegSum equal to the sum of the list
-                    - Lists without positives have a MaxSegSum equal to the least negative member 
+                    - Lists without positives have a MaxSegSum equal to the least negative member
+                    To Do: Make this explicit in a more general MaxSegSum function which covers these other cases as described above.
                 2) segs, inits and scanl don't map to the empty list and the only way to get the empty list
                       from map and concat is from the empty list and a list of empty lists respectively so nothing
                       we can get from proceeding functions in the forms below will trigger this case anyway. *)
