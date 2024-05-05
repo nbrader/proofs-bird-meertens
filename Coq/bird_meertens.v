@@ -204,7 +204,19 @@ Proof.
            assert (x <= z).
            ++ apply (Rle_trans x y z r2).
               apply r0.
-Admitted.
+           ++ simpl.
+              destruct (Rle_dec x z) as [Htrue|Hfalse].
+              ** (* Case where x <= z *)
+                reflexivity.
+              ** (* Case where x > z, which should be impossible given hypothesis H *)
+                exfalso.
+                apply Hfalse.
+                exact H.
+        -- admit.
+      * admit.
+    + admit.
+  - admit.
+Qed.
 
 Lemma fold_promotion : compose maximum concat = compose maximum (map maximum).
 Proof.
