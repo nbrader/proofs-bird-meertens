@@ -3,6 +3,7 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Reals.Reals.
 Require Import Coq.Reals.Rminmax.
 Require Import Coq.Lists.List.
+Require Import Coq.Init.Datatypes.
 Require Import Coq.Logic.FunctionalExtensionality.
 Import ListNotations.
 
@@ -73,7 +74,7 @@ Definition example_list := [1; 2; 3].
 Definition computed_inits := inits example_list.
 
 (* Printing the computed inits for demonstration *)
-Eval compute in (inits example_list).
+(* Eval compute in (inits example_list). *)
 
 
 Definition double : R -> R := fun x => 2*x.
@@ -96,6 +97,13 @@ Definition concat {A : Type} : list (list A) -> list A := fun xs => fold_right (
 (* segs :: [a] -> [[a]] *)
 (* segs = concat . map tails . inits *)
 Definition segs {A : Type} : list A -> list (list A) := compose concat (compose (map tails) inits).
+
+Fixpoint scan_left {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} : list B :=
+  i ::
+    match xs with
+    | nil => nil
+    | x :: xs' => scan_left f (f i x) xs'
+    end.
 
 Definition maximum : list R -> option R := fun xs => match xs with
   | [] => None
@@ -124,7 +132,9 @@ end) (Some []).
 Definition RnonzeroSum : R -> R -> R := fun x y => Rmax (x + y) 0.
 
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-(* x <|> y = max x y *)
+Definition RMaxSoFarAndPreviousNonzeroSum : (R * R) -> R -> (R * R) := fun uv x => match uv with
+  | (u, v) => let w := RnonzeroSum v x in (Rmax u w, w)
+end.
 
 
 (* Forms of MaxSegSum *)
@@ -147,11 +157,11 @@ Definition form5 : list R -> option R := compose (andThenOption maximum) (compos
 (* form6 = maximum . map (foldl (<#>) 0) . inits *)
 Definition form6 : list R -> option R := compose maximum (compose (map (fun xs => fold_left RnonzeroSum xs 0)) inits).
 
-(* form7 = maximum . scanl (<#>) 0 *)
-(* Definition form7 : list R -> option R :=  *)
+(* form7 = maximum . scal (<#>) 0 *)
+Definition form7 : list R -> option R := compose maximum (scan_left RnonzeroSum 0).
 
 (* form8 = fst . foldl (<.>) (0,0) *)
-(* Definition form8 : list R -> option R :=  *)
+Definition form8 : list R -> option R := compose Some (compose fst ((fun xs => fold_left RMaxSoFarAndPreviousNonzeroSum xs (0,0)))).
 
 Lemma map_promotion : forall (f : (list R) -> R),
   compose (map f) concat = compose concat (map (map f)).
