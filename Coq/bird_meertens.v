@@ -185,9 +185,10 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma maximum_distr (x : list R) (xs : list (list R)) : maximum (x ++ concat xs) = Rmax (maximum x) (maximum (concat xs)).
+Lemma maximum_distr (xs : list R) (ys : list R) : maximum (xs ++ ys) = Rmax (maximum xs) (maximum ys).
 Proof.
   unfold fold_right.
+
 Admitted.
 
 Lemma Rmax_assoc : forall (x y z : R), Rmax x (Rmax y z) = Rmax (Rmax x y) z.
@@ -350,7 +351,8 @@ Proof.
     + tauto.
     + destruct H.
       * rewrite H.
-        unfold maximum.
+        rewrite (maximum_distr x (concat xs)) in H.
+        
 Admitted.
 
 
