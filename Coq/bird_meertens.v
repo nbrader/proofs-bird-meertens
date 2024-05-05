@@ -107,7 +107,7 @@ Fixpoint scanl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} 
     | x :: xs' => scanl f (f i x) xs'
     end.
 
-Definition maximum : list R -> R := fun xs => match xs with
+(* Definition maximum : list R -> R := fun xs => match xs with
   | [] => 0 (* This would be incorrect for lists of negatives but:
                 1) We consider only lists of at least 1 positive and 1 negative because alternatives are trivial:
                     - Lists without negatives have a MaxSegSum equal to the sum of the list
@@ -116,8 +116,9 @@ Definition maximum : list R -> R := fun xs => match xs with
                 2) segs, inits and scanl don't map to the empty list and the only way to get the empty list
                       from map and concat is from the empty list and a list of empty lists respectively so nothing
                       we can get from proceeding functions in the forms below will trigger this case anyway. *)
-  | x' :: xs' => (fold_right (fun y acc => Rmax y acc) x' xs')
-end.
+  | x' :: xs' => (fold_right Rmax x' xs')
+end. *)
+Definition maximum : list R -> R := fold_right Rmax 0.
 
 Definition Rsum : list R -> R := fun xs => fold_right (fun x acc => x + acc) 0 xs.
 
@@ -339,6 +340,24 @@ Proof.
             +++ contradiction.
           --- reflexivity.
 Qed.
+
+Definition RfoldlSum := (foldl (fun x y => x + y) 0).
+
+Lemma foldl_promotion : compose RfoldlSum concat = compose RfoldlSum (map RfoldlSum).
+Proof.
+  apply functional_extensionality.
+  intros.
+  induction x0 as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - unfold compose.
+    induction x, xs.
+    + unfold concat, RfoldlSum.
+      simpl.
+      f_equal.
+      ring.
+    + admit.
+        
+Admitted.
 
 Lemma fold_promotion : compose maximum concat = compose maximum (map maximum).
 Proof.
