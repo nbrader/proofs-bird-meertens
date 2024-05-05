@@ -212,10 +212,131 @@ Proof.
                 exfalso.
                 apply Hfalse.
                 exact H.
-        -- admit.
-      * admit.
-    + admit.
-  - admit.
+        -- reflexivity.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- rewrite Hyz.
+           assert (x <= z).
+           ++ apply (Rle_trans x y z r1).
+              apply r0.
+           ++ simpl.
+              destruct (Rle_dec x z) as [Htrue|Hfalse].
+              ** (* Case where x <= z *)
+                reflexivity.
+              ** (* Case where x > z, which should be impossible given hypothesis H *)
+                exfalso.
+                apply Hfalse.
+                exact H.
+        -- reflexivity.
+    + simpl.
+      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- rewrite Hyz.
+           reflexivity.
+        -- assert (~ x <= z).
+           ++ intro.
+              assert (z < y).
+              ** apply Rnot_le_lt.
+                 apply n.
+              ** assert (y < x).
+                 --- apply Rnot_le_lt.
+                     apply n0.
+                 --- assert (z < x).
+                     +++ apply (Rlt_trans z y x H0 H1).
+                     +++ apply Rlt_not_le in H2.
+                         contradiction.
+          ++ destruct (Rle_dec x z) as [Htrue|Hfalse].
+             +++ contradiction.
+             +++ reflexivity.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- destruct (Rle_dec y z).
+           ++ contradiction.
+           ++ reflexivity.
+        -- destruct (Rle_dec x z).
+          --- assert (~ x <= z).
+            +++ intro.
+                assert (z < y).
+                *** apply Rnot_le_lt.
+                  apply n.
+                *** assert (y < x).
+                  ---- apply Rnot_le_lt.
+                      apply n1.
+                  ---- assert (z < x).
+                      ++++ apply (Rlt_trans z y x H0 H1).
+                      ++++ apply Rlt_not_le in H2.
+                          contradiction.
+            +++ contradiction.
+          --- reflexivity.
+  - destruct (Rle_dec y z) eqn:Hyz.
+    + (* Case x ≤ z ∧ y ≤ z *)
+      simpl.
+      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- rewrite Hyz.
+           assert (x <= z).
+           ++ apply (Rle_trans x y z r1).
+              apply r.
+           ++ simpl.
+              destruct (Rle_dec x z) as [Htrue|Hfalse].
+              ** (* Case where x <= z *)
+                reflexivity.
+              ** (* Case where x > z, which should be impossible given hypothesis H *)
+                exfalso.
+                apply Hfalse.
+                exact H.
+        -- reflexivity.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- rewrite Hyz.
+           assert (x <= z).
+           ++ apply (Rle_trans x y z r0).
+              apply r.
+           ++ simpl.
+              destruct (Rle_dec x z) as [Htrue|Hfalse].
+              ** (* Case where x <= z *)
+                reflexivity.
+              ** (* Case where x > z, which should be impossible given hypothesis H *)
+                exfalso.
+                apply Hfalse.
+                exact H.
+        -- reflexivity.
+    + simpl.
+      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- rewrite Hyz.
+           reflexivity.
+        -- assert (~ x <= z).
+           ++ intro.
+              assert (z < y).
+              ** apply Rnot_le_lt.
+                 apply n0.
+              ** assert (y < x).
+                 --- apply Rnot_le_lt.
+                     apply n1.
+                 --- assert (z < x).
+                     +++ apply (Rlt_trans z y x H0 H1).
+                     +++ apply Rlt_not_le in H2.
+                         contradiction.
+          ++ destruct (Rle_dec x z) as [Htrue|Hfalse].
+             +++ contradiction.
+             +++ reflexivity.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- destruct (Rle_dec y z).
+           ++ contradiction.
+           ++ reflexivity.
+        -- destruct (Rle_dec x z).
+          --- assert (~ x <= z).
+            +++ intro.
+                assert (z < y).
+                *** apply Rnot_le_lt.
+                  apply n0.
+                *** assert (y < x).
+                  ---- apply Rnot_le_lt.
+                      apply n2.
+                  ---- assert (z < x).
+                      ++++ apply (Rlt_trans z y x H0 H1).
+                      ++++ apply Rlt_not_le in H2.
+                          contradiction.
+            +++ contradiction.
+          --- reflexivity.
 Qed.
 
 Lemma fold_promotion : compose maximum concat = compose maximum (map maximum).
