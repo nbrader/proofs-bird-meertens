@@ -156,7 +156,7 @@ Definition form7 : list R -> R := compose maximum (scanl RnonzeroSum 0).
 (* form8 = fst . foldl (<.>) (0,0) *)
 Definition form8 : list R -> R := compose fst (foldl RMaxSoFarAndPreviousNonzeroSum (0,0)).
 
-Lemma map_promotion : forall (f : (list R) -> R),
+Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
   compose (map f) concat = compose concat (map (map f)).
 Proof.
   intros.
@@ -171,6 +171,55 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
+  compose (map f) (map g) = map (compose f g).
+Proof.
+  intros.
+  unfold compose.
+  f_equal.
+  apply functional_extensionality.
+  intros.
+  induction x0 as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - rewrite IH.    (* Apply the induction hypothesis *)
+    reflexivity.
+Qed.
+
+Lemma maximum_distr (x : list R) (xs : list (list R)) : maximum (x ++ concat xs) = Rmax (maximum x) (maximum (concat xs)).
+Proof.
+  unfold fold_right.
+Admitted.
+
+Lemma Rmax_assoc : forall (x y z : R), Rmax x (Rmax y z) = Rmax (Rmax x y) z.
+Proof.
+  intros x y z.
+  unfold Rmax.
+  destruct (Rle_dec x (Rmax y z)) eqn:Hxyz.
+  - destruct (Rle_dec y z) eqn:Hyz.
+    + (* Case x ≤ z ∧ y ≤ z *)
+      simpl.
+      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
+      * destruct (Rle_dec x y) eqn:Hxy.
+        -- rewrite Hyz.
+           assert (x <= z).
+           ++ apply (Rle_trans x y z r2).
+              apply r0.
+Admitted.
+
+Lemma fold_promotion : compose maximum concat = compose maximum (map maximum).
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x0 as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - assert (maximum (x ++ (concat xs)) = maximum x \/ maximum (x ++ (concat xs)) <> maximum x).
+    + tauto.
+    + destruct H.
+      * rewrite H.
+        unfold maximum.
+Admitted.
+
 
 Theorem form1_eq_form2 : form1 = form2.
 Proof.
@@ -184,5 +233,26 @@ Proof.
   f_equal.
   rewrite <- compose_assoc.
   rewrite map_promotion.
+  reflexivity.
+Qed.
+
+Theorem form3_eq_form4 : form3 = form4.
+Proof.
+  unfold form3.
+  unfold form4.
+  f_equal.
+  rewrite <- compose_assoc.
+Admitted.
+
+Theorem form4_eq_form5 : form4 = form5.
+Proof.
+  unfold form4.
+  unfold form5.
+  f_equal.
+  rewrite <- compose_assoc.
+  rewrite <- compose_assoc.
+  rewrite <- compose_assoc.
+  rewrite (map_distr maximum (map Rsum)).
+  rewrite (map_distr (compose maximum (map Rsum)) tails).
   reflexivity.
 Qed.
