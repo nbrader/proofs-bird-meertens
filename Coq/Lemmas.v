@@ -12,8 +12,6 @@ Require Import BirdMeertens.Max.
 
 Open Scope R_scope.
 
-Notation "g ∘ f" := (compose g f) (at level 40, left associativity).
-
 Definition RfoldlSum := foldl (fun x y => x + y) 0.
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
