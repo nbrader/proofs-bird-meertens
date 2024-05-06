@@ -3,6 +3,8 @@ Require Import Coq.Lists.List.
 
 Open Scope R_scope.
 
+Require Import BirdMeertens.ListFunctions.
+
 Lemma Rmax_assoc : forall (x y z : R), Rmax x (Rmax y z) = Rmax (Rmax x y) z.
 Proof.
   intros x y z.
@@ -163,7 +165,7 @@ Qed.
                       we can get from proceeding functions in the forms below will trigger this case anyway. *)
   | x' :: xs' => (fold_left Rmax xs 0.)
 end. *)
-Definition maximum : list R -> R := fun xs => fold_left Rmax xs 0.
+Definition maximum : list R -> R := fun xs => foldl Rmax 0 xs.
 
 (* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
 (* NOTE: I think I'm going to have to work with option types again and interpret the extra value as negative infinity for this to work because otherwise this gets needlessly inelegant.
@@ -171,7 +173,7 @@ Definition maximum : list R -> R := fun xs => fold_left Rmax xs 0.
 Lemma maximum_distr (xs : list R) (ys : list R) : maximum (xs ++ ys) = Rmax (maximum xs) (maximum ys).
 Proof.
   unfold maximum.
-  rewrite fold_left_app.
+  rewrite foldl_left_app.
   
 Admitted.
 
