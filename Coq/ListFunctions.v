@@ -1,13 +1,7 @@
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
-Require Import Coq.Reals.Reals.
-Require Import Coq.Reals.Rminmax.
 Require Import Coq.Lists.List.
-Require Import Coq.Init.Datatypes.
-Require Import Coq.Logic.FunctionalExtensionality.
 Import ListNotations.
-
-Open Scope R_scope.
 
 Fixpoint tails {A : Type} (xs : list A) : list (list A) :=
   match xs with

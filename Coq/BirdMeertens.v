@@ -1,11 +1,7 @@
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
 Require Import Coq.Reals.Reals.
-Require Import Coq.Reals.Rminmax.
 Require Import Coq.Lists.List.
-Require Import Coq.Init.Datatypes.
-Require Import Coq.Logic.FunctionalExtensionality.
-Import ListNotations.
 
 Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
