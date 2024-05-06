@@ -92,7 +92,7 @@ Proof.
   ring.
 Qed.
 
-Definition concat {A : Type} : list (list A) -> list A := fun xs => fold_right (fun x acc => x ++ acc) [] xs.
+Definition concat {A : Type} : list (list A) -> list A := @List.concat A.
 
 (* segs :: [a] -> [[a]] *)
 (* segs = concat . map tails . inits *)
@@ -116,11 +116,11 @@ Fixpoint scanl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} 
                 2) segs, inits and scanl don't map to the empty list and the only way to get the empty list
                       from map and concat is from the empty list and a list of empty lists respectively so nothing
                       we can get from proceeding functions in the forms below will trigger this case anyway. *)
-  | x' :: xs' => (fold_right Rmax x' xs')
+  | x' :: xs' => (fold_left Rmax xs 0.)
 end. *)
-Definition maximum : list R -> R := fold_right Rmax 0.
+Definition maximum : list R -> R := fun xs => fold_left Rmax xs 0.
 
-Definition Rsum : list R -> R := fun xs => fold_right (fun x acc => x + acc) 0 xs.
+Definition Rsum : list R -> R := fun xs => fold_left (fun x acc => x + acc) xs 0.
 
 (* x <#> y = (x + y) <|> 0 *)
 Definition RnonzeroSum : R -> R -> R := fun x y => Rmax (x + y) 0.
@@ -157,21 +157,6 @@ Definition form7 : list R -> R := compose maximum (scanl RnonzeroSum 0).
 (* form8 = fst . foldl (<.>) (0,0) *)
 Definition form8 : list R -> R := compose fst (foldl RMaxSoFarAndPreviousNonzeroSum (0,0)).
 
-Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
-  compose (map f) concat = compose concat (map (map f)).
-Proof.
-  intros.
-  unfold compose.
-  f_equal.
-  apply functional_extensionality.
-  intros.
-  induction x0 as [|x xs IH]; simpl.
-  - reflexivity. (* Base case: both sides are empty *)
-  - rewrite map_app. (* Apply map_app to rewrite map f (x ++ concat xs) *)
-    rewrite IH.    (* Apply the induction hypothesis *)
-    reflexivity.
-Qed.
-
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
   compose (map f) (map g) = map (compose f g).
 Proof.
@@ -186,11 +171,16 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma maximum_distr (xs : list R) (ys : list R) : maximum (xs ++ ys) = Rmax (maximum xs) (maximum ys).
+Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
+  compose (map f) concat = compose concat (map (map f)).
 Proof.
-  unfold fold_right.
-
-Admitted.
+  intros.
+  unfold compose.
+  f_equal.
+  apply functional_extensionality.
+  intros.
+  apply concat_map.
+Qed.
 
 Lemma Rmax_assoc : forall (x y z : R), Rmax x (Rmax y z) = Rmax (Rmax x y) z.
 Proof.
@@ -341,6 +331,14 @@ Proof.
           --- reflexivity.
 Qed.
 
+(* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
+Lemma maximum_distr (xs : list R) (ys : list R) : maximum (xs ++ ys) = Rmax (maximum xs) (maximum ys).
+Proof.
+  unfold maximum.
+  rewrite fold_left_app.
+  
+Admitted.
+
 Definition RfoldlSum := (foldl (fun x y => x + y) 0).
 
 Lemma foldl_promotion : compose RfoldlSum concat = compose RfoldlSum (map RfoldlSum).
@@ -366,11 +364,7 @@ Proof.
   intros.
   induction x0 as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-  - assert (maximum (x ++ (concat xs)) = maximum x \/ maximum (x ++ (concat xs)) <> maximum x).
-    + tauto.
-    + destruct H.
-      * rewrite H.
-        rewrite (maximum_distr x (concat xs)) in H.
+  - 
         
 Admitted.
 
