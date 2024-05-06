@@ -163,7 +163,7 @@ Qed.
                 2) segs, inits and scanl don't map to the empty list and the only way to get the empty list
                       from map and concat is from the empty list and a list of empty lists respectively so nothing
                       we can get from proceeding functions in the forms below will trigger this case anyway. *)
-  | x' :: xs' => (fold_left Rmax xs 0.)
+  | x' :: xs' => foldl Rmax 0 xs.
 end. *)
 Definition maximum : list R -> R := fun xs => foldl Rmax 0 xs.
 
@@ -177,7 +177,7 @@ Proof.
   
 Admitted.
 
-Definition Rsum : list R -> R := fun xs => fold_left (fun x acc => x + acc) xs 0.
+Definition Rsum : list R -> R := fun xs => foldl (fun x acc => x + acc) 0 xs.
 
 (* x <#> y = (x + y) <|> 0 *)
 Definition RnonzeroSum : R -> R -> R := fun x y => Rmax (x + y) 0.
