@@ -252,7 +252,7 @@ Proof.
   
 Admitted.
 
-Definition RfoldlSum := (foldl (fun x y => x + y) 0).
+Definition RfoldlSum := foldl (fun x y => x + y) 0.
 
 Lemma foldl_promotion : RfoldlSum ∘ concat = RfoldlSum ∘ map RfoldlSum.
 Proof.
