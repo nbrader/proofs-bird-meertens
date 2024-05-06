@@ -25,3 +25,11 @@ Fixpoint scanl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} 
     | nil => nil
     | x :: xs' => scanl f (f i x) xs'
     end.
+
+(* I'm having to remake some lemmas for foldl so it can have the required argument order*)
+Lemma foldl_left_app : forall [A B : Type] (f : A -> B -> A) (l l' : list B) (i : A),
+  foldl f i (l ++ l') = foldl f (foldl f i l) l'.
+Proof.
+  unfold foldl.
+  apply fold_left_app.
+Qed.

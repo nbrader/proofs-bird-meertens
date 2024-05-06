@@ -6,6 +6,8 @@ Require Import Coq.Lists.List.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.Max.
 
+Require Import BirdMeertens.ListFunctions.
+
 Definition RfoldlSum := foldl (fun x y => x + y) 0.
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
@@ -45,14 +47,13 @@ Proof.
     unfold RfoldlSum.
     simpl.
     rewrite Rplus_0_l.
-    unfold foldl.
-    rewrite fold_left_app.
+    rewrite foldl_left_app.
     fold RfoldlSum.
     induction xs.
     + simpl.
       reflexivity.
     + simpl.
-      rewrite fold_left_app.
+      rewrite foldl_left_app.
       admit.
 Admitted.
 
