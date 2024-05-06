@@ -6,8 +6,6 @@ Require Import Coq.Lists.List.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.Max.
 
-Open Scope R_scope.
-
 Definition RfoldlSum := foldl (fun x y => x + y) 0.
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),

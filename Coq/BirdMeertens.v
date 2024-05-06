@@ -7,8 +7,6 @@ Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.Max.
 
-Open Scope R_scope.
-
 (* Forms of MaxSegSum *)
 Definition form1 : list R -> R := maximum ∘ map Rsum ∘ segs.
 Definition form2 : list R -> R := maximum ∘ map Rsum ∘ concat ∘ map tails ∘ inits.
