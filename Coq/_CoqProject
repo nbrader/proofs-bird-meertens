@@ -1,2 +1,5 @@
--Q . BirdMeertens
-bird_meertens.v
+-R . BirdMeertens
+BirdMeertens.v
+ListFunctions.v
+Lemmas.v
+Max.v
