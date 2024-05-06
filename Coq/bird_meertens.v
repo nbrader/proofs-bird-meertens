@@ -394,9 +394,10 @@ Theorem form3_eq_form4 : form3 = form4.
 Proof.
   unfold form3.
   unfold form4.
-  f_equal.
   rewrite <- compose_assoc.
-Admitted.
+  rewrite fold_promotion.
+  reflexivity.
+Qed.
 
 Theorem form4_eq_form5 : form4 = form5.
 Proof.
