@@ -332,6 +332,8 @@ Proof.
 Qed.
 
 (* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
+(* NOTE: I think I'm going to have to work with option types again and interpret the extra value as negative infinity for this to work because otherwise this gets needlessly inelegant.
+         A consequence of this will be that I'll have to replace all the 0s in the theoresm with Nones. *)
 Lemma maximum_distr (xs : list R) (ys : list R) : maximum (xs ++ ys) = Rmax (maximum xs) (maximum ys).
 Proof.
   unfold maximum.
