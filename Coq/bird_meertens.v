@@ -9,94 +9,21 @@ Import ListNotations.
 
 Open Scope R_scope.
 
-(* tails' :: [a] -> [[a]]
-tails' [] = [[]]
-tails' xs@(_:xs') = xs : tails' xs' *)
+Notation "g ∘ f" := (compose g f) (at level 40, left associativity).
+
 Fixpoint tails {A : Type} (xs : list A) : list (list A) :=
   match xs with
   | [] => [[]]
   | _ :: xs' => xs :: tails xs'
 end.
 
-Fixpoint init {A : Type} (xs : list A) : option (list A) :=
-  match xs with
-  | [] => None
-  | [x] => Some []  (* The only initial segment of a single-element list is the empty list *)
-  | x :: xs' => 
-      match init xs' with
-      | None => Some []  (* Should not happen since xs' is part of a non-empty list *)
-      | Some xs'' => Some (x :: xs'')
-      end
-  end.
-
-(* Definition NonEmpty {A : Type} (xs : list A) : Prop := xs <> []. *)
-
-(* (* inits' :: [a] -> [[a]]
-inits' [] = [[]]
-inits' xs = inits' (init xs) ++ [xs] *)
-Fixpoint inits {A : Type} (xs : list A) : list (list A) :=
-  match xs with
-  | [] => [[]]
-  | xs' => match init xs' with
-    | None => [[]]
-    | Some i => app (inits i) [xs']
-  end
-end.
-
-Cannot guess decreasing argument of fix. *)
-
-(* Define a recursive function to reverse a list *)
-Fixpoint reverse {A : Type} (l : list A) : list A :=
-  match l with
-  | [] => []
-  | x :: xs => reverse xs ++ [x]
-  end.
-
-(* Reverse a list using an accumulator for efficiency *)
-Fixpoint reverse_acc {A : Type} (l acc : list A) : list A :=
-  match l with
-  | [] => acc
-  | x :: xs => reverse_acc xs (x :: acc)
-  end.
-
-(* Wrapper function to reverse a list by calling reverse_acc with an empty accumulator *)
-Definition reverse' {A : Type} (l : list A) : list A :=
-  reverse_acc l [].
-
 (* Define the inits function using reverse and tails *)
 Definition inits {A : Type} (xs : list A) : list (list A) :=
-  map (reverse) (tails (reverse xs)).
-
-(* Example list to evaluate *)
-Definition example_list := [1; 2; 3].
-
-(* Compute inits of the example list *)
-Definition computed_inits := inits example_list.
-
-(* Printing the computed inits for demonstration *)
-(* Eval compute in (inits example_list). *)
-
-
-Definition double : R -> R := fun x => 2*x.
-Definition inc : R -> R := fun x => x+1.
-Definition myFunc : R -> R := compose inc double.
-Definition x := myFunc 10.
-
-Theorem x_eval : x = 21.
-Proof.
-  unfold x.
-  unfold myFunc.
-  unfold inc.
-  unfold double.
-  unfold compose.
-  ring.
-Qed.
+  map (@rev A) (tails (rev xs)).
 
 Definition concat {A : Type} : list (list A) -> list A := @List.concat A.
 
-(* segs :: [a] -> [[a]] *)
-(* segs = concat . map tails . inits *)
-Definition segs {A : Type} : list A -> list (list A) := compose concat (compose (map tails) inits).
+Definition segs {A : Type} : list A -> list (list A) := concat ∘ map tails ∘ inits.
 
 Definition foldl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) : B := fold_left f xs i.
 
@@ -132,47 +59,31 @@ end.
 
 
 (* Forms of MaxSegSum *)
-(* form1, form2, form3, form4, form5, form6, form7, form8 :: (Ord a, Num a) => [a] -> a *)
-(* form1 = maximum . map sum . segs *)
-Definition form1 : list R -> R := compose maximum (compose (map Rsum) segs).
-
-(* form2 = maximum . map sum . concat . map tails . inits *)
-Definition form2 : list R -> R := compose maximum (compose (map Rsum) (compose concat (compose (map tails) inits))).
-
-(* form3 = maximum . concat . map (map sum) . map tails . inits *)
-Definition form3 : list R -> R := compose maximum (compose concat (compose (map (map Rsum)) (compose (map tails) inits))).
-
-(* form4 = maximum . map maximum . map (map sum) . map tails . inits *)
-Definition form4 : list R -> R := compose maximum (compose (map maximum) (compose (map (map Rsum)) (compose (map tails) inits))).
-
-(* form5 = maximum . map (maximum . map sum . tails) . inits *)
-Definition form5 : list R -> R := compose maximum (compose (map (compose maximum (compose (map Rsum) tails))) inits).
-
-(* form6 = maximum . map (foldl (<#>) 0) . inits *)
-Definition form6 : list R -> R := compose maximum (compose (map (foldl RnonzeroSum 0)) inits).
-
-(* form7 = maximum . scal (<#>) 0 *)
-Definition form7 : list R -> R := compose maximum (scanl RnonzeroSum 0).
-
-(* form8 = fst . foldl (<.>) (0,0) *)
-Definition form8 : list R -> R := compose fst (foldl RMaxSoFarAndPreviousNonzeroSum (0,0)).
+Definition form1 : list R -> R := maximum ∘ map Rsum ∘ segs.
+Definition form2 : list R -> R := maximum ∘ map Rsum ∘ concat ∘ map tails ∘ inits.
+Definition form3 : list R -> R := maximum ∘ concat ∘ map (map Rsum) ∘ map tails ∘ inits.
+Definition form4 : list R -> R := maximum ∘ map maximum ∘ map (map Rsum) ∘ map tails ∘ inits.
+Definition form5 : list R -> R := maximum ∘ map (maximum ∘ map Rsum ∘ tails) ∘ inits.
+Definition form6 : list R -> R := maximum ∘ map (foldl RnonzeroSum 0) ∘ inits.
+Definition form7 : list R -> R := maximum ∘ scanl RnonzeroSum 0.
+Definition form8 : list R -> R := fst ∘ foldl RMaxSoFarAndPreviousNonzeroSum (0,0).
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
-  compose (map f) (map g) = map (compose f g).
+  map f ∘ map g = map (f ∘ g).
 Proof.
   intros.
   unfold compose.
   f_equal.
   apply functional_extensionality.
   intros.
-  induction x0 as [|x xs IH]; simpl.
+  induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - rewrite IH.    (* Apply the induction hypothesis *)
     reflexivity.
 Qed.
 
 Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
-  compose (map f) concat = compose concat (map (map f)).
+  map f ∘ concat = concat ∘ map (map f).
 Proof.
   intros.
   unfold compose.
@@ -343,11 +254,11 @@ Admitted.
 
 Definition RfoldlSum := (foldl (fun x y => x + y) 0).
 
-Lemma foldl_promotion : compose RfoldlSum concat = compose RfoldlSum (map RfoldlSum).
+Lemma foldl_promotion : RfoldlSum ∘ concat = RfoldlSum ∘ map RfoldlSum.
 Proof.
   apply functional_extensionality.
   intros.
-  induction x0 as [|x xs IH]; simpl.
+  induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - unfold compose.
     rewrite concat_cons.
@@ -366,11 +277,11 @@ Proof.
       admit.
 Admitted.
 
-Lemma foldl_promotion1 : compose RfoldlSum concat = compose RfoldlSum (map RfoldlSum).
+Lemma foldl_promotion1 : RfoldlSum ∘ concat = RfoldlSum ∘ map RfoldlSum.
 Proof.
   apply functional_extensionality.
   intros.
-  induction x0 as [|x xs IH]; simpl.
+  induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - unfold compose.
     induction x, xs.
@@ -404,17 +315,15 @@ Proof.
     + admit.
 Admitted.
 
-Lemma fold_promotion : compose maximum concat = compose maximum (map maximum).
+Lemma fold_promotion : maximum ∘ concat = maximum ∘ map maximum.
 Proof.
   unfold compose.
   apply functional_extensionality.
   intros.
-  induction x0 as [|x xs IH]; simpl.
+  induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - 
-        
 Admitted.
-
 
 Theorem form1_eq_form2 : form1 = form2.
 Proof.
@@ -426,8 +335,10 @@ Proof.
   unfold form2.
   unfold form3.
   f_equal.
-  rewrite <- compose_assoc.
-  rewrite map_promotion.
+  rewrite compose_assoc.
+  rewrite (compose_assoc _ _ _ _ (concat ∘ map tails) (map Rsum) maximum).
+  rewrite <- (compose_assoc _ _ _ _ (map tails) concat (map Rsum)).
+  rewrite (map_promotion Rsum).
   reflexivity.
 Qed.
 
@@ -435,7 +346,7 @@ Theorem form3_eq_form4 : form3 = form4.
 Proof.
   unfold form3.
   unfold form4.
-  rewrite <- compose_assoc.
+  rewrite compose_assoc.
   rewrite fold_promotion.
   reflexivity.
 Qed.
@@ -445,10 +356,9 @@ Proof.
   unfold form4.
   unfold form5.
   f_equal.
-  rewrite <- compose_assoc.
-  rewrite <- compose_assoc.
-  rewrite <- compose_assoc.
-  rewrite (map_distr maximum (map Rsum)).
-  rewrite (map_distr (compose maximum (map Rsum)) tails).
+  rewrite compose_assoc.
+  rewrite compose_assoc.
+  rewrite (map_distr (map Rsum) tails).
+  rewrite (map_distr maximum (compose (map Rsum) tails)).
   reflexivity.
 Qed.
