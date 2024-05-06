@@ -350,13 +350,58 @@ Proof.
   induction x0 as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - unfold compose.
+    rewrite concat_cons.
+    rewrite map_cons.
+    unfold RfoldlSum.
+    simpl.
+    rewrite Rplus_0_l.
+    unfold foldl.
+    rewrite fold_left_app.
+    fold RfoldlSum.
+    induction xs.
+    + simpl.
+      reflexivity.
+    + simpl.
+      rewrite fold_left_app.
+      admit.
+Admitted.
+
+Lemma foldl_promotion1 : compose RfoldlSum concat = compose RfoldlSum (map RfoldlSum).
+Proof.
+  apply functional_extensionality.
+  intros.
+  induction x0 as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - unfold compose.
     induction x, xs.
     + unfold concat, RfoldlSum.
       simpl.
       f_equal.
       ring.
+    + rewrite concat_cons.
+      rewrite app_nil_l.
+      unfold compose in IH.
+      unfold concat in IH.
+      rewrite IH.
+      rewrite map_cons.
+      rewrite map_cons.
+      rewrite map_cons.
+      unfold RfoldlSum.
+      simpl.
+      rewrite Rplus_0_l.
+      rewrite Rplus_0_l.
+      rewrite Rplus_0_l.
+      fold RfoldlSum.
+      reflexivity.
+    + rewrite map_cons.
+      simpl.
+      rewrite app_nil_r.
+      unfold RfoldlSum.
+      simpl.
+      rewrite Rplus_0_l.
+      rewrite Rplus_0_l.
+      reflexivity.
     + admit.
-        
 Admitted.
 
 Lemma fold_promotion : compose maximum concat = compose maximum (map maximum).
