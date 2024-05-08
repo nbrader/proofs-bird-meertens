@@ -3,10 +3,8 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Reals.Reals.
 Require Import Coq.Lists.List.
 
-Require Import BirdMeertens.ListFunctions.
-Require Import BirdMeertens.Max.
-
-Require Import BirdMeertens.ListFunctions.
+Require Import ListFunctions.
+Require Import MonoidMax.
 
 Definition RfoldlSum := foldl (fun x y => x + y) 0.
 

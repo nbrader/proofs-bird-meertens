@@ -1,5 +1,18 @@
--R . BirdMeertens
-BirdMeertens.v
-ListFunctions.v
-Lemmas.v
-Max.v
+-docroot MyProject
+-R BirdMeertens BirdMeertens
+-R FreeMonoid FreeMonoid
+BirdMeertens/ListFunctions.v
+BirdMeertens/Lemmas.v
+BirdMeertens/MonoidMax.v
+FreeMonoid/Category.v
+FreeMonoid/ExtraLemmas.v
+FreeMonoid/HomExampleBoolOrToNatMax1.v
+FreeMonoid/MonoidExampleBoolOr.v
+FreeMonoid/MonoidExampleNatMax1.v
+FreeMonoid/MonoidFree.v
+FreeMonoid/MonoidFreeTest.v
+FreeMonoid/MonoidHom.v
+FreeMonoid/StructMagma.v
+FreeMonoid/StructMonoid.v
+FreeMonoid/StructSemigroup.v
+FreeMonoid/TypeCategory.v

@@ -1,0 +1,3 @@
+[submodule "Coq/FreeMonoid"]
+	path = Coq/FreeMonoid
+	url = https://github.com/nbrader/proofs-bird-meertens
