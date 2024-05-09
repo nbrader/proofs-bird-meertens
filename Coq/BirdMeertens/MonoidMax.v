@@ -223,7 +223,7 @@ Module RFreeMonoid := FreeMonoidModule RBasis.
 (* Definition maximum : list (option R) -> option R := fun xs => foldl RmaxWithNegInf None xs. *)
 Definition identity (x : option R) : option R := x.
 Definition maximum : list (option R) -> option R := @RFreeMonoid.extend _ _ _ _ RFreeMonoid.FreeMonoid_UniversalProperty identity.
-Definition maximum_mor : MonoidHomomorphism maximum := @RFreeMonoid.extend_monoid_homomorphism _ _ _ _ identity.
+Definition maximum_mor : MonoidHomomorphism maximum := RFreeMonoid.extend_monoid_homomorphism identity.
 Definition maximum_universal : forall (x : option R), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
 Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorphism g) : (forall (x : option R), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
 
