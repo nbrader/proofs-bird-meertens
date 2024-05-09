@@ -245,10 +245,6 @@ Notation "x <|> y" := (RmaxWithNegInf x y) (at level 50, left associativity).
 Notation "x <#> y" := (RnonzeroSumWithNegInf x y) (at level 50, left associativity).
 Notation "x <.> y" := (RmaxWithNegInfSoFarAndPreviousNonzeroSum x y) (at level 50, left associativity).
 
-
-(* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
-(* NOTE: I think I'm going to have to work with option types again and interpret the extra value as negative infinity for this to work because otherwise this gets needlessly inelegant.
-         A consequence of this will be that I'll have to replace all the 0s in the theoresm with Nones. *)
 Lemma maximum_distr (xs ys : list (option R)) : maximum (xs ++ ys) = (maximum xs) <|> (maximum ys).
 Proof.
   apply maximum_mor.
