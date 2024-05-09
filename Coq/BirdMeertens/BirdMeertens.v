@@ -3,9 +3,9 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Reals.Reals.
 Require Import Coq.Lists.List.
 
-Require Import Lemmas.
-Require Import ListFunctions.
-Require Import MonoidMax.
+Require Import BirdMeertens.Lemmas.
+Require Import BirdMeertens.ListFunctions.
+Require Import BirdMeertens.MonoidMax.
 
 (* Forms of MaxSegSum *)
 Definition form1 : list R -> R := maximum ∘ map Rsum ∘ segs.

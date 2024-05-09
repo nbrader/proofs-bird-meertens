@@ -3,7 +3,7 @@ Require Import Coq.Lists.List.
 
 Open Scope R_scope.
 
-Require Import ListFunctions.
+Require Import BirdMeertens.ListFunctions.
 
 Lemma Rmax_assoc : forall (x y z : R), Rmax x (Rmax y z) = Rmax (Rmax x y) z.
 Proof.
