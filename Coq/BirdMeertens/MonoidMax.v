@@ -176,7 +176,7 @@ Require Import Coq.Init.Datatypes.
   | x' :: xs' => foldl Rmax 0 xs.
 end. *)
 
-(* Instead, I'm just extending Rmax to a monoid with the inclusion of a "negative infinity" element which will act as ideneity element.
+(* Instead, I'm just extending Rmax to a monoid with the inclusion of a "negative infinity" element which will act as identity element.
    None takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
 
 (* None takes on the role of negative infinity *)

@@ -3,6 +3,12 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+Require Import FreeMonoid.StructMagma.
+Require Import FreeMonoid.StructSemigroup.
+Require Import FreeMonoid.StructMonoid.
+
+Require Import Coq.ssr.ssrfun.
+
 Fixpoint tails {A : Type} (xs : list A) : list (list A) :=
   match xs with
   | [] => [[]]
@@ -33,3 +39,33 @@ Proof.
   unfold foldl.
   apply fold_left_app.
 Qed.
+
+Context {A : Type} (HmagmaA : Magma A) (HsemigroupA : Semigroup A) (HmonoidA : Monoid A).
+
+Lemma monoid_concat `{Monoid A} : idempotent m_op -> let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
+Proof.
+  intros.
+  unfold f.
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity.
+  - rewrite foldl_left_app.
+    rewrite mn_left_id.
+    rewrite <- foldl_left_app.
+Admitted.
+
+Lemma monoid_concatFake `{Monoid A} : let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
+Proof.
+  intros.
+  unfold f.
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity.
+  - rewrite foldl_left_app.
+    rewrite mn_left_id.
+    rewrite <- foldl_left_app.
+Admitted.

@@ -100,7 +100,8 @@ Proof.
   intros.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-  - 
+  - unfold maximum.
+    (* apply monoid_concatFake. *)
 Admitted.
 
 Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ tails = foldl RnonzeroSumWithNegInf None.
