@@ -102,3 +102,13 @@ Proof.
   - reflexivity. (* Base case: both sides are empty *)
   - 
 Admitted.
+
+Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ tails = foldl RnonzeroSumWithNegInf None.
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - 
+Admitted.

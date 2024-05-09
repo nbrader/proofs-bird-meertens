@@ -54,3 +54,13 @@ Proof.
   rewrite (map_distr maximum (compose (map RsumWithNegInf) tails)).
   reflexivity.
 Qed.
+
+Theorem form4_eq_form6 : form5 = form6.
+Proof.
+  unfold form5.
+  unfold form6.
+  f_equal.
+  f_equal.
+  f_equal.
+  apply horners_rule.
+Qed.
