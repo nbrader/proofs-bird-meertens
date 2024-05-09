@@ -249,3 +249,8 @@ Lemma maximum_distr (xs ys : list (option R)) : maximum (xs ++ ys) = (maximum xs
 Proof.
   apply maximum_mor.
 Qed.
+
+Lemma maximum_idempotent (xs : list (option R)) : maximum xs = maximum (maximum xs :: nil).
+Proof.
+  
+Admitted.

@@ -93,6 +93,8 @@ Proof.
     + admit.
 Admitted.
 
+(* Lemma maximum_distr (xs ys : list (option R)) : maximum (xs ++ ys) = (maximum xs) <|> (maximum ys). *)
+
 Lemma fold_promotion : maximum ∘ concat = maximum ∘ map maximum.
 Proof.
   unfold compose.
@@ -100,9 +102,13 @@ Proof.
   intros.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-  - unfold maximum.
-    (* apply monoid_concatFake. *)
-Admitted.
+  - rewrite cons_append.
+    rewrite maximum_distr.
+    rewrite maximum_distr.
+    rewrite IH.
+    f_equal.
+    apply maximum_idempotent.
+Qed.
 
 Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ tails = foldl RnonzeroSumWithNegInf None.
 Proof.
@@ -111,5 +117,5 @@ Proof.
   intros.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-  - 
+    
 Admitted.

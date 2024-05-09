@@ -40,6 +40,13 @@ Proof.
   apply fold_left_app.
 Qed.
 
+Theorem cons_append : forall (X : Type) (x : X) (xs : list X),
+  x :: xs = [x] ++ xs.
+Proof.
+  intros X x xs.
+  reflexivity.
+Qed.
+
 Context {A : Type} (HmagmaA : Magma A) (HsemigroupA : Semigroup A) (HmonoidA : Monoid A).
 
 Lemma monoid_concat `{Monoid A} : idempotent m_op -> let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
