@@ -2,6 +2,7 @@
 -R BirdMeertens BirdMeertens
 -R FreeMonoid FreeMonoid
 BirdMeertens/ListFunctions.v
+BirdMeertens/OptionFunctions.v
 BirdMeertens/Lemmas.v
 BirdMeertens/MonoidMax.v
 FreeMonoid/Category.v

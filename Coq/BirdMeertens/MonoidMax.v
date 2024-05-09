@@ -154,6 +154,16 @@ Proof.
           --- reflexivity.
 Qed.
 
+Require Import Coq.Arith.PeanoNat.
+Require Import BirdMeertens.OptionFunctions.
+Require Import FreeMonoid.StructMagma.
+Require Import FreeMonoid.StructSemigroup.
+Require Import FreeMonoid.StructMonoid.
+Require Import FreeMonoid.MonoidHom.
+Require Import FreeMonoid.MonoidFree.
+Require Import Coq.Init.Datatypes.
+
+(* I decided not to define maximum like they did in the original Bird Meertens Wikipedia article, because it creates the following complication:*)
 (* Definition maximum : list R -> R := fun xs => match xs with
   | [] => 0 (* This would be incorrect for lists of negatives but:
                 1) We consider only lists of at least 1 positive and 1 negative because alternatives are trivial:
@@ -165,24 +175,77 @@ Qed.
                       we can get from proceeding functions in the forms below will trigger this case anyway. *)
   | x' :: xs' => foldl Rmax 0 xs.
 end. *)
-Definition maximum : list R -> R := fun xs => foldl Rmax 0 xs.
+
+(* Instead, I'm just extending Rmax to a monoid with the inclusion of a "negative infinity" element which will act as ideneity element.
+   None takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
+
+(* None takes on the role of negative infinity *)
+Definition RmaxWithNegInf := liftOptionOpWithNoneID Rmax.
+
+Instance MaxMagma : Magma (option R) := { m_op := RmaxWithNegInf }.
+
+Lemma RmaxWithNegInf_assoc : forall x y z : (option R), RmaxWithNegInf x (RmaxWithNegInf y z) = RmaxWithNegInf (RmaxWithNegInf x y) z.
+Proof.
+  intros x y z.
+  unfold RmaxWithNegInf.
+  induction x, y, z; simpl; f_equal; apply Rmax_assoc.
+Qed.
+
+Instance MaxSemigroup : Semigroup (option R) := { sg_assoc := RmaxWithNegInf_assoc }.
+
+Lemma RmaxWithNegInf_left_id : forall x : (option R), RmaxWithNegInf None x = x.
+Proof.
+  intro x.
+  unfold RmaxWithNegInf.
+  induction x; simpl; reflexivity.
+Qed.
+
+Lemma RmaxWithNegInf_right_id : forall x : (option R), RmaxWithNegInf x None = x.
+Proof.
+  intro x.
+  unfold RmaxWithNegInf.
+  induction x; simpl; reflexivity.
+Qed.
+
+Instance MaxMonoid : Monoid (option R) := {
+  mn_id := None;
+  mn_left_id := RmaxWithNegInf_left_id;
+  mn_right_id := RmaxWithNegInf_right_id
+}.
+
+
+Module RBasis.
+  Definition Basis := option R.
+End RBasis.
+
+Module RFreeMonoid := FreeMonoidModule RBasis.
+
+(* Definition maximum : list (option R) -> option R := fun xs => foldl RmaxWithNegInf None xs. *)
+Definition identity (x : option R) : option R := x.
+Definition maximum : list (option R) -> option R := @RFreeMonoid.extend _ _ _ _ RFreeMonoid.FreeMonoid_UniversalProperty identity.
+Definition maximum_mor : MonoidHomomorphism maximum := @RFreeMonoid.extend_monoid_homomorphism _ _ _ _ identity.
+Definition maximum_universal : forall (x : option R), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
+Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorphism g) : (forall (x : option R), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
 
 (* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
 (* NOTE: I think I'm going to have to work with option types again and interpret the extra value as negative infinity for this to work because otherwise this gets needlessly inelegant.
          A consequence of this will be that I'll have to replace all the 0s in the theoresm with Nones. *)
-Lemma maximum_distr (xs : list R) (ys : list R) : maximum (xs ++ ys) = Rmax (maximum xs) (maximum ys).
+Lemma maximum_distr (xs : list (option R)) (ys : list (option R)) : maximum (xs ++ ys) = RmaxWithNegInf (maximum xs) (maximum ys).
 Proof.
-  unfold maximum.
-  rewrite foldl_left_app.
-  
-Admitted.
+  apply maximum_mor.
+Qed.
 
-Definition Rsum : list R -> R := fun xs => foldl (fun x acc => x + acc) 0 xs.
+Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fun x y => x + y).
+
+Definition RsumWithNegInf : list (option R) -> option R := fun xs => foldl RplusWithNegInf None xs.
 
 (* x <#> y = (x + y) <|> 0 *)
-Definition RnonzeroSum : R -> R -> R := fun x y => Rmax (x + y) 0.
+(* This might not be necessary anymore with the use of a the negative infinity to give an actual monoid *)
+Definition RnonzeroSum : option R -> option R -> option R := fun mx my => RmaxWithNegInf (RplusWithNegInf mx my) (Some 0).
 
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-Definition RMaxSoFarAndPreviousNonzeroSum : (R * R) -> R -> (R * R) := fun uv x => match uv with
-  | (u, v) => let w := RnonzeroSum v x in (Rmax u w, w)
+Definition RmaxWithNegInfSoFarAndPreviousNonzeroSum : (option R * option R) -> option R -> (option R * option R) := fun uv x => match uv with
+  | (u, v) => let w := RnonzeroSum v x in (RmaxWithNegInf u w, w)
 end.
+
+Definition Rsum : list (option R) -> option R := fun xs => foldl (liftOption2 (fun x acc => x + acc)) None xs.

@@ -8,14 +8,14 @@ Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.MonoidMax.
 
 (* Forms of MaxSegSum *)
-Definition form1 : list R -> R := maximum ∘ map Rsum ∘ segs.
-Definition form2 : list R -> R := maximum ∘ map Rsum ∘ concat ∘ map tails ∘ inits.
-Definition form3 : list R -> R := maximum ∘ concat ∘ map (map Rsum) ∘ map tails ∘ inits.
-Definition form4 : list R -> R := maximum ∘ map maximum ∘ map (map Rsum) ∘ map tails ∘ inits.
-Definition form5 : list R -> R := maximum ∘ map (maximum ∘ map Rsum ∘ tails) ∘ inits.
-Definition form6 : list R -> R := maximum ∘ map (foldl RnonzeroSum 0) ∘ inits.
-Definition form7 : list R -> R := maximum ∘ scanl RnonzeroSum 0.
-Definition form8 : list R -> R := fst ∘ foldl RMaxSoFarAndPreviousNonzeroSum (0,0).
+Definition form1 : list (option R) -> option R := maximum ∘ map Rsum ∘ segs.
+Definition form2 : list (option R) -> option R := maximum ∘ map Rsum ∘ concat ∘ map tails ∘ inits.
+Definition form3 : list (option R) -> option R := maximum ∘ concat ∘ map (map Rsum) ∘ map tails ∘ inits.
+Definition form4 : list (option R) -> option R := maximum ∘ map maximum ∘ map (map Rsum) ∘ map tails ∘ inits.
+Definition form5 : list (option R) -> option R := maximum ∘ map (maximum ∘ map Rsum ∘ tails) ∘ inits.
+Definition form6 : list (option R) -> option R := maximum ∘ map (foldl RnonzeroSum None) ∘ inits.
+Definition form7 : list (option R) -> option R := maximum ∘ scanl RnonzeroSum None.
+Definition form8 : list (option R) -> option R := fst ∘ foldl RmaxWithNegInfSoFarAndPreviousNonzeroSum (None,None).
 
 Theorem form1_eq_form2 : form1 = form2.
 Proof.
