@@ -227,25 +227,29 @@ Definition maximum_mor : MonoidHomomorphism maximum := @RFreeMonoid.extend_monoi
 Definition maximum_universal : forall (x : option R), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
 Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorphism g) : (forall (x : option R), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
 
-(* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
-(* NOTE: I think I'm going to have to work with option types again and interpret the extra value as negative infinity for this to work because otherwise this gets needlessly inelegant.
-         A consequence of this will be that I'll have to replace all the 0s in the theoresm with Nones. *)
-Lemma maximum_distr (xs : list (option R)) (ys : list (option R)) : maximum (xs ++ ys) = RmaxWithNegInf (maximum xs) (maximum ys).
-Proof.
-  apply maximum_mor.
-Qed.
-
 Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fun x y => x + y).
 
 Definition RsumWithNegInf : list (option R) -> option R := fun xs => foldl RplusWithNegInf None xs.
 
 (* x <#> y = (x + y) <|> 0 *)
 (* This might not be necessary anymore with the use of a the negative infinity to give an actual monoid *)
-Definition RnonzeroSum : option R -> option R -> option R := fun mx my => RmaxWithNegInf (RplusWithNegInf mx my) (Some 0).
+Definition RnonzeroSumWithNegInf : option R -> option R -> option R := fun mx my => RmaxWithNegInf (RplusWithNegInf mx my) (Some 0).
 
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
 Definition RmaxWithNegInfSoFarAndPreviousNonzeroSum : (option R * option R) -> option R -> (option R * option R) := fun uv x => match uv with
-  | (u, v) => let w := RnonzeroSum v x in (RmaxWithNegInf u w, w)
+  | (u, v) => let w := RnonzeroSumWithNegInf v x in (RmaxWithNegInf u w, w)
 end.
 
-Definition Rsum : list (option R) -> option R := fun xs => foldl (liftOption2 (fun x acc => x + acc)) None xs.
+Notation "x <+> y" := (RplusWithNegInf x y) (at level 50, left associativity).
+Notation "x <|> y" := (RmaxWithNegInf x y) (at level 50, left associativity).
+Notation "x <#> y" := (RnonzeroSumWithNegInf x y) (at level 50, left associativity).
+Notation "x <.> y" := (RmaxWithNegInfSoFarAndPreviousNonzeroSum x y) (at level 50, left associativity).
+
+
+(* To Do: Use the fact that Rmax forms a monoid and lists are the free monoid to show that maximum is the unique monoid homomorphism. *)
+(* NOTE: I think I'm going to have to work with option types again and interpret the extra value as negative infinity for this to work because otherwise this gets needlessly inelegant.
+         A consequence of this will be that I'll have to replace all the 0s in the theoresm with Nones. *)
+Lemma maximum_distr (xs ys : list (option R)) : maximum (xs ++ ys) = (maximum xs) <|> (maximum ys).
+Proof.
+  apply maximum_mor.
+Qed.

@@ -8,13 +8,13 @@ Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.MonoidMax.
 
 (* Forms of MaxSegSum *)
-Definition form1 : list (option R) -> option R := maximum ∘ map Rsum ∘ segs.
-Definition form2 : list (option R) -> option R := maximum ∘ map Rsum ∘ concat ∘ map tails ∘ inits.
-Definition form3 : list (option R) -> option R := maximum ∘ concat ∘ map (map Rsum) ∘ map tails ∘ inits.
-Definition form4 : list (option R) -> option R := maximum ∘ map maximum ∘ map (map Rsum) ∘ map tails ∘ inits.
-Definition form5 : list (option R) -> option R := maximum ∘ map (maximum ∘ map Rsum ∘ tails) ∘ inits.
-Definition form6 : list (option R) -> option R := maximum ∘ map (foldl RnonzeroSum None) ∘ inits.
-Definition form7 : list (option R) -> option R := maximum ∘ scanl RnonzeroSum None.
+Definition form1 : list (option R) -> option R := maximum ∘ map RsumWithNegInf ∘ segs.
+Definition form2 : list (option R) -> option R := maximum ∘ map RsumWithNegInf ∘ concat ∘ map tails ∘ inits.
+Definition form3 : list (option R) -> option R := maximum ∘ concat ∘ map (map RsumWithNegInf) ∘ map tails ∘ inits.
+Definition form4 : list (option R) -> option R := maximum ∘ map maximum ∘ map (map RsumWithNegInf) ∘ map tails ∘ inits.
+Definition form5 : list (option R) -> option R := maximum ∘ map (maximum ∘ map RsumWithNegInf ∘ tails) ∘ inits.
+Definition form6 : list (option R) -> option R := maximum ∘ map (foldl RnonzeroSumWithNegInf None) ∘ inits.
+Definition form7 : list (option R) -> option R := maximum ∘ scanl RnonzeroSumWithNegInf None.
 Definition form8 : list (option R) -> option R := fst ∘ foldl RmaxWithNegInfSoFarAndPreviousNonzeroSum (None,None).
 
 Theorem form1_eq_form2 : form1 = form2.
@@ -28,9 +28,9 @@ Proof.
   unfold form3.
   f_equal.
   rewrite compose_assoc.
-  rewrite (compose_assoc _ _ _ _ (concat ∘ map tails) (map Rsum) maximum).
-  rewrite <- (compose_assoc _ _ _ _ (map tails) concat (map Rsum)).
-  rewrite (map_promotion Rsum).
+  rewrite (compose_assoc _ _ _ _ (concat ∘ map tails) (map RsumWithNegInf) maximum).
+  rewrite <- (compose_assoc _ _ _ _ (map tails) concat (map RsumWithNegInf)).
+  rewrite (map_promotion RsumWithNegInf).
   reflexivity.
 Qed.
 
@@ -50,7 +50,7 @@ Proof.
   f_equal.
   rewrite compose_assoc.
   rewrite compose_assoc.
-  rewrite (map_distr (map Rsum) tails).
-  rewrite (map_distr maximum (compose (map Rsum) tails)).
+  rewrite (map_distr (map RsumWithNegInf) tails).
+  rewrite (map_distr maximum (compose (map RsumWithNegInf) tails)).
   reflexivity.
 Qed.
