@@ -49,7 +49,7 @@ Qed.
 
 Context {A : Type} (HmagmaA : Magma A) (HsemigroupA : Semigroup A) (HmonoidA : Monoid A).
 
-Lemma monoid_concat `{Monoid A} : idempotent m_op -> let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
+Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
 Proof.
   intros.
   unfold f.
@@ -57,22 +57,11 @@ Proof.
   apply functional_extensionality.
   intros.
   induction x as [|x xs IH]; simpl.
-  - reflexivity.
+  - reflexivity. (* Base case: both sides are empty *)
   - rewrite foldl_left_app.
     rewrite mn_left_id.
-    rewrite <- foldl_left_app.
-Admitted.
-
-Lemma monoid_concatFake `{Monoid A} : let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
-Proof.
-  intros.
-  unfold f.
-  unfold compose.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH]; simpl.
-  - reflexivity.
-  - rewrite foldl_left_app.
-    rewrite mn_left_id.
-    rewrite <- foldl_left_app.
-Admitted.
+    (* rewrite FreeMonoid.extend_monoid_homomorphism (fun x => x).
+    rewrite IH.
+    f_equal.
+    apply idH. *)
+Qed.
