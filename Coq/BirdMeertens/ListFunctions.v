@@ -86,7 +86,7 @@ Qed.
 Context {A : Type} (HmagmaA : Magma A) (HsemigroupA : Semigroup A) (HmonoidA : Monoid A).
 
 Module ABasis.
-  Definition Basis := option A.
+  Definition Basis := A.
 End ABasis.
 
 Module AFreeMonoid := FreeMonoidModule ABasis.
@@ -102,9 +102,10 @@ Proof.
   - reflexivity. (* Base case: both sides are empty *)
   - rewrite <- IH.
     rewrite <- (app_nil_l (x ++ concat xs)).
-    assert (fold_right m_op mn_id ((mn_id AFreeMonoid.FreeMonoid_Monoid) ++ x ++ concat xs) = fold_right m_op mn_id ([] ++ x ++ concat xs)).
-    - 
-    rewrite (fold_right_app m_op mn_id (x ++ concat xs) mn_id).
+    assert (fold_right m_op mn_id ((@mn_id (list AFreeMonoid.Basis) _ _ AFreeMonoid.FreeMonoid_Monoid) ++ x ++ concat xs) = fold_right m_op mn_id ([] ++ x ++ concat xs)).
+    + f_equal.
+    + rewrite <- H2.
+      rewrite (fold_right_app m_op (@mn_id (list AFreeMonoid.Basis) _ _ AFreeMonoid.FreeMonoid_Monoid) (x ++ concat xs) (@mn_id A _ _ H1)).
     fold (fold_right m_op mn_id ).
     reflexivity.
     
