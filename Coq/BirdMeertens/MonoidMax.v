@@ -213,6 +213,11 @@ Instance MaxMonoid : Monoid (option R) := {
   mn_right_id := RmaxWithNegInf_right_id
 }.
 
+Require Import Coq.ssr.ssrfun.
+Lemma RmaxWithNegInf_comm : commutative RmaxWithNegInf.
+Proof.
+
+Admitted.
 
 Module RBasis.
   Definition Basis := option R.
@@ -229,7 +234,6 @@ Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorp
 Definition maximumImplementation : list (option R) -> option R := fun xs => foldl RmaxWithNegInf None xs.
 
 
-Require Import Coq.ssr.ssrfun.
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
 
@@ -252,15 +256,15 @@ Proof.
       rewrite RmaxWithNegInf_left_id.
       rewrite app_nil_l.
       reflexivity.
-    + unfold m_op in *.
+    + unfold m_op in *. (* After proving this A way, make version of the proof where only the RHS of the goal equation changes each time. *)
       unfold RFreeMonoid.FreeMonoid_Magma in *.
       unfold MaxMagma in *.
       rewrite foldl_app in *.
       rewrite (foldl_cons_comm RmaxWithNegInf x xs' None g_comm).
-      rewrite (foldl_cons_comm RmaxWithNegInf x xs' None g_comm) at 1.
+      (* rewrite (foldl_cons_comm RmaxWithNegInf x xs' None g_comm) at 1. *)
       rewrite g_comm.
       rewrite <- IHxs'.
-      
+      rewrite <- (foldl_cons_comm RmaxWithNegInf x ys (foldl RmaxWithNegInf None xs') g_comm) at 1.
 
 Admitted.
 
