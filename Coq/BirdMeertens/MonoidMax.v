@@ -220,12 +220,36 @@ End RBasis.
 
 Module RFreeMonoid := FreeMonoidModule RBasis.
 
-(* Definition maximum : list (option R) -> option R := fun xs => foldl RmaxWithNegInf None xs. *)
 Definition identity (x : option R) : option R := x.
 Definition maximum : list (option R) -> option R := @RFreeMonoid.extend _ _ _ _ RFreeMonoid.FreeMonoid_UniversalProperty identity.
 Definition maximum_mor : MonoidHomomorphism maximum := RFreeMonoid.extend_monoid_homomorphism identity.
 Definition maximum_universal : forall (x : option R), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
 Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorphism g) : (forall (x : option R), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
+
+Definition maximumImplementation : list (option R) -> option R := fun xs => foldl RmaxWithNegInf None xs.
+
+Lemma g_mor : @MonoidHomomorphism (list (option R)) (option R) _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ maximumImplementation.
+Proof.
+  unfold maximumImplementation.
+  split.
+
+  - (* Preserving Operation *)
+    intros xs ys. unfold maximumImplementation.
+    induction xs as [| x xs' IHxs'].
+    + unfold m_op.
+      unfold RFreeMonoid.FreeMonoid_Magma.
+      rewrite foldl_nil.
+      rewrite RmaxWithNegInf_left_id.
+      rewrite app_nil_l.
+      reflexivity.
+    + unfold m_op.
+      unfold RFreeMonoid.FreeMonoid_Magma.
+      unfold MaxMagma.
+      rewrite foldl_left_app.
+      inversion IHxs'.
+
+Admitted.
+
 
 Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fun x y => x + y).
 
@@ -252,5 +276,13 @@ Qed.
 
 Lemma maximum_idempotent (xs : list (option R)) : maximum xs = maximum (maximum xs :: nil).
 Proof.
-  
+  pose (g xs := foldl RmaxWithNegInf None xs).
+  assert (g_mor : @MonoidHomomorphism (list (option R)) (option R) _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ g).
+  (* - apply (RFreeMonoid.extend_mor).
+  assert (g_universal : forall (x : option R), g (RFreeMonoid.canonical_inj x).
+  - 
+  assert (maximum = fun xs => foldl RmaxWithNegInf None xs).
+  - apply (maximum_unique ).
+  unfold RFreeMonoid.extend.
+  destruct extend. *)
 Admitted.

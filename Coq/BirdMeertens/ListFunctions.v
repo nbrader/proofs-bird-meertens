@@ -65,3 +65,11 @@ Proof.
     f_equal.
     apply idH. *)
 Admitted.
+
+Lemma foldl_nil : forall [A B : Type] (f : A -> B -> A) (i : A),
+  foldl f i nil = i.
+Proof.
+  intros.
+  simpl.
+  reflexivity.
+Qed.
