@@ -18,3 +18,9 @@ Definition liftOptionOpWithNoneID {A: Type} : (A -> A -> A) -> option A -> optio
     | Some y => Some (op x y)
   end
 end.
+
+Definition fromSome {A : Type} (opt : option A) : opt <> None -> A :=
+  match opt with
+  | Some a => fun _ => a
+  | None => fun H => False_rect _ (H eq_refl)
+  end.

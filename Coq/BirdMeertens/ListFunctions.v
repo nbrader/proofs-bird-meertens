@@ -3,9 +3,12 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+Require Import OptionFunctions.
+
 Require Import FreeMonoid.StructMagma.
 Require Import FreeMonoid.StructSemigroup.
 Require Import FreeMonoid.StructMonoid.
+Require Import FreeMonoid.MonoidFree.
 
 Require Import Coq.ssr.ssrfun.
 
@@ -21,28 +24,27 @@ Definition inits {A : Type} (xs : list A) : list (list A) :=
 
 Definition concat {A : Type} : list (list A) -> list A := @List.concat A.
 
-Definition segs {A : Type} : list A -> list (list A) := concat ∘ map tails ∘ inits.
+Definition segs {A : Type} : list A -> list (list A) := concat ∘ map inits ∘ tails.
 
-Definition foldl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) : B := fold_left f xs i.
+Fixpoint fold_right {A B : Type} (f : A -> B -> B) (i : B) (xs : list A) {struct xs} : B :=
+  match xs with
+    | nil => i
+    | x :: xs' => f x (fold_right f i xs')
+    end.
 
-Fixpoint scanl {A B : Type} (f : B -> A -> B) (i : B) (xs : list A) {struct xs} : list B :=
+Fixpoint scan_right {A B : Type} (f : A -> B -> B) (i : B) (xs : list A) {struct xs} : list B :=
+  match xs with
+  | nil => [i]
+  | x :: xs' => let q := fold_right f i xs' in
+                f x q :: scan_right f i xs'
+  end.
+
+Fixpoint scan_left {A B : Type} (f : B -> A -> B) (xs : list A) (i : B) {struct xs} : list B :=
   i ::
     match xs with
     | nil => nil
-    | x :: xs' => scanl f (f i x) xs'
+    | x :: xs' => scan_left f xs' (f i x)
     end.
-
-(* I'm having to remake some lemmas for foldl so it can have the required argument order*)
-Lemma foldl_app : forall [A B : Type] (f : B -> A -> B) (l l' : list A) (i : B),
-  foldl f i (l ++ l') = foldl f (foldl f i l) l'.
-Proof.
-  intros A B.
-  revert A.
-  revert B.
-  unfold foldl.
-  apply fold_left_app.
-Qed.
-
 
 (* Allows us to expand a left fold as if it were a right fold, provided the operation allows a form of commutativity. *)
 Lemma fold_left_cons_comm : forall [A B : Type] (f : B -> A -> B) (x : A) (xs : list A) (i : B),
@@ -60,22 +62,15 @@ Proof.
     apply comH.
 Qed.
 
-Lemma foldl_cons_comm : forall [A B : Type] (f : B -> A -> B) (x : A) (xs : list A) (i : B),
-  (forall i, commutative (fun x y => f (f i x) y)) -> foldl f i (x :: xs) = f (foldl f i xs) x.
-Proof.
-  unfold foldl.
-  apply fold_left_cons_comm.
-Qed.
-
-Lemma foldl_comm_cons_app : forall [A B : Type] (f : A -> A -> A) (x : A) (xs ys : list A) (i : A),
-  commutative f -> foldl f i ((x :: xs) ++ ys) = foldl f i (xs ++ (x :: ys)).
+Lemma fold_left_comm_cons_app : forall [A B : Type] (f : A -> A -> A) (x : A) (xs ys : list A) (i : A),
+  commutative f -> fold_left f ((x :: xs) ++ ys) i = fold_left f (xs ++ (x :: ys)) i.
 Proof.
   intros.
   
 Admitted.
 
 Lemma foldl_comm_app : forall [A B : Type] (f : A -> A -> A) (xs ys : list A) (i : A),
-  commutative f -> foldl f i (xs ++ ys) = foldl f i (ys ++ xs).
+  commutative f -> fold_left f (xs ++ ys) i = fold_left f (ys ++ xs) i.
 Proof.
   intros.
   
@@ -90,7 +85,13 @@ Qed.
 
 Context {A : Type} (HmagmaA : Magma A) (HsemigroupA : Semigroup A) (HmonoidA : Monoid A).
 
-Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := foldl m_op mn_id in f ∘ concat = f ∘ map f.
+Module ABasis.
+  Definition Basis := option A.
+End ABasis.
+
+Module AFreeMonoid := FreeMonoidModule ABasis.
+
+Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := fold_right m_op mn_id in f ∘ concat = f ∘ map f.
 Proof.
   intros.
   unfold f.
@@ -99,16 +100,39 @@ Proof.
   intros.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-  - rewrite foldl_app.
-    rewrite mn_left_id.
-    (* rewrite FreeMonoid.extend_monoid_homomorphism (fun x => x).
-    rewrite IH.
-    f_equal.
-    apply idH. *)
-Admitted.
+  - rewrite <- IH.
+    rewrite <- (app_nil_l (x ++ concat xs)).
+    assert (fold_right m_op mn_id ((mn_id AFreeMonoid.FreeMonoid_Monoid) ++ x ++ concat xs) = fold_right m_op mn_id ([] ++ x ++ concat xs)).
+    - 
+    rewrite (fold_right_app m_op mn_id (x ++ concat xs) mn_id).
+    fold (fold_right m_op mn_id ).
+    reflexivity.
+    
+(* Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := fold_right m_op mn_id in f ∘ concat = f ∘ map f.
+Proof.
+  intros.
+  unfold f.
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - rewrite <- IH.
+    case_eq (x ++ concat xs).
+    + simpl.
+      intro.
+      apply concat_empty in H2.
+      destruct H2.
+      rewrite H2.
+      rewrite H3.
+      simpl.
+      rewrite mn_right_id.
+      reflexivity.
+    + intros.
+      simpl. *)
 
-Lemma foldl_nil : forall [A B : Type] (f : A -> B -> A) (i : A),
-  foldl f i nil = i.
+Lemma fold_left_nil : forall [A B : Type] (f : A -> B -> A) (i : A),
+  fold_left f nil i = i.
 Proof.
   intros.
   simpl.
