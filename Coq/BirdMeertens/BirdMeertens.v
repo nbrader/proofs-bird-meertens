@@ -7,6 +7,14 @@ Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.MonoidMax.
 
+(*
+To Do:
+  Swap out all instances of foldl with foldr because I think it'll be generally easier to work with.
+  This is because:
+    - I think proofs will turn out simpler because the recursive part looks the same as the hypothesis when performing induction.
+    - Coq and Haskell agree on the order of the arguments of their right folder whereas they disagree for their left fold.
+*)
+
 (* Forms of MaxSegSum *)
 Definition form1 : list (option R) -> option R := maximum ∘ map RsumWithNegInf ∘ segs.
 Definition form2 : list (option R) -> option R := maximum ∘ map RsumWithNegInf ∘ concat ∘ map tails ∘ inits.
