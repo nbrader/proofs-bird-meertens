@@ -55,5 +55,5 @@ Proof.
   intros.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-    
+  - 
 Admitted.

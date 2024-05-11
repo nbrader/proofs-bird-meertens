@@ -67,16 +67,18 @@ Proof.
   apply fold_left_cons_comm.
 Qed.
 
-Lemma foldl_comm_app : forall [A B : Type] (f : A -> A -> A) (xs ys : list A) (i : A),
-  commutative f -> foldl f i (xs ++ ys) = foldl f i (ys ++ xs).
-Proof.
-
-Admitted.
-
 Lemma foldl_comm_cons_app : forall [A B : Type] (f : A -> A -> A) (x : A) (xs ys : list A) (i : A),
   commutative f -> foldl f i ((x :: xs) ++ ys) = foldl f i (xs ++ (x :: ys)).
 Proof.
+  intros.
+  
+Admitted.
 
+Lemma foldl_comm_app : forall [A B : Type] (f : A -> A -> A) (xs ys : list A) (i : A),
+  commutative f -> foldl f i (xs ++ ys) = foldl f i (ys ++ xs).
+Proof.
+  intros.
+  
 Admitted.
 
 Theorem cons_append : forall (X : Type) (x : X) (xs : list X),
