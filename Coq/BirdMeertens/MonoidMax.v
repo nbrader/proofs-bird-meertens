@@ -265,9 +265,13 @@ Proof.
       rewrite g_comm.
       rewrite <- IHxs'.
       rewrite <- (foldl_cons_comm RmaxWithNegInf x ys (foldl RmaxWithNegInf None xs') g_comm) at 1.
-
-Admitted.
-
+      rewrite <- foldl_app.
+      rewrite <- foldl_app.
+      rewrite (@foldl_comm_cons_app (option R) (option R) RmaxWithNegInf x xs' ys None RmaxWithNegInf_comm) at 1.
+      reflexivity.
+  - simpl.
+    reflexivity.
+Qed.
 
 Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fun x y => x + y).
 
