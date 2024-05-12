@@ -5,12 +5,10 @@ Import ListNotations.
 Open Scope R_scope.
 
 Module RealsWithLowerBound.
-
 Definition RLB := option R.
 
 
 Section RLBmax.
-
 Definition RLBmax (x y : RLB) : RLB :=
   match x, y with
   | None, _ => y
@@ -58,12 +56,10 @@ Proof.
   unfold RLBmax.
   induction x; reflexivity.
 Qed.
-
 End RLBmax.
 
 
 Section RLBplus.
-
 Definition RLBplus (x y : RLB) : RLB :=
   match x, y with
   | None, _ | _, None => None  (* Treat None as 'undefined' for sum *)
@@ -81,15 +77,13 @@ Proof.
   intros x y z; destruct x, y, z; simpl; try reflexivity.
   - f_equal; rewrite Rplus_assoc; reflexivity.
 Qed.
-
 End RLBplus.
 
 
 Section RLBsum.
-
 Definition RLBsum : list RLB -> RLB := fun xs => fold_right RLBplus None xs.
-
 End RLBsum.
+
 
 End RealsWithLowerBound.
 
