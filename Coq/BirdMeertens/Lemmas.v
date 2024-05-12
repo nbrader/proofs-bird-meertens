@@ -50,15 +50,16 @@ Proof.
     apply RLBmaximum_idempotent.
 Qed.
 
-Lemma horners_rule : RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus None.
+Lemma horners_rule : RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus (Some 0).
 Proof.
   unfold compose.
   apply functional_extensionality.
   intros.
   induction x as [|x xs IH]; simpl.
   - unfold RLBsum.
-    simpl. (* Goal: RLBmaximum (Some 0 :: nil) = None     <---- This is false so, by reductio ad absurdum, horners_rule (as currently stated) is false.
-                                                                It looks like I'll have to qualify it with an assumption of the result being at least 0. *)
+    simpl.
+    reflexivity.
+  - 
     
 Admitted.
 
