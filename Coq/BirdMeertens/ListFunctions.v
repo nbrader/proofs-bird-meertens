@@ -56,19 +56,15 @@ Proof.
     apply comH.
 Qed.
 
-Lemma fold_left_comm_cons_app : forall [A B : Type] (f : A -> A -> A) (x : A) (xs ys : list A) (i : A),
+(* Lemma fold_left_comm_cons_app : forall [A B : Type] (f : A -> A -> A) (x : A) (xs ys : list A) (i : A),
   commutative f -> fold_left f ((x :: xs) ++ ys) i = fold_left f (xs ++ (x :: ys)) i.
 Proof.
-  intros.
-  
-Admitted.
+  intros. *)
 
-Lemma foldl_comm_app : forall [A B : Type] (f : A -> A -> A) (xs ys : list A) (i : A),
+(* Lemma foldl_comm_app : forall [A B : Type] (f : A -> A -> A) (xs ys : list A) (i : A),
   commutative f -> fold_left f (xs ++ ys) i = fold_left f (ys ++ xs) i.
 Proof.
-  intros.
-  
-Admitted.
+  intros. *)
 
 Theorem cons_append : forall (X : Type) (x : X) (xs : list X),
   x :: xs = [x] ++ xs.
