@@ -63,8 +63,14 @@ Definition maximumImplementation : list RLB -> RLB := fun xs => fold_right RLBma
 
 Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLBmax (RLBmax i x) y).
 Proof.
-
-Admitted.
+  intros.
+  unfold commutative.
+  intros.
+  rewrite <- RLBmax_assoc.
+  rewrite (RLBmax_comm x y).
+  rewrite RLBmax_assoc.
+  reflexivity.
+Qed.
 
 Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ maximumImplementation.
 Proof.
