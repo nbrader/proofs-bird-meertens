@@ -50,8 +50,6 @@ Proof.
     apply RLBmaximum_idempotent.
 Qed.
 
-Definition RLBsumImplementation : list RLB -> RLB := fun xs => fold_right RLBplus (Some 0) xs.
-
 Lemma horners_rule : RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus (Some 0).
 Proof.
   unfold compose.
