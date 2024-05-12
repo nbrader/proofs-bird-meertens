@@ -100,11 +100,6 @@ Qed.
 End RLBplus.
 
 
-Section RLBsum.
-Definition RLBsum : list RLB -> RLB := fun xs => fold_right RLBplus None xs.
-End RLBsum.
-
-
 End RealsWithLowerBound.
 
 Export RealsWithLowerBound.

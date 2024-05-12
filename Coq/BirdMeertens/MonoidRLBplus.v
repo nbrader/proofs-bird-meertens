@@ -97,16 +97,31 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma g_universal : forall (x : RLB), RLBsumImplementation (RLBFreeMonoid.canonical_inj x) = identity x.
+Proof.
+  intros.
+  simpl.
+  rewrite RLBplus_right_id.
+  reflexivity.
+Qed.
+
+Lemma RLBsum_implementation_correctness : RLBsumImplementation = RLBsum.
+Proof.
+  apply functional_extensionality.
+  intros.
+  apply RLBsum_unique.
+  - apply g_mor.
+  - apply g_universal.
+Qed.
+
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
 Definition RLBplusSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
   | (u, v) => let w := RLBplus v x in (RLBplus u w, w)
 end.
 
 Notation "x <+> y" := (RLBplus x y) (at level 50, left associativity).
-Notation "x <|> y" := (RLBplus x y) (at level 50, left associativity).
-Notation "x <.> y" := (RLBplusSoFarAndPreviousSum x y) (at level 50, left associativity).
 
-Lemma RLBsum_distr (xs ys : list RLB) : RLBsum (xs ++ ys) = (RLBsum xs) <|> (RLBsum ys).
+Lemma RLBsum_distr (xs ys : list RLB) : RLBsum (xs ++ ys) = (RLBsum xs) <+> (RLBsum ys).
 Proof.
   apply RLBsum_mor.
 Qed.

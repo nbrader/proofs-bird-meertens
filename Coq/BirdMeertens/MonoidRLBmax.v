@@ -102,9 +102,7 @@ Definition RLBmaxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun 
   | (u, v) => let w := RLBplus v x in (RLBmax u w, w)
 end.
 
-Notation "x <+> y" := (RLBsum x y) (at level 50, left associativity).
 Notation "x <|> y" := (RLBmax x y) (at level 50, left associativity).
-Notation "x <.> y" := (RLBmaxSoFarAndPreviousSum x y) (at level 50, left associativity).
 
 Lemma RLBmaximum_distr (xs ys : list RLB) : RLBmaximum (xs ++ ys) = (RLBmaximum xs) <|> (RLBmaximum ys).
 Proof.

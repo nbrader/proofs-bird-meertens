@@ -5,7 +5,10 @@ Require Import Coq.Lists.List.
 
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.MonoidRLBmax.
+Require Import BirdMeertens.MonoidRLBplus.
 Require Import BirdMeertens.RealsWithLowerBound.
+
+Notation "x <.> y" := (RLBmaxSoFarAndPreviousSum x y) (at level 50, left associativity).
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
   map f ∘ map g = map (f ∘ g).
@@ -53,22 +56,8 @@ Proof.
   apply functional_extensionality.
   intros.
   induction x as [|x xs IH]; simpl.
-  - reflexivity. (* Base case: both sides are empty *)
-  - rewrite <- IH.
-    assert (x = RLBmaximum (x :: nil)).
-    + unfold RLBmaximum.
-      simpl.
-      rewrite RLBmax_right_id.
-      reflexivity.
-    + assert (RLBplus x (RLBmaximum (map RLBsum (inits xs))) = RLBmaximum (x :: map RLBsum (inits xs))).
-      * unfold RLBmaximum.
-        unfold RLBFreeMonoid.extend.
-        simpl.
-         (* extend_monoid_homomorphism
-      rewrite H at 2.
-      apply AFreeMonoid.extend_monoid_homomorphism.
-      rewrite <- RLBmaximum_distr.
-      simpl.
-      rewrite RLBmax_right_id.
-      reflexivity. *)
+  - unfold RLBsum.
+    simpl. (* Goal: RLBmaximum (Some 0 :: nil) = None     <---- This is false so, by reductio ad absurdum, horners_rule (as currently stated) is false.
+                                                                It looks like I'll have to qualify it with an assumption of the result being at least 0. *)
+    
 Admitted.
