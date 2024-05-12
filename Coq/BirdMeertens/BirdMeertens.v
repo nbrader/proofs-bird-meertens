@@ -5,7 +5,7 @@ Require Import Coq.Lists.List.
 
 Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
-Require Import BirdMeertens.MonoidMax.
+Require Import BirdMeertens.MonoidRLBmax.
 Require Import BirdMeertens.RealsWithLowerBound.
 
 (* Forms of MaxSegSum *)

@@ -4,7 +4,7 @@ Require Import Coq.Reals.Reals.
 Require Import Coq.Lists.List.
 
 Require Import BirdMeertens.ListFunctions.
-Require Import BirdMeertens.MonoidMax.
+Require Import BirdMeertens.MonoidRLBmax.
 Require Import BirdMeertens.RealsWithLowerBound.
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),

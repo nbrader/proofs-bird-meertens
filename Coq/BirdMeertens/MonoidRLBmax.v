@@ -37,11 +37,11 @@ end. *)
    None takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
 
 (* None takes on the role of negative infinity *)
-Instance MaxMagma : Magma RLB := { m_op := RLBmax }.
+Instance RLBmaxMagma : Magma RLB := { m_op := RLBmax }.
 
-Instance MaxSemigroup : Semigroup RLB := { sg_assoc := RLBmax_assoc }.
+Instance RLBmaxSemigroup : Semigroup RLB := { sg_assoc := RLBmax_assoc }.
 
-Instance MaxMonoid : Monoid RLB := {
+Instance RLBmaxMonoid : Monoid RLB := {
   mn_id := None;
   mn_left_id := RLBmax_left_id;
   mn_right_id := RLBmax_right_id
@@ -88,7 +88,7 @@ Proof.
       reflexivity.
     + unfold m_op in *. (* After proving this A way, make version of the proof where only the RHS of the goal equation changes each time. *)
       unfold RLBFreeMonoid.FreeMonoid_Magma in *.
-      unfold MaxMagma in *.
+      unfold RLBmaxMagma in *.
       simpl.
       rewrite IHxs'.
       rewrite RLBmax_assoc.
