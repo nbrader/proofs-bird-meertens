@@ -271,19 +271,14 @@ Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fu
 
 Definition RsumWithNegInf : list (option R) -> option R := fun xs => fold_right RplusWithNegInf None xs.
 
-(* x <#> y = (x + y) <|> 0 *)
-(* This might not be necessary anymore with the use of a the negative infinity to give an actual monoid *)
-Definition RnonzeroSumWithNegInf : option R -> option R -> option R := fun mx my => RmaxWithNegInf (RplusWithNegInf mx my) (Some 0).
-
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-Definition RmaxWithNegInfSoFarAndPreviousNonzeroSum : option R -> (option R * option R) -> (option R * option R) := fun x uv => match uv with
-  | (u, v) => let w := RnonzeroSumWithNegInf v x in (RmaxWithNegInf u w, w)
+Definition RmaxWithNegInfSoFarAndPreviousSum : option R -> (option R * option R) -> (option R * option R) := fun x uv => match uv with
+  | (u, v) => let w := RplusWithNegInf v x in (RmaxWithNegInf u w, w)
 end.
 
 Notation "x <+> y" := (RplusWithNegInf x y) (at level 50, left associativity).
 Notation "x <|> y" := (RmaxWithNegInf x y) (at level 50, left associativity).
-Notation "x <#> y" := (RnonzeroSumWithNegInf x y) (at level 50, left associativity).
-Notation "x <.> y" := (RmaxWithNegInfSoFarAndPreviousNonzeroSum x y) (at level 50, left associativity).
+Notation "x <.> y" := (RmaxWithNegInfSoFarAndPreviousSum x y) (at level 50, left associativity).
 
 Lemma maximum_distr (xs ys : list (option R)) : maximum (xs ++ ys) = (maximum xs) <|> (maximum ys).
 Proof.

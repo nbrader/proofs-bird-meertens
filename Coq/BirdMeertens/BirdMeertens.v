@@ -13,9 +13,9 @@ Definition form2 : list (option R) -> option R := maximum ∘ map RsumWithNegInf
 Definition form3 : list (option R) -> option R := maximum ∘ concat ∘ map (map RsumWithNegInf) ∘ map inits ∘ tails.
 Definition form4 : list (option R) -> option R := maximum ∘ map maximum ∘ map (map RsumWithNegInf) ∘ map inits ∘ tails.
 Definition form5 : list (option R) -> option R := maximum ∘ map (maximum ∘ map RsumWithNegInf ∘ inits) ∘ tails.
-Definition form6 : list (option R) -> option R := maximum ∘ map (fold_right RnonzeroSumWithNegInf None) ∘ tails.
-Definition form7 : list (option R) -> option R := maximum ∘ scan_right RnonzeroSumWithNegInf None.
-Definition form8 : list (option R) -> option R := fst ∘ fold_right RmaxWithNegInfSoFarAndPreviousNonzeroSum (None,None).
+Definition form6 : list (option R) -> option R := maximum ∘ map (fold_right RplusWithNegInf None) ∘ tails.
+Definition form7 : list (option R) -> option R := maximum ∘ scan_right RplusWithNegInf None.
+Definition form8 : list (option R) -> option R := fst ∘ fold_right RmaxWithNegInfSoFarAndPreviousSum (None,None).
 
 Theorem form1_eq_form2 : form1 = form2.
 Proof.

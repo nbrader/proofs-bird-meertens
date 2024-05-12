@@ -37,3 +37,10 @@ prop_sameResults xs = (not . null $ xs) && any (<0) xs && any (>=0) xs ==> all (
 -- Run QuickCheck
 main :: IO ()
 main = quickCheck (forAll listGen prop_sameResults)
+
+eq2Form1 x xs = maximum (map (+) (inits (x : xs)))
+eq2Form2 x xs = x + foldr (+) 0 xs
+
+horners1, horners2 :: [Integer] -> Integer
+horners1 = maximum . map sum . inits
+horners2 = foldr (+) 0

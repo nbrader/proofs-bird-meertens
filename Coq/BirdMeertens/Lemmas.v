@@ -48,12 +48,21 @@ Proof.
     apply maximum_idempotent.
 Qed.
 
-Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ inits = fold_right RnonzeroSumWithNegInf None.
+Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ inits = fold_right RplusWithNegInf None.
 Proof.
   unfold compose.
   apply functional_extensionality.
   intros.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
-  - 
+  - rewrite <- IH.
+    assert (x = maximum (x :: nil)).
+    + unfold maximum.
+      simpl.
+      unfold RmaxWithNegInf.
+      unfold identity.
+      unfold OptionFunctions.liftOptionOpWithNoneID.
+      case x; reflexivity.
+    + rewrite H at 2.
+      admit.
 Admitted.
