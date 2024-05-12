@@ -113,13 +113,8 @@ Qed.
 
 Lemma maximum_idempotent (xs : list RLB) : maximum xs = maximum (maximum xs :: nil).
 Proof.
-  pose (g xs := fold_right RLBmax None xs).
-  assert (g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ g).
-  (* - apply (RFreeMonoid.extend_mor).
-  assert (g_universal : forall (x : RLB), g (RFreeMonoid.canonical_inj x).
-  - 
-  assert (maximum = fun xs => foldl RLBmax None xs).
-  - apply (maximum_unique ).
-  unfold RFreeMonoid.extend.
-  destruct extend. *)
-Admitted.
+  unfold maximum.
+  simpl.
+  rewrite RLBmax_right_id.
+  reflexivity.
+Qed.
