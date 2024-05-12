@@ -6,7 +6,7 @@ Require Import Coq.Lists.List.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.MonoidMax.
 
-Definition RfoldlSum := foldl (fun x y => x + y) 0.
+Definition RfoldlSum := fold_right (fun x y => x + y) 0.
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
   map f ∘ map g = map (f ∘ g).
@@ -48,7 +48,7 @@ Proof.
     apply maximum_idempotent.
 Qed.
 
-Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ tails = foldl RnonzeroSumWithNegInf None.
+Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ tails = fold_right RnonzeroSumWithNegInf None.
 Proof.
   unfold compose.
   apply functional_extensionality.

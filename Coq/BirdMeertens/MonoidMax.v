@@ -231,7 +231,7 @@ Definition maximum_mor : MonoidHomomorphism maximum := RFreeMonoid.extend_monoid
 Definition maximum_universal : forall (x : option R), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
 Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorphism g) : (forall (x : option R), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
 
-Definition maximumImplementation : list (option R) -> option R := fun xs => foldl RmaxWithNegInf None xs.
+Definition maximumImplementation : list (option R) -> option R := fun xs => fold_right RmaxWithNegInf None xs.
 
 
 Require Import Coq.Program.Basics.
@@ -252,22 +252,16 @@ Proof.
     induction xs as [| x xs' IHxs'].
     + unfold m_op.
       unfold RFreeMonoid.FreeMonoid_Magma.
-      rewrite foldl_nil.
+      rewrite fold_right_nil.
       rewrite RmaxWithNegInf_left_id.
       rewrite app_nil_l.
       reflexivity.
     + unfold m_op in *. (* After proving this A way, make version of the proof where only the RHS of the goal equation changes each time. *)
       unfold RFreeMonoid.FreeMonoid_Magma in *.
       unfold MaxMagma in *.
-      rewrite foldl_app in *.
-      rewrite (foldl_cons_comm RmaxWithNegInf x xs' None g_comm).
-      (* rewrite (foldl_cons_comm RmaxWithNegInf x xs' None g_comm) at 1. *)
-      rewrite g_comm.
-      rewrite <- IHxs'.
-      rewrite <- (foldl_cons_comm RmaxWithNegInf x ys (foldl RmaxWithNegInf None xs') g_comm) at 1.
-      rewrite <- foldl_app.
-      rewrite <- foldl_app.
-      rewrite (@foldl_comm_cons_app (option R) (option R) RmaxWithNegInf x xs' ys None RmaxWithNegInf_comm) at 1.
+      simpl.
+      rewrite IHxs'.
+      rewrite RmaxWithNegInf_assoc.
       reflexivity.
   - simpl.
     reflexivity.
@@ -275,7 +269,7 @@ Qed.
 
 Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fun x y => x + y).
 
-Definition RsumWithNegInf : list (option R) -> option R := fun xs => foldl RplusWithNegInf None xs.
+Definition RsumWithNegInf : list (option R) -> option R := fun xs => fold_right RplusWithNegInf None xs.
 
 (* x <#> y = (x + y) <|> 0 *)
 (* This might not be necessary anymore with the use of a the negative infinity to give an actual monoid *)
@@ -298,7 +292,7 @@ Qed.
 
 Lemma maximum_idempotent (xs : list (option R)) : maximum xs = maximum (maximum xs :: nil).
 Proof.
-  pose (g xs := foldl RmaxWithNegInf None xs).
+  pose (g xs := fold_right RmaxWithNegInf None xs).
   assert (g_mor : @MonoidHomomorphism (list (option R)) (option R) _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ g).
   (* - apply (RFreeMonoid.extend_mor).
   assert (g_universal : forall (x : option R), g (RFreeMonoid.canonical_inj x).

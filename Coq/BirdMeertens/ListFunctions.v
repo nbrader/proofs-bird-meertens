@@ -26,12 +26,6 @@ Definition concat {A : Type} : list (list A) -> list A := @List.concat A.
 
 Definition segs {A : Type} : list A -> list (list A) := concat ∘ map inits ∘ tails.
 
-Fixpoint fold_right {A B : Type} (f : A -> B -> B) (i : B) (xs : list A) {struct xs} : B :=
-  match xs with
-    | nil => i
-    | x :: xs' => f x (fold_right f i xs')
-    end.
-
 Fixpoint scan_right {A B : Type} (f : A -> B -> B) (i : B) (xs : list A) {struct xs} : list B :=
   match xs with
   | nil => [i]
@@ -91,6 +85,8 @@ End ABasis.
 
 Module AFreeMonoid := FreeMonoidModule ABasis.
 
+Definition identity (x : A) : A := x.
+
 Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := fold_right m_op mn_id in f ∘ concat = f ∘ map f.
 Proof.
   intros.
@@ -99,41 +95,21 @@ Proof.
   apply functional_extensionality.
   intros.
   induction x as [|x xs IH]; simpl.
-  - reflexivity. (* Base case: both sides are empty *)
+  - reflexivity.
   - rewrite <- IH.
-    rewrite <- (app_nil_l (x ++ concat xs)).
-    assert (fold_right m_op mn_id ((@mn_id (list AFreeMonoid.Basis) _ _ AFreeMonoid.FreeMonoid_Monoid) ++ x ++ concat xs) = fold_right m_op mn_id ([] ++ x ++ concat xs)).
-    + f_equal.
-    + rewrite <- H2.
-      rewrite (fold_right_app m_op (@mn_id (list AFreeMonoid.Basis) _ _ AFreeMonoid.FreeMonoid_Monoid) (x ++ concat xs) (@mn_id A _ _ H1)).
-    fold (fold_right m_op mn_id ).
-    reflexivity.
-    
-(* Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := fold_right m_op mn_id in f ∘ concat = f ∘ map f.
-Proof.
-  intros.
-  unfold f.
-  unfold compose.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH]; simpl.
-  - reflexivity. (* Base case: both sides are empty *)
-  - rewrite <- IH.
-    case_eq (x ++ concat xs).
-    + simpl.
-      intro.
-      apply concat_empty in H2.
-      destruct H2.
-      rewrite H2.
-      rewrite H3.
-      simpl.
-      rewrite mn_right_id.
-      reflexivity.
-    + intros.
-      simpl. *)
+    apply AFreeMonoid.extend_monoid_homomorphism.
+Qed.
 
 Lemma fold_left_nil : forall [A B : Type] (f : A -> B -> A) (i : A),
   fold_left f nil i = i.
+Proof.
+  intros.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma fold_right_nil : forall [A B : Type] (f : B -> A -> A) (i : A),
+  fold_right f i nil = i.
 Proof.
   intros.
   simpl.
