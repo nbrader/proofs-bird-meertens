@@ -58,10 +58,17 @@ Proof.
     assert (x = maximum (x :: nil)).
     + unfold maximum.
       simpl.
-      unfold RLBmax.
-      unfold identity.
-      unfold OptionFunctions.liftOptionOpWithNoneID.
-      case x; reflexivity.
-    + rewrite H at 2.
-      admit.
+      rewrite RLBmax_right_id.
+      reflexivity.
+    + assert (RLBplus x (maximum (map RLBsum (inits xs))) = maximum (x :: map RLBsum (inits xs))).
+      * unfold maximum.
+        unfold RLBFreeMonoid.extend.
+        simpl.
+         (* extend_monoid_homomorphism
+      rewrite H at 2.
+      apply AFreeMonoid.extend_monoid_homomorphism.
+      rewrite <- maximum_distr.
+      simpl.
+      rewrite RLBmax_right_id.
+      reflexivity. *)
 Admitted.

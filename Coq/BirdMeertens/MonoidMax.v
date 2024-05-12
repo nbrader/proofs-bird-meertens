@@ -47,17 +47,17 @@ Instance MaxMonoid : Monoid RLB := {
   mn_right_id := RLBmax_right_id
 }.
 
-Module RBasis.
+Module RLBBasis.
   Definition Basis := RLB.
-End RBasis.
+End RLBBasis.
 
-Module RFreeMonoid := FreeMonoidModule RBasis.
+Module RLBFreeMonoid := FreeMonoidModule RLBBasis.
 
 Definition identity (x : RLB) : RLB := x.
-Definition maximum : list RLB -> RLB := @RFreeMonoid.extend _ _ _ _ RFreeMonoid.FreeMonoid_UniversalProperty identity.
-Definition maximum_mor : MonoidHomomorphism maximum := RFreeMonoid.extend_monoid_homomorphism identity.
-Definition maximum_universal : forall (x : RLB), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
-Definition maximum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
+Definition maximum : list RLB -> RLB := @RLBFreeMonoid.extend _ _ _ _ RLBFreeMonoid.FreeMonoid_UniversalProperty identity.
+Definition maximum_mor : MonoidHomomorphism maximum := RLBFreeMonoid.extend_monoid_homomorphism identity.
+Definition maximum_universal : forall (x : RLB), maximum (RLBFreeMonoid.canonical_inj x) = identity x := RLBFreeMonoid.extend_universal identity.
+Definition maximum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RLBFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RLBFreeMonoid.extend_unique identity g Hg H.
 
 Definition maximumImplementation : list RLB -> RLB := fun xs => fold_right RLBmax None xs.
 
@@ -72,7 +72,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ maximumImplementation.
+Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RLBFreeMonoid.FreeMonoid_Monoid _ _ _ maximumImplementation.
 Proof.
   unfold maximumImplementation.
   split.
@@ -81,13 +81,13 @@ Proof.
     intros xs ys. unfold maximumImplementation.
     induction xs as [| x xs' IHxs'].
     + unfold m_op.
-      unfold RFreeMonoid.FreeMonoid_Magma.
+      unfold RLBFreeMonoid.FreeMonoid_Magma.
       rewrite fold_right_nil.
       rewrite RLBmax_left_id.
       rewrite app_nil_l.
       reflexivity.
     + unfold m_op in *. (* After proving this A way, make version of the proof where only the RHS of the goal equation changes each time. *)
-      unfold RFreeMonoid.FreeMonoid_Magma in *.
+      unfold RLBFreeMonoid.FreeMonoid_Magma in *.
       unfold MaxMagma in *.
       simpl.
       rewrite IHxs'.
