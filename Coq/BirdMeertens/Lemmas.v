@@ -50,14 +50,38 @@ Proof.
     apply RLBmaximum_idempotent.
 Qed.
 
-Lemma horners_rule : RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus None.
+Lemma horners_rule_false : RLBmaximum ∘ map RLBsum ∘ inits <> fold_right RLBplus None.
 Proof.
-  unfold compose.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH]; simpl.
-  - unfold RLBsum.
-    simpl. (* Goal: RLBmaximum (Some 0 :: nil) = None     <---- This is false so, by reductio ad absurdum, horners_rule (as currently stated) is false.
-                                                                It looks like I'll have to qualify it with an assumption of the result being at least 0. *)
-    
-Admitted.
+  unfold not; intros H. (* Assume horners_rule is true and aim for a contradiction. *)
+  assert (Hempty: (RLBmaximum (map RLBsum (inits nil))) = fold_right RLBplus None nil). 
+  - rewrite <- H. reflexivity. (* Use the hypothesis on an empty list. *)
+  - (* Evaluate the left side of Hempty. *)
+    simpl in Hempty. (* Simplify the left side with empty list calculations. *)
+    unfold RLBmaximum, map, RLBsum, inits in Hempty. simpl in Hempty.
+
+    (* Evaluate the right side of Hempty. *)
+    unfold fold_right in Hempty; simpl in Hempty.
+
+    (* At this point, we have:
+      Hempty : Some 0 = None
+      This is a contradiction because Some 0 cannot be equal to None. *)
+    discriminate Hempty. (* `Some 0 = None` is impossible, which means our initial assumption H must be false. *)
+Qed.
+
+Lemma horners_rule_false : RLBmaximum ∘ map RLBsum ∘ inits <> fold_right RLBplus None.
+Proof.
+  unfold not; intros H. (* Assume horners_rule is true and aim for a contradiction. *)
+  assert (Hempty: (RLBmaximum (map RLBsum (inits nil))) = fold_right RLBplus None nil). 
+  - rewrite <- H. reflexivity. (* Use the hypothesis on an empty list. *)
+  - (* Evaluate the left side of Hempty. *)
+    simpl in Hempty. (* Simplify the left side with empty list calculations. *)
+    unfold RLBmaximum, map, RLBsum, inits in Hempty. simpl in Hempty.
+
+    (* Evaluate the right side of Hempty. *)
+    unfold fold_right in Hempty; simpl in Hempty.
+
+    (* At this point, we have:
+      Hempty : Some 0 = None
+      This is a contradiction because Some 0 cannot be equal to None. *)
+    discriminate Hempty. (* `Some 0 = None` is impossible, which means our initial assumption H must be false. *)
+Qed.
