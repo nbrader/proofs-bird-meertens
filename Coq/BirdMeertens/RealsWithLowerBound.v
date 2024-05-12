@@ -62,7 +62,7 @@ End RLBmax.
 Section RLBplus.
 Definition RLBplus (x y : RLB) : RLB :=
   match x, y with
-  | None, _ | _, None => None  (* Treat None as 'undefined' for sum *)
+  | None, _ | _, None => None  (* Add anything to negative infinity and you get negative infinity. *)
   | Some a, Some b => Some (a + b)
   end.
 
