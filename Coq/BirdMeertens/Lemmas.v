@@ -56,20 +56,16 @@ Lemma horners_rule : RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus (S
 Proof.
   unfold compose.
   apply functional_extensionality.
-  intros.
+  intros x.
   induction x as [|x xs IH]; simpl.
   - unfold RLBsum.
     simpl.
     reflexivity.
-  - assert (x <+> fold_right RLBplus (Some 0) xs = fold_right RLBplus (Some 0) (x :: xs)).
-    + reflexivity.
-    + rewrite H.
-      assert (fold_right RLBplus (Some 0) (x :: xs) = MonoidRLBplus.RLBsumImplementation (x :: xs)).
-      * unfold MonoidRLBplus.RLBsumImplementation.
-        reflexivity.
-      * rewrite H0.
-        rewrite RLBsum_implementation_correctness.
-        
+  - assert (x <+> fold_right RLBplus (Some 0) xs = fold_right RLBplus (Some 0) (x :: xs)) as H by reflexivity.
+    rewrite H.
+    assert (fold_right RLBplus (Some 0) (x :: xs) = MonoidRLBplus.RLBsumImplementation (x :: xs)) as H0 by (unfold MonoidRLBplus.RLBsumImplementation; reflexivity).
+    rewrite H0.
+    rewrite RLBsum_implementation_correctness.
 Admitted.
 
 Lemma horners_rule_false : RLBmaximum ∘ map RLBsum ∘ inits <> fold_right RLBplus None.
