@@ -64,15 +64,14 @@ Admitted.
 
 Lemma horners_rule_false : RLBmaximum ∘ map RLBsum ∘ inits <> fold_right RLBplus None.
 Proof.
-  unfold not; intros H. (* Assume horners_rule is true and aim for a contradiction. *)
+  intros H. (* Assume horners_rule is true and aim for a contradiction. *)
   assert (Hempty: (RLBmaximum (map RLBsum (inits nil))) = fold_right RLBplus None nil). 
   - rewrite <- H. reflexivity. (* Use the hypothesis on an empty list. *)
   - (* Evaluate the left side of Hempty. *)
     simpl in Hempty. (* Simplify the left side with empty list calculations. *)
-    unfold RLBmaximum, map, RLBsum, inits in Hempty. simpl in Hempty.
-
-    (* Evaluate the right side of Hempty. *)
-    unfold fold_right in Hempty; simpl in Hempty.
+    unfold RLBmaximum, map, RLBsum, inits in Hempty.
+    simpl in Hempty.
+    unfold MonoidRLBmax.identity in Hempty.
 
     (* At this point, we have:
       Hempty : Some 0 = None
