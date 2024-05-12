@@ -44,3 +44,6 @@ eq2Form2 x xs = x + foldr (+) 0 xs
 horners1, horners2 :: [Integer] -> Integer
 horners1 = maximum . map sum . inits
 horners2 = foldr (+) 0
+
+test1 xs = maximum (map sum (inits (xs)))
+test2 xs = sum xs
