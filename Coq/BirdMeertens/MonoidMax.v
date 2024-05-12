@@ -1,158 +1,9 @@
 Require Import Coq.Reals.Reals.
 Require Import Coq.Lists.List.
 
-Open Scope R_scope.
-
 Require Import BirdMeertens.ListFunctions.
-
-Lemma Rmax_assoc : forall (x y z : R), Rmax x (Rmax y z) = Rmax (Rmax x y) z.
-Proof.
-  intros x y z.
-  unfold Rmax.
-  destruct (Rle_dec x (Rmax y z)) eqn:Hxyz.
-  - destruct (Rle_dec y z) eqn:Hyz.
-    + (* Case x ≤ z ∧ y ≤ z *)
-      simpl.
-      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- rewrite Hyz.
-           assert (x <= z).
-           ++ apply (Rle_trans x y z r2).
-              apply r0.
-           ++ simpl.
-              destruct (Rle_dec x z) as [Htrue|Hfalse].
-              ** (* Case where x <= z *)
-                reflexivity.
-              ** (* Case where x > z, which should be impossible given hypothesis H *)
-                exfalso.
-                apply Hfalse.
-                exact H.
-        -- reflexivity.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- rewrite Hyz.
-           assert (x <= z).
-           ++ apply (Rle_trans x y z r1).
-              apply r0.
-           ++ simpl.
-              destruct (Rle_dec x z) as [Htrue|Hfalse].
-              ** (* Case where x <= z *)
-                reflexivity.
-              ** (* Case where x > z, which should be impossible given hypothesis H *)
-                exfalso.
-                apply Hfalse.
-                exact H.
-        -- reflexivity.
-    + simpl.
-      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- rewrite Hyz.
-           reflexivity.
-        -- assert (~ x <= z).
-           ++ intro.
-              assert (z < y).
-              ** apply Rnot_le_lt.
-                 apply n.
-              ** assert (y < x).
-                 --- apply Rnot_le_lt.
-                     apply n0.
-                 --- assert (z < x).
-                     +++ apply (Rlt_trans z y x H0 H1).
-                     +++ apply Rlt_not_le in H2.
-                         contradiction.
-          ++ destruct (Rle_dec x z) as [Htrue|Hfalse].
-             +++ contradiction.
-             +++ reflexivity.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- destruct (Rle_dec y z).
-           ++ contradiction.
-           ++ reflexivity.
-        -- destruct (Rle_dec x z).
-          --- assert (~ x <= z).
-            +++ intro.
-                assert (z < y).
-                *** apply Rnot_le_lt.
-                  apply n.
-                *** assert (y < x).
-                  ---- apply Rnot_le_lt.
-                      apply n1.
-                  ---- assert (z < x).
-                      ++++ apply (Rlt_trans z y x H0 H1).
-                      ++++ apply Rlt_not_le in H2.
-                          contradiction.
-            +++ contradiction.
-          --- reflexivity.
-  - destruct (Rle_dec y z) eqn:Hyz.
-    + (* Case x ≤ z ∧ y ≤ z *)
-      simpl.
-      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- rewrite Hyz.
-           assert (x <= z).
-           ++ apply (Rle_trans x y z r1).
-              apply r.
-           ++ simpl.
-              destruct (Rle_dec x z) as [Htrue|Hfalse].
-              ** (* Case where x <= z *)
-                reflexivity.
-              ** (* Case where x > z, which should be impossible given hypothesis H *)
-                exfalso.
-                apply Hfalse.
-                exact H.
-        -- reflexivity.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- rewrite Hyz.
-           assert (x <= z).
-           ++ apply (Rle_trans x y z r0).
-              apply r.
-           ++ simpl.
-              destruct (Rle_dec x z) as [Htrue|Hfalse].
-              ** (* Case where x <= z *)
-                reflexivity.
-              ** (* Case where x > z, which should be impossible given hypothesis H *)
-                exfalso.
-                apply Hfalse.
-                exact H.
-        -- reflexivity.
-    + simpl.
-      destruct (Rle_dec (Rmax x y) z) eqn:Hxyz'.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- rewrite Hyz.
-           reflexivity.
-        -- assert (~ x <= z).
-           ++ intro.
-              assert (z < y).
-              ** apply Rnot_le_lt.
-                 apply n0.
-              ** assert (y < x).
-                 --- apply Rnot_le_lt.
-                     apply n1.
-                 --- assert (z < x).
-                     +++ apply (Rlt_trans z y x H0 H1).
-                     +++ apply Rlt_not_le in H2.
-                         contradiction.
-          ++ destruct (Rle_dec x z) as [Htrue|Hfalse].
-             +++ contradiction.
-             +++ reflexivity.
-      * destruct (Rle_dec x y) eqn:Hxy.
-        -- destruct (Rle_dec y z).
-           ++ contradiction.
-           ++ reflexivity.
-        -- destruct (Rle_dec x z).
-          --- assert (~ x <= z).
-            +++ intro.
-                assert (z < y).
-                *** apply Rnot_le_lt.
-                  apply n0.
-                *** assert (y < x).
-                  ---- apply Rnot_le_lt.
-                      apply n2.
-                  ---- assert (z < x).
-                      ++++ apply (Rlt_trans z y x H0 H1).
-                      ++++ apply Rlt_not_le in H2.
-                          contradiction.
-            +++ contradiction.
-          --- reflexivity.
-Qed.
+Require Import BirdMeertens.RealsWithLowerBound.
+Open Scope R_scope.
 
 Require Import Coq.Arith.PeanoNat.
 Require Import BirdMeertens.OptionFunctions.
@@ -162,6 +13,12 @@ Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.
 Require Import FreeMonoid.MonoidFree.
 Require Import Coq.Init.Datatypes.
+
+Require Import Coq.ssr.ssrfun.
+
+
+Require Import Coq.Program.Basics.
+Require Import Coq.Program.Combinators.
 
 (* I decided not to define maximum like they did in the original Bird Meertens Wikipedia article, because it creates the following complication:*)
 (* Definition maximum : list R -> R := fun xs => match xs with
@@ -180,69 +37,36 @@ end. *)
    None takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
 
 (* None takes on the role of negative infinity *)
-Definition RmaxWithNegInf := liftOptionOpWithNoneID Rmax.
+Instance MaxMagma : Magma RLB := { m_op := RLBmax }.
 
-Instance MaxMagma : Magma (option R) := { m_op := RmaxWithNegInf }.
+Instance MaxSemigroup : Semigroup RLB := { sg_assoc := RLBmax_assoc }.
 
-Lemma RmaxWithNegInf_assoc : forall x y z : (option R), RmaxWithNegInf x (RmaxWithNegInf y z) = RmaxWithNegInf (RmaxWithNegInf x y) z.
-Proof.
-  intros x y z.
-  unfold RmaxWithNegInf.
-  induction x, y, z; simpl; f_equal; apply Rmax_assoc.
-Qed.
-
-Instance MaxSemigroup : Semigroup (option R) := { sg_assoc := RmaxWithNegInf_assoc }.
-
-Lemma RmaxWithNegInf_left_id : forall x : (option R), RmaxWithNegInf None x = x.
-Proof.
-  intro x.
-  unfold RmaxWithNegInf.
-  induction x; simpl; reflexivity.
-Qed.
-
-Lemma RmaxWithNegInf_right_id : forall x : (option R), RmaxWithNegInf x None = x.
-Proof.
-  intro x.
-  unfold RmaxWithNegInf.
-  induction x; simpl; reflexivity.
-Qed.
-
-Instance MaxMonoid : Monoid (option R) := {
+Instance MaxMonoid : Monoid RLB := {
   mn_id := None;
-  mn_left_id := RmaxWithNegInf_left_id;
-  mn_right_id := RmaxWithNegInf_right_id
+  mn_left_id := RLBmax_left_id;
+  mn_right_id := RLBmax_right_id
 }.
 
-Require Import Coq.ssr.ssrfun.
-Lemma RmaxWithNegInf_comm : commutative RmaxWithNegInf.
-Proof.
-
-Admitted.
-
 Module RBasis.
-  Definition Basis := option R.
+  Definition Basis := RLB.
 End RBasis.
 
 Module RFreeMonoid := FreeMonoidModule RBasis.
 
-Definition identity (x : option R) : option R := x.
-Definition maximum : list (option R) -> option R := @RFreeMonoid.extend _ _ _ _ RFreeMonoid.FreeMonoid_UniversalProperty identity.
+Definition identity (x : RLB) : RLB := x.
+Definition maximum : list RLB -> RLB := @RFreeMonoid.extend _ _ _ _ RFreeMonoid.FreeMonoid_UniversalProperty identity.
 Definition maximum_mor : MonoidHomomorphism maximum := RFreeMonoid.extend_monoid_homomorphism identity.
-Definition maximum_universal : forall (x : option R), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
-Definition maximum_unique (g : list (option R) -> option R) (Hg : MonoidHomomorphism g) : (forall (x : option R), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
+Definition maximum_universal : forall (x : RLB), maximum (RFreeMonoid.canonical_inj x) = identity x := RFreeMonoid.extend_universal identity.
+Definition maximum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = maximum a := fun H => RFreeMonoid.extend_unique identity g Hg H.
 
-Definition maximumImplementation : list (option R) -> option R := fun xs => fold_right RmaxWithNegInf None xs.
+Definition maximumImplementation : list RLB -> RLB := fun xs => fold_right RLBmax None xs.
 
-
-Require Import Coq.Program.Basics.
-Require Import Coq.Program.Combinators.
-
-Lemma g_comm : forall i, commutative (fun (x y : option R) => RmaxWithNegInf (RmaxWithNegInf i x) y).
+Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLBmax (RLBmax i x) y).
 Proof.
 
 Admitted.
 
-Lemma g_mor : @MonoidHomomorphism (list (option R)) (option R) _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ maximumImplementation.
+Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ maximumImplementation.
 Proof.
   unfold maximumImplementation.
   split.
@@ -253,7 +77,7 @@ Proof.
     + unfold m_op.
       unfold RFreeMonoid.FreeMonoid_Magma.
       rewrite fold_right_nil.
-      rewrite RmaxWithNegInf_left_id.
+      rewrite RLBmax_left_id.
       rewrite app_nil_l.
       reflexivity.
     + unfold m_op in *. (* After proving this A way, make version of the proof where only the RHS of the goal equation changes each time. *)
@@ -261,38 +85,34 @@ Proof.
       unfold MaxMagma in *.
       simpl.
       rewrite IHxs'.
-      rewrite RmaxWithNegInf_assoc.
+      rewrite RLBmax_assoc.
       reflexivity.
   - simpl.
     reflexivity.
 Qed.
 
-Definition RplusWithNegInf : option R -> option R -> option R := liftOption2 (fun x y => x + y).
-
-Definition RsumWithNegInf : list (option R) -> option R := fun xs => fold_right RplusWithNegInf None xs.
-
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-Definition RmaxWithNegInfSoFarAndPreviousSum : option R -> (option R * option R) -> (option R * option R) := fun x uv => match uv with
-  | (u, v) => let w := RplusWithNegInf v x in (RmaxWithNegInf u w, w)
+Definition RLBmaxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
+  | (u, v) => let w := RLBplus v x in (RLBmax u w, w)
 end.
 
-Notation "x <+> y" := (RplusWithNegInf x y) (at level 50, left associativity).
-Notation "x <|> y" := (RmaxWithNegInf x y) (at level 50, left associativity).
-Notation "x <.> y" := (RmaxWithNegInfSoFarAndPreviousSum x y) (at level 50, left associativity).
+Notation "x <+> y" := (RLBsum x y) (at level 50, left associativity).
+Notation "x <|> y" := (RLBmax x y) (at level 50, left associativity).
+Notation "x <.> y" := (RLBmaxSoFarAndPreviousSum x y) (at level 50, left associativity).
 
-Lemma maximum_distr (xs ys : list (option R)) : maximum (xs ++ ys) = (maximum xs) <|> (maximum ys).
+Lemma maximum_distr (xs ys : list RLB) : maximum (xs ++ ys) = (maximum xs) <|> (maximum ys).
 Proof.
   apply maximum_mor.
 Qed.
 
-Lemma maximum_idempotent (xs : list (option R)) : maximum xs = maximum (maximum xs :: nil).
+Lemma maximum_idempotent (xs : list RLB) : maximum xs = maximum (maximum xs :: nil).
 Proof.
-  pose (g xs := fold_right RmaxWithNegInf None xs).
-  assert (g_mor : @MonoidHomomorphism (list (option R)) (option R) _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ g).
+  pose (g xs := fold_right RLBmax None xs).
+  assert (g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RFreeMonoid.FreeMonoid_Monoid _ _ _ g).
   (* - apply (RFreeMonoid.extend_mor).
-  assert (g_universal : forall (x : option R), g (RFreeMonoid.canonical_inj x).
+  assert (g_universal : forall (x : RLB), g (RFreeMonoid.canonical_inj x).
   - 
-  assert (maximum = fun xs => foldl RmaxWithNegInf None xs).
+  assert (maximum = fun xs => foldl RLBmax None xs).
   - apply (maximum_unique ).
   unfold RFreeMonoid.extend.
   destruct extend. *)
