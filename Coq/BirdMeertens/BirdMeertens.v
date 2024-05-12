@@ -14,7 +14,7 @@ Definition form3 : list (option R) -> option R := maximum ∘ concat ∘ map (ma
 Definition form4 : list (option R) -> option R := maximum ∘ map maximum ∘ map (map RsumWithNegInf) ∘ map inits ∘ tails.
 Definition form5 : list (option R) -> option R := maximum ∘ map (maximum ∘ map RsumWithNegInf ∘ inits) ∘ tails.
 Definition form6 : list (option R) -> option R := maximum ∘ map (fold_right RnonzeroSumWithNegInf None) ∘ tails.
-Definition form7 : list (option R) -> option R := maximum ∘ scanr RnonzeroSumWithNegInf None.
+Definition form7 : list (option R) -> option R := maximum ∘ scan_right RnonzeroSumWithNegInf None.
 Definition form8 : list (option R) -> option R := fst ∘ fold_right RmaxWithNegInfSoFarAndPreviousNonzeroSum (None,None).
 
 Theorem form1_eq_form2 : form1 = form2.
@@ -28,8 +28,8 @@ Proof.
   unfold form3.
   f_equal.
   rewrite compose_assoc.
-  rewrite (compose_assoc _ _ _ _ (concat ∘ map tails) (map RsumWithNegInf) maximum).
-  rewrite <- (compose_assoc _ _ _ _ (map tails) concat (map RsumWithNegInf)).
+  rewrite (compose_assoc _ _ _ _ (concat ∘ map inits) (map RsumWithNegInf) maximum).
+  rewrite <- (compose_assoc _ _ _ _ (map inits) concat (map RsumWithNegInf)).
   rewrite (map_promotion RsumWithNegInf).
   reflexivity.
 Qed.
@@ -50,8 +50,8 @@ Proof.
   f_equal.
   rewrite compose_assoc.
   rewrite compose_assoc.
-  rewrite (map_distr (map RsumWithNegInf) tails).
-  rewrite (map_distr maximum (compose (map RsumWithNegInf) tails)).
+  rewrite (map_distr (map RsumWithNegInf) inits).
+  rewrite (map_distr maximum (compose (map RsumWithNegInf) inits)).
   reflexivity.
 Qed.
 

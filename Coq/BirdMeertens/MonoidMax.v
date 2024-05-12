@@ -276,7 +276,7 @@ Definition RsumWithNegInf : list (option R) -> option R := fun xs => fold_right 
 Definition RnonzeroSumWithNegInf : option R -> option R -> option R := fun mx my => RmaxWithNegInf (RplusWithNegInf mx my) (Some 0).
 
 (* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-Definition RmaxWithNegInfSoFarAndPreviousNonzeroSum : (option R * option R) -> option R -> (option R * option R) := fun uv x => match uv with
+Definition RmaxWithNegInfSoFarAndPreviousNonzeroSum : option R -> (option R * option R) -> (option R * option R) := fun x uv => match uv with
   | (u, v) => let w := RnonzeroSumWithNegInf v x in (RmaxWithNegInf u w, w)
 end.
 

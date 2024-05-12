@@ -48,7 +48,7 @@ Proof.
     apply maximum_idempotent.
 Qed.
 
-Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ tails = fold_right RnonzeroSumWithNegInf None.
+Lemma horners_rule : maximum ∘ map RsumWithNegInf ∘ inits = fold_right RnonzeroSumWithNegInf None.
 Proof.
   unfold compose.
   apply functional_extensionality.
