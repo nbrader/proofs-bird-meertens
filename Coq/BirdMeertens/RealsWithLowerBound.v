@@ -77,6 +77,26 @@ Proof.
   intros x y z; destruct x, y, z; simpl; try reflexivity.
   - f_equal; rewrite Rplus_assoc; reflexivity.
 Qed.
+
+Lemma RLBplus_left_id : forall x : RLB, RLBplus (Some 0) x = x.
+Proof.
+  intro x.
+  unfold RLBplus.
+  induction x.
+    - f_equal.
+      ring.
+    - reflexivity.
+Qed.
+
+Lemma RLBplus_right_id : forall x : RLB, RLBplus x (Some 0) = x.
+Proof.
+  intro x.
+  unfold RLBplus.
+  induction x.
+    - f_equal.
+      ring.
+    - reflexivity.
+Qed.
 End RLBplus.
 
 

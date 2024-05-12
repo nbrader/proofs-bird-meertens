@@ -5,6 +5,7 @@ BirdMeertens/ListFunctions.v
 BirdMeertens/OptionFunctions.v
 BirdMeertens/Lemmas.v
 BirdMeertens/MonoidRLBmax.v
+BirdMeertens/MonoidRLBplus.v
 BirdMeertens/RealsWithLowerBound.v
 FreeMonoid/Category.v
 FreeMonoid/ExtraLemmas.v

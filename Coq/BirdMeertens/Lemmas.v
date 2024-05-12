@@ -32,7 +32,7 @@ Proof.
   apply concat_map.
 Qed.
 
-Lemma fold_promotion : maximum ∘ concat = maximum ∘ map maximum.
+Lemma fold_promotion : RLBmaximum ∘ concat = RLBmaximum ∘ map RLBmaximum.
 Proof.
   unfold compose.
   apply functional_extensionality.
@@ -40,14 +40,14 @@ Proof.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - rewrite cons_append.
-    rewrite maximum_distr.
-    rewrite maximum_distr.
+    rewrite RLBmaximum_distr.
+    rewrite RLBmaximum_distr.
     rewrite IH.
     f_equal.
-    apply maximum_idempotent.
+    apply RLBmaximum_idempotent.
 Qed.
 
-Lemma horners_rule : maximum ∘ map RLBsum ∘ inits = fold_right RLBplus None.
+Lemma horners_rule : RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus None.
 Proof.
   unfold compose.
   apply functional_extensionality.
@@ -55,19 +55,19 @@ Proof.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - rewrite <- IH.
-    assert (x = maximum (x :: nil)).
-    + unfold maximum.
+    assert (x = RLBmaximum (x :: nil)).
+    + unfold RLBmaximum.
       simpl.
       rewrite RLBmax_right_id.
       reflexivity.
-    + assert (RLBplus x (maximum (map RLBsum (inits xs))) = maximum (x :: map RLBsum (inits xs))).
-      * unfold maximum.
+    + assert (RLBplus x (RLBmaximum (map RLBsum (inits xs))) = RLBmaximum (x :: map RLBsum (inits xs))).
+      * unfold RLBmaximum.
         unfold RLBFreeMonoid.extend.
         simpl.
          (* extend_monoid_homomorphism
       rewrite H at 2.
       apply AFreeMonoid.extend_monoid_homomorphism.
-      rewrite <- maximum_distr.
+      rewrite <- RLBmaximum_distr.
       simpl.
       rewrite RLBmax_right_id.
       reflexivity. *)
