@@ -17,7 +17,7 @@ Definition RLBmaxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun 
   | (u, v) => let w := (v <+> x) in (u <|> w, w)
 end.
 
-Definition RLBnonZeroPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> Some 0.
+Definition RLBnonZeroPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> finite 0.
 
 Notation "x <.> y" := (RLBmaxSoFarAndPreviousSum x y) (at level 50, left associativity).
 Notation "x <#> y" := (RLBnonZeroPlus x y) (at level 50, left associativity).
@@ -63,15 +63,15 @@ Proof.
     apply RLBmaximum_idempotent.
 Qed.
 
-Lemma horners_rule (xs : list RLB) (HexistsNonNeg : exists (x : RLB), In x xs /\ RLBlte (Some 0) x) : (RLBmaximum ∘ map RLBsum ∘ inits) xs = fold_right RLBnonZeroPlus (Some 0) xs.
+Lemma horners_rule (xs : list RLB) (HexistsNonNeg : exists (x : RLB), In x xs /\ RLBlte (finite 0) x) : (RLBmaximum ∘ map RLBsum ∘ inits) xs = fold_right RLBnonZeroPlus (finite 0) xs.
 Proof.
   
 Admitted.
 
-Lemma horners_rule_false : RLBmaximum ∘ map RLBsum ∘ inits <> fold_right RLBplus None.
+Lemma horners_rule_false : RLBmaximum ∘ map RLBsum ∘ inits <> fold_right RLBplus neg_inf.
 Proof.
   intros H. (* Assume horners_rule is true and aim for a contradiction. *)
-  assert (Hempty: (RLBmaximum (map RLBsum (inits nil))) = fold_right RLBplus None nil). 
+  assert (Hempty: (RLBmaximum (map RLBsum (inits nil))) = fold_right RLBplus neg_inf nil). 
   - rewrite <- H. reflexivity. (* Use the hypothesis on an empty list. *)
   - (* Evaluate the left side of Hempty. *)
     simpl in Hempty. (* Simplify the left side with empty list calculations. *)
@@ -86,12 +86,12 @@ Proof.
 Qed.
 
 
-Lemma horners_rule_false_2 : ~(RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus (Some 0)).
+Lemma horners_rule_false_2 : ~(RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus (finite 0)).
 Proof.
   apply functions_not_equal.
   (* Use a specific counterexample where the lemma fails. *)
   (* Consider the list [Some 1, Some (-1)] *)
-  exists [Some 1; Some (-1)].
+  exists [finite 1; finite (-1)].
   simpl. 
   unfold RLBsum, RLBmaximum, map, inits.
   simpl. (* At this point you would simplify the expressions based on the actual definitions of RLBsum and RLBmaximum *)

@@ -26,7 +26,7 @@ Instance RLBplusMagma : Magma RLB := { m_op := RLBplus }.
 Instance RLBplusSemigroup : Semigroup RLB := { sg_assoc := RLBplus_assoc }.
 
 Instance RLBplusMonoid : Monoid RLB := {
-  mn_id := Some 0;
+  mn_id := finite 0;
   mn_left_id := RLBplus_left_id;
   mn_right_id := RLBplus_right_id
 }.
@@ -43,7 +43,7 @@ Definition RLBsum_mor : MonoidHomomorphism RLBsum := RLBFreeMonoid.extend_monoid
 Definition RLBsum_universal : forall (x : RLB), RLBsum (RLBFreeMonoid.canonical_inj x) = identity x := RLBFreeMonoid.extend_universal identity.
 Definition RLBsum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RLBFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = RLBsum a := fun H => RLBFreeMonoid.extend_unique identity g Hg H.
 
-Definition RLBsumImplementation : list RLB -> RLB := fun xs => fold_right RLBplus (Some 0) xs.
+Definition RLBsumImplementation : list RLB -> RLB := fun xs => fold_right RLBplus (finite 0) xs.
 
 Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLBplus (RLBplus i x) y).
 Proof.

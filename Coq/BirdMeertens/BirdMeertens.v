@@ -15,9 +15,9 @@ Definition form2 : list RLB -> RLB := RLBmaximum ∘ map RLBsum ∘ concat ∘ m
 Definition form3 : list RLB -> RLB := RLBmaximum ∘ concat ∘ map (map RLBsum) ∘ map inits ∘ tails.
 Definition form4 : list RLB -> RLB := RLBmaximum ∘ map RLBmaximum ∘ map (map RLBsum) ∘ map inits ∘ tails.
 Definition form5 : list RLB -> RLB := RLBmaximum ∘ map (RLBmaximum ∘ map RLBsum ∘ inits) ∘ tails.
-Definition form6 : list RLB -> RLB := RLBmaximum ∘ map (fold_right RLBplus (Some 0)) ∘ tails.
-Definition form7 : list RLB -> RLB := RLBmaximum ∘ scan_right RLBplus (Some 0).
-Definition form8 : list RLB -> RLB := fst ∘ fold_right RLBmaxSoFarAndPreviousSum (Some 0,Some 0).
+Definition form6 : list RLB -> RLB := RLBmaximum ∘ map (fold_right RLBplus (finite 0)) ∘ tails.
+Definition form7 : list RLB -> RLB := RLBmaximum ∘ scan_right RLBplus (finite 0).
+Definition form8 : list RLB -> RLB := fst ∘ fold_right RLBmaxSoFarAndPreviousSum (finite 0, finite 0).
 
 Theorem form1_eq_form2 : form1 = form2.
 Proof.

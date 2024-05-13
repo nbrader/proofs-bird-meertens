@@ -34,15 +34,15 @@ Require Import Coq.Program.Combinators.
 end. *)
 
 (* Instead, I'm just extending Rmax to a monoid with the inclusion of a "negative infinity" element which will act as identity element.
-   None takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
+   neg_inf takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
 
-(* None takes on the role of negative infinity *)
+(* neg_inf takes on the role of negative infinity *)
 Instance RLBmaxMagma : Magma RLB := { m_op := RLBmax }.
 
 Instance RLBmaxSemigroup : Semigroup RLB := { sg_assoc := RLBmax_assoc }.
 
 Instance RLBmaxMonoid : Monoid RLB := {
-  mn_id := None;
+  mn_id := neg_inf;
   mn_left_id := RLBmax_left_id;
   mn_right_id := RLBmax_right_id
 }.
@@ -59,7 +59,7 @@ Definition RLBmaximum_mor : MonoidHomomorphism RLBmaximum := RLBFreeMonoid.exten
 Definition RLBmaximum_universal : forall (x : RLB), RLBmaximum (RLBFreeMonoid.canonical_inj x) = identity x := RLBFreeMonoid.extend_universal identity.
 Definition RLBmaximum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RLBFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = RLBmaximum a := fun H => RLBFreeMonoid.extend_unique identity g Hg H.
 
-Definition RLBmaximumImplementation : list RLB -> RLB := fun xs => fold_right RLBmax None xs.
+Definition RLBmaximumImplementation : list RLB -> RLB := fun xs => fold_right RLBmax neg_inf xs.
 
 Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLBmax (RLBmax i x) y).
 Proof.

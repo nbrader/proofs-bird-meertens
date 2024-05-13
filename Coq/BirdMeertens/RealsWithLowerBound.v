@@ -5,15 +5,27 @@ Import ListNotations.
 Open Scope R_scope.
 
 Module RealsWithLowerBound.
-Definition RLB := option R.
+Inductive RLB :=
+  | finite (r : R)
+  | neg_inf.
+
+Definition RLB_to_option (x : RLB) : option R := match x with
+  | finite r => Some r
+  | neg_inf => None
+end.
+
+Definition option_to_RLB (x : option R) : RLB := match x with
+  | Some r => finite r
+  | None => neg_inf
+end.
 
 
 Section RLBmax.
 Definition RLBmax (x y : RLB) : RLB :=
   match x, y with
-  | None, _ => y
-  | _, None => x
-  | Some a, Some b => Some (Rmax a b)
+  | neg_inf, _ => y
+  | _, neg_inf => x
+  | finite a, finite b => finite (Rmax a b)
   end.
 
 Lemma RLBmax_comm : forall x y : RLB, RLBmax x y = RLBmax y x.
@@ -43,13 +55,13 @@ Proof.
     apply Rmax_idempotent.
 Qed.
 
-Lemma RLBmax_left_id : forall x : RLB, RLBmax None x = x.
+Lemma RLBmax_left_id : forall x : RLB, RLBmax neg_inf x = x.
 Proof.
   (* exact (fun x => eq_refl). *)
   intro x; reflexivity.
 Qed.
 
-Lemma RLBmax_right_id : forall x : RLB, RLBmax x None = x.
+Lemma RLBmax_right_id : forall x : RLB, RLBmax x neg_inf = x.
 Proof.
   (* exact (fun x : RLB => option_ind (fun x0 : option R => RLBmax x0 None = x0) (fun a : R => eq_refl) eq_refl x). *)
   intro x; induction x; reflexivity.
@@ -60,8 +72,8 @@ End RLBmax.
 Section RLBplus.
 Definition RLBplus (x y : RLB) : RLB :=
   match x, y with
-  | None, _ | _, None => None  (* Add anything to negative infinity and you get negative infinity. *)
-  | Some a, Some b => Some (a + b)
+  | neg_inf, _ | _, neg_inf => neg_inf  (* Add anything to negative infinity and you get negative infinity. *)
+  | finite a, finite b => finite (a + b)
   end.
 
 Lemma RLBplus_comm : forall x y : RLB, RLBplus x y = RLBplus y x.
@@ -76,7 +88,7 @@ Proof.
   - f_equal; rewrite Rplus_assoc; reflexivity.
 Qed.
 
-Lemma RLBplus_left_id : forall x : RLB, RLBplus (Some 0) x = x.
+Lemma RLBplus_left_id : forall x : RLB, RLBplus (finite 0) x = x.
 Proof.
   intro x.
   unfold RLBplus.
@@ -86,7 +98,7 @@ Proof.
     - reflexivity.
 Qed.
 
-Lemma RLBplus_right_id : forall x : RLB, RLBplus x (Some 0) = x.
+Lemma RLBplus_right_id : forall x : RLB, RLBplus x (finite 0) = x.
 Proof.
   intro x.
   unfold RLBplus.
@@ -101,9 +113,9 @@ End RLBplus.
 Section RLBlte.
 Definition RLBlte (x y : RLB) : Prop :=
   match x, y with
-  | None, _ => True   (* Negative infinity is less or equal to everything. *)
-  | _, None => False  (* Anything (other than negative infinity) is greater than negative infinity. *)
-  | Some a, Some b => a <= b
+  | neg_inf, _ => True   (* Negative infinity is less or equal to everything. *)
+  | _, neg_inf => False  (* Anything (other than negative infinity) is greater than negative infinity. *)
+  | finite a, finite b => a <= b
   end.
 End RLBlte.
 
