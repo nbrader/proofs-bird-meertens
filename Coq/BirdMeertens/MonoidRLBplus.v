@@ -98,11 +98,6 @@ Proof.
   - apply g_universal.
 Qed.
 
-(* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
-Definition RLBplusSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
-  | (u, v) => let w := RLBplus v x in (RLBplus u w, w)
-end.
-
 Notation "x <+> y" := (RLBplus x y) (at level 50, left associativity).
 
 Lemma RLBsum_distr (xs ys : list RLB) : RLBsum (xs ++ ys) = (RLBsum xs) <+> (RLBsum ys).

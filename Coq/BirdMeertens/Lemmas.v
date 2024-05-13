@@ -12,7 +12,16 @@ Require Import BirdMeertens.FunctionLemmas.
 
 Require Import Psatz.
 
+(* (u,v) <.> x = let w = (v+x) <|> 0 in (u <|> w, w) *)
+Definition RLBmaxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
+  | (u, v) => let w := (v <+> x) in (u <|> w, w)
+end.
+
+Definition RLBnonZeroPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> Some 0.
+
 Notation "x <.> y" := (RLBmaxSoFarAndPreviousSum x y) (at level 50, left associativity).
+Notation "x <#> y" := (RLBnonZeroPlus x y) (at level 50, left associativity).
+
 
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
   map f ∘ map g = map (f ∘ g).
@@ -54,7 +63,7 @@ Proof.
     apply RLBmaximum_idempotent.
 Qed.
 
-Lemma horners_rule : True. (* RLBmaximum ∘ map RLBsum ∘ inits = fold_right RLBplus (Some 0). *)
+Lemma horners_rule (xs : list RLB) (HexistsNonNeg : exists (x : RLB), In x xs /\ RLBlte (Some 0) x) : (RLBmaximum ∘ map RLBsum ∘ inits) xs = fold_right RLBnonZeroPlus (Some 0) xs.
 Proof.
   
 Admitted.

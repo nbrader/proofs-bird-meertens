@@ -98,6 +98,15 @@ Qed.
 End RLBplus.
 
 
+Section RLBlte.
+Definition RLBlte (x y : RLB) : Prop :=
+  match x, y with
+  | None, _ => True   (* Negative infinity is less or equal to everything. *)
+  | _, None => False  (* Anything (other than negative infinity) is greater than negative infinity. *)
+  | Some a, Some b => a <= b
+  end.
+End RLBlte.
+
 End RealsWithLowerBound.
 
 Export RealsWithLowerBound.
