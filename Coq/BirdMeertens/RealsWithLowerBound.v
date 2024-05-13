@@ -45,16 +45,14 @@ Qed.
 
 Lemma RLBmax_left_id : forall x : RLB, RLBmax None x = x.
 Proof.
-  intro x.
-  unfold RLBmax.
-  reflexivity.
+  (* exact (fun x => eq_refl). *)
+  intro x; reflexivity.
 Qed.
 
 Lemma RLBmax_right_id : forall x : RLB, RLBmax x None = x.
 Proof.
-  intro x.
-  unfold RLBmax.
-  induction x; reflexivity.
+  (* exact (fun x : RLB => option_ind (fun x0 : option R => RLBmax x0 None = x0) (fun a : R => eq_refl) eq_refl x). *)
+  intro x; induction x; reflexivity.
 Qed.
 End RLBmax.
 
