@@ -20,8 +20,8 @@ Require Import Coq.ssr.ssrfun.
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
 
-(* I decided not to define RLBmaximum like they did in the original Bird Meertens Wikipedia article, because it creates the following complication:*)
-(* Definition RLBmaximum : list R -> R := fun xs => match xs with
+(* I decided not to define RLB_maximum like they did in the original Bird Meertens Wikipedia article, because it creates the following complication:*)
+(* Definition RLB_maximum : list R -> R := fun xs => match xs with
   | [] => 0 (* This would be incorrect for lists of negatives but:
                 1) We consider only lists of at least 1 positive and 1 negative because alternatives are trivial:
                     - Lists without negatives have a MaxSegSum equal to the sum of the list
@@ -37,77 +37,77 @@ end. *)
    neg_inf takes on this role of negative infinity. This should make the proof simpler and the result more general. *)
 
 (* neg_inf takes on the role of negative infinity *)
-Instance RLBmaxMagma : Magma RLB := { m_op := RLBmax }.
+Instance RLB_maxMagma : Magma RLB := { m_op := RLB_max }.
 
-Instance RLBmaxSemigroup : Semigroup RLB := { sg_assoc := RLBmax_assoc }.
+Instance RLB_maxSemigroup : Semigroup RLB := { sg_assoc := RLB_max_assoc }.
 
-Instance RLBmaxMonoid : Monoid RLB := {
+Instance RLB_maxMonoid : Monoid RLB := {
   mn_id := neg_inf;
-  mn_left_id := RLBmax_left_id;
-  mn_right_id := RLBmax_right_id
+  mn_left_id := RLB_max_left_id;
+  mn_right_id := RLB_max_right_id
 }.
 
-Module RLBBasis.
+Module RLB_Basis.
   Definition Basis := RLB.
-End RLBBasis.
+End RLB_Basis.
 
-Module RLBFreeMonoid := FreeMonoidModule RLBBasis.
+Module RLB_FreeMonoid := FreeMonoidModule RLB_Basis.
 
 Definition identity (x : RLB) : RLB := x.
-Definition RLBmaximum : list RLB -> RLB := @RLBFreeMonoid.extend _ _ _ _ RLBFreeMonoid.FreeMonoid_UniversalProperty identity.
-Definition RLBmaximum_mor : MonoidHomomorphism RLBmaximum := RLBFreeMonoid.extend_monoid_homomorphism identity.
-Definition RLBmaximum_universal : forall (x : RLB), RLBmaximum (RLBFreeMonoid.canonical_inj x) = identity x := RLBFreeMonoid.extend_universal identity.
-Definition RLBmaximum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RLBFreeMonoid.canonical_inj x) = identity x) -> forall a, g a = RLBmaximum a := fun H => RLBFreeMonoid.extend_unique identity g Hg H.
+Definition RLB_maximum : list RLB -> RLB := @RLB_FreeMonoid.extend _ _ _ _ RLB_FreeMonoid.FreeMonoid_UniversalProperty identity.
+Definition RLB_maximum_mor : MonoidHomomorphism RLB_maximum := RLB_FreeMonoid.extend_monoid_homomorphism identity.
+Definition RLB_maximum_universal : forall (x : RLB), RLB_maximum (RLB_FreeMonoid.canonical_inj x) = identity x := RLB_FreeMonoid.extend_universal identity.
+Definition RLB_maximum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (forall (x : RLB), g (RLB_FreeMonoid.canonical_inj x) = identity x) -> forall a, g a = RLB_maximum a := fun H => RLB_FreeMonoid.extend_unique identity g Hg H.
 
-Definition RLBmaximumImplementation : list RLB -> RLB := fun xs => fold_right RLBmax neg_inf xs.
+Definition RLB_maximumImplementation : list RLB -> RLB := fun xs => fold_right RLB_max neg_inf xs.
 
-Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLBmax (RLBmax i x) y).
+Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLB_max (RLB_max i x) y).
 Proof.
   intros.
   unfold commutative.
   intros.
-  rewrite <- RLBmax_assoc.
-  rewrite (RLBmax_comm x y).
-  rewrite RLBmax_assoc.
+  rewrite <- RLB_max_assoc.
+  rewrite (RLB_max_comm x y).
+  rewrite RLB_max_assoc.
   reflexivity.
 Qed.
 
-Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RLBFreeMonoid.FreeMonoid_Monoid _ _ _ RLBmaximumImplementation.
+Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RLB_FreeMonoid.FreeMonoid_Monoid _ _ _ RLB_maximumImplementation.
 Proof.
-  unfold RLBmaximumImplementation.
+  unfold RLB_maximumImplementation.
   split.
 
   - (* Preserving Operation *)
-    intros xs ys. unfold RLBmaximumImplementation.
+    intros xs ys. unfold RLB_maximumImplementation.
     induction xs as [| x xs' IHxs'].
     + unfold m_op.
-      unfold RLBFreeMonoid.FreeMonoid_Magma.
+      unfold RLB_FreeMonoid.FreeMonoid_Magma.
       rewrite fold_right_nil.
-      rewrite RLBmax_left_id.
+      rewrite RLB_max_left_id.
       rewrite app_nil_l.
       reflexivity.
     + unfold m_op in *. (* After proving this A way, make version of the proof where only the RHS of the goal equation changes each time. *)
-      unfold RLBFreeMonoid.FreeMonoid_Magma in *.
-      unfold RLBmaxMagma in *.
+      unfold RLB_FreeMonoid.FreeMonoid_Magma in *.
+      unfold RLB_maxMagma in *.
       simpl.
       rewrite IHxs'.
-      rewrite RLBmax_assoc.
+      rewrite RLB_max_assoc.
       reflexivity.
   - simpl.
     reflexivity.
 Qed.
 
-Notation "x <|> y" := (RLBmax x y) (at level 50, left associativity).
+Notation "x <|> y" := (RLB_max x y) (at level 50, left associativity).
 
-Lemma RLBmaximum_distr (xs ys : list RLB) : RLBmaximum (xs ++ ys) = (RLBmaximum xs) <|> (RLBmaximum ys).
+Lemma RLB_maximum_distr (xs ys : list RLB) : RLB_maximum (xs ++ ys) = (RLB_maximum xs) <|> (RLB_maximum ys).
 Proof.
-  apply RLBmaximum_mor.
+  apply RLB_maximum_mor.
 Qed.
 
-Lemma RLBmaximum_idempotent (xs : list RLB) : RLBmaximum xs = RLBmaximum (RLBmaximum xs :: nil).
+Lemma RLB_maximum_idempotent (xs : list RLB) : RLB_maximum xs = RLB_maximum (RLB_maximum xs :: nil).
 Proof.
-  unfold RLBmaximum.
+  unfold RLB_maximum.
   simpl.
-  rewrite RLBmax_right_id.
+  rewrite RLB_max_right_id.
   reflexivity.
 Qed.
