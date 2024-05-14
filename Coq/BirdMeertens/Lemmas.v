@@ -63,7 +63,7 @@ Proof.
     apply RLB_maximum_idempotent.
 Qed.
 
-Lemma horners_rule (xs : list RLB) (HexistsNonNeg : exists (x : RLB), In x xs /\ RLB_lte (finite 0) x) : (RLB_maximum ∘ map RLB_sum ∘ inits) xs = fold_right RLB_nonZeroPlus (finite 0) xs.
+Lemma horners_rule (xs : list RLB) (HnonNegElem : exists (x : RLB), In x xs /\ RLB_lte (finite 0) x) : (RLB_maximum ∘ map RLB_sum ∘ inits) xs = fold_right RLB_nonZeroPlus (finite 0) xs.
 Proof.
   
 Admitted.
