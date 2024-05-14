@@ -15,6 +15,29 @@ Require Import Psatz.
 Definition RLB_nonNegPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> finite 0.
 Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
 
+Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y r : RLB), (r = x <#> y) -> (r = x <+> y) \/ (r = finite 0).
+Proof.
+  intros.
+Admitted.
+
+Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
+Proof.
+  intros.
+  pose (H := RLB_nonNegPlusEitherPlusOr0 x y (x <#> y) eq_refl).
+  case_eq (x <#> y).
+  - intros.
+    exists r.
+    reflexivity.
+  - intros.
+    exfalso.
+    unfold RLB_nonNegPlus in H0.
+    case x, y in H0.
+    + discriminate.
+    + discriminate.
+    + discriminate.
+    + discriminate.
+Qed.
+
 Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
 
 Definition RLB_maxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
@@ -110,7 +133,56 @@ Qed.
 
 Lemma horners_rule_attept3 : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) = fold_right RLB_nonNegPlus (finite 0).
 Proof.
-  
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity. (* Base case: both sides are empty *)
+  - rewrite <- IH.
+    unfold RLB_maximum.
+    unfold MonoidRLB_max.RLB_FreeMonoid.extend.
+    unfold MonoidRLB_max.identity.
+    simpl.
+    unfold MonoidRLB_max.RLB_FreeMonoid.extend_monoid.
+    simpl.
+    induction (map RLB_nonNegSum (inits (x :: xs))), (map RLB_nonNegSum (inits xs)).
+    + exfalso.
+      unfold RLB_maximum in IH.
+      simpl in IH.
+      induction xs in IH.
+      * simpl in IH.
+        discriminate.
+      * simpl in IH.
+        (* assert ()
+        unfold RLB_nonNegPlus in IH.
+        case_eq (a <#> fold_right RLB_nonNegPlus (finite 0) xs).
+        -- intros.
+           rewrite H in IH.
+           discriminate.
+        -- intros. *)
+        (* rewrite <- IHxs.
+        case_eq (a <#> fold_right RLB_nonNegPlus (finite 0) xs).
+        -- intros.
+           rewrite H in IH.
+           discriminate.
+        -- intros.
+        rewrite <- IHxs. *)
+      
+    (* assert (RLB_maximum [x] = x).
+    + unfold RLB_maximum.
+      unfold MonoidRLB_max.RLB_FreeMonoid.extend.
+      unfold MonoidRLB_max.identity.
+      apply RLB_max_right_id.
+    + rewrite <- H at 2.
+      rewrite <- RLB_maximum_distr.
+    rewrite <- (app_nil_l x).
+    RLB_maximum_distr
+    rewrite (rev_cons xs x).
+    rewrite RLB_maximum_distr.
+    rewrite RLB_maximum_distr.
+    rewrite IH.
+    f_equal.
+    apply RLB_maximum_idempotent. *)
 Admitted.
 
 Lemma horners_rule_attept3_false : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) <> fold_right RLB_nonNegPlus (finite 0).
