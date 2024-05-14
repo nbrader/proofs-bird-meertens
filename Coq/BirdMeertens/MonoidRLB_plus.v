@@ -45,7 +45,7 @@ Definition RLB_sum_unique (g : list RLB -> RLB) (Hg : MonoidHomomorphism g) : (f
 
 Definition RLB_sumImplementation : list RLB -> RLB := fun xs => fold_right RLB_plus (finite 0) xs.
 
-Lemma g_comm : forall i, commutative (fun (x y : RLB) => RLB_plus (RLB_plus i x) y).
+Lemma RLB_plus_comm : forall i, commutative (fun (x y : RLB) => RLB_plus (RLB_plus i x) y).
 Proof.
   intros.
   unfold commutative.
@@ -56,7 +56,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma g_mor : @MonoidHomomorphism (list RLB) RLB _ _ RLB_FreeMonoid.FreeMonoid_Monoid _ _ _ RLB_sumImplementation.
+Lemma RLB_sumImplementation_mor : @MonoidHomomorphism (list RLB) RLB _ _ RLB_FreeMonoid.FreeMonoid_Monoid _ _ _ RLB_sumImplementation.
 Proof.
   unfold RLB_sumImplementation.
   split.
@@ -81,7 +81,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma g_universal : forall (x : RLB), RLB_sumImplementation (RLB_FreeMonoid.canonical_inj x) = identity x.
+Lemma RLB_sumImplementation_universal : forall (x : RLB), RLB_sumImplementation (RLB_FreeMonoid.canonical_inj x) = identity x.
 Proof.
   intros.
   simpl.
@@ -94,8 +94,8 @@ Proof.
   apply functional_extensionality.
   intros.
   apply RLB_sum_unique.
-  - apply g_mor.
-  - apply g_universal.
+  - apply RLB_sumImplementation_mor.
+  - apply RLB_sumImplementation_universal.
 Qed.
 
 Notation "x <+> y" := (RLB_plus x y) (at level 50, left associativity).
