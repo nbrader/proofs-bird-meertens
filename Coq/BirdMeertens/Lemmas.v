@@ -15,12 +15,54 @@ Require Import Psatz.
 Definition RLB_nonNegPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> finite 0.
 Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
 
-Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y r : RLB), (r = x <#> y) -> (r = x <+> y) \/ (r = finite 0).
+Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB), (RLB_lte (finite 0) (x <+> y) -> x <#> y = x <+> y) \/ (~(RLB_lte (finite 0) (x <+> y)) -> x <#> y = finite 0).
 Proof.
   intros.
-Admitted.
+  unfold RLB_nonNegPlus.
+  unfold RLB_max.
+  case_eq (x <+> y).
+  - intros.
+    left.
+    intros.
+    unfold RLB_lte in H0.
+    unfold Rmax.
+    case_eq (Rle_dec r 0).
+    + intros.
+      rewrite (Rle_antisym 0 r H0).
+      * reflexivity.
+      * apply r0.
+    + intros.
+      reflexivity.
+  - simpl.
+    intros.
+    right.
+    intros.
+    reflexivity.
+Qed.
 
 Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
+Proof.
+  intros.
+  destruct (RLB_nonNegPlusEitherPlusOr0 x y) as [Hsum | Hzero].
+  case_eq (x <+> y).
+  - intros.
+    exists r.
+    rewrite Hsum.
+    + apply H.
+    + case x, y in H.
+      (* * 
+  - intros.
+    exfalso.
+    unfold RLB_nonNegPlus in Hsum.
+    rewrite H in Hsum.
+    simpl in Hsum.
+    discriminate.
+  - rewrite Hzero.
+    exists 0.
+    reflexivity. *)
+Admitted.
+
+(* Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
 Proof.
   intros.
   pose (H := RLB_nonNegPlusEitherPlusOr0 x y (x <#> y) eq_refl).
@@ -36,7 +78,7 @@ Proof.
     + discriminate.
     + discriminate.
     + discriminate.
-Qed.
+Qed. *)
 
 Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
 
