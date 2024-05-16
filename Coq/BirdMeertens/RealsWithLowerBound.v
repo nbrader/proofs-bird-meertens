@@ -110,14 +110,23 @@ Qed.
 End RLB_plus.
 
 
-Section RLB_lte.
-Definition RLB_lte (x y : RLB) : Prop :=
+Section RLB_le.
+Definition RLB_le (x y : RLB) : Prop :=
   match x, y with
   | neg_inf, _ => True   (* Negative infinity is less or equal to everything. *)
-  | _, neg_inf => False  (* Anything (other than negative infinity) is greater than negative infinity. *)
+  | _, neg_inf => False  (* Everything (other than negative infinity) is greater than negative infinity. *)
   | finite a, finite b => a <= b
   end.
-End RLB_lte.
+End RLB_le.
+
+Section RLB_ge.
+Definition RLB_ge (x y : RLB) : Prop :=
+  match x, y with
+  | _, neg_inf => True   (* Negative infinity is less or equal to everything. *)
+  | neg_inf, _ => False  (* Everything (other than negative infinity) is greater than negative infinity. *)
+  | finite a, finite b => b <= a
+  end.
+End RLB_ge.
 
 End RealsWithLowerBound.
 

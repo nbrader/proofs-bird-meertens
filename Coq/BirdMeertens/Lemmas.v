@@ -15,16 +15,16 @@ Require Import Psatz.
 Definition RLB_nonNegPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> finite 0.
 Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
 
-Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB), (RLB_lte (finite 0) (x <+> y) -> x <#> y = x <+> y) \/ (~(RLB_lte (finite 0) (x <+> y)) -> x <#> y = finite 0).
+Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB), (RLB_le (finite 0) (x <+> y) -> x <#> y = x <+> y) /\ (RLB_ge (finite 0) (x <+> y) -> x <#> y = finite 0).
 Proof.
   intros.
+  split.
   unfold RLB_nonNegPlus.
   unfold RLB_max.
   case_eq (x <+> y).
   - intros.
-    left.
     intros.
-    unfold RLB_lte in H0.
+    unfold RLB_le in H0.
     unfold Rmax.
     case_eq (Rle_dec r 0).
     + intros.
@@ -35,31 +35,34 @@ Proof.
       reflexivity.
   - simpl.
     intros.
-    right.
-    intros.
-    reflexivity.
+    contradiction.
+  - intros.
+    unfold RLB_nonNegPlus.
+    unfold RLB_max.
+    unfold Rmax.
+    unfold RLB_ge in H.
+    case (x <+> y) in *.
+    + intros.
+      case (Rle_dec r 0).
+      * intros.
+        reflexivity.
+      * intros.
+        contradiction.
+    + reflexivity.
 Qed.
 
 Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
 Proof.
   intros.
-  destruct (RLB_nonNegPlusEitherPlusOr0 x y) as [Hsum | Hzero].
+  pose (RLB_nonNegPlusEitherPlusOr0 x y).
+  destruct a.
   case_eq (x <+> y).
   - intros.
     exists r.
-    rewrite Hsum.
-    + apply H.
-    + case x, y in H.
-      (* * 
-  - intros.
-    exfalso.
-    unfold RLB_nonNegPlus in Hsum.
-    rewrite H in Hsum.
-    simpl in Hsum.
-    discriminate.
-  - rewrite Hzero.
-    exists 0.
-    reflexivity. *)
+    rewrite H.
+    + apply H1.
+    + rewrite H1.
+      
 Admitted.
 
 (* Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
