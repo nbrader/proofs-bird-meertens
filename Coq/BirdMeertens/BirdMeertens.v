@@ -3,19 +3,21 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Reals.Reals.
 Require Import Coq.Lists.List.
 
-Require Import Lemmas.
-Require Import ListFunctions.
-Require Import MonoidMax.
+Require Import BirdMeertens.Lemmas.
+Require Import BirdMeertens.ListFunctions.
+Require Import BirdMeertens.MonoidRLB_max.
+Require Import BirdMeertens.MonoidRLB_plus.
+Require Import BirdMeertens.RealsWithLowerBound.
 
 (* Forms of MaxSegSum *)
-Definition form1 : list R -> R := maximum ∘ map Rsum ∘ segs.
-Definition form2 : list R -> R := maximum ∘ map Rsum ∘ concat ∘ map tails ∘ inits.
-Definition form3 : list R -> R := maximum ∘ concat ∘ map (map Rsum) ∘ map tails ∘ inits.
-Definition form4 : list R -> R := maximum ∘ map maximum ∘ map (map Rsum) ∘ map tails ∘ inits.
-Definition form5 : list R -> R := maximum ∘ map (maximum ∘ map Rsum ∘ tails) ∘ inits.
-Definition form6 : list R -> R := maximum ∘ map (foldl RnonzeroSum 0) ∘ inits.
-Definition form7 : list R -> R := maximum ∘ scanl RnonzeroSum 0.
-Definition form8 : list R -> R := fst ∘ foldl RMaxSoFarAndPreviousNonzeroSum (0,0).
+Definition form1 : list RLB -> RLB := RLB_maximum ∘ map RLB_nonNegSum ∘ segs.
+Definition form2 : list RLB -> RLB := RLB_maximum ∘ map RLB_nonNegSum ∘ concat ∘ map inits ∘ tails.
+Definition form3 : list RLB -> RLB := RLB_maximum ∘ concat ∘ map (map RLB_nonNegSum) ∘ map inits ∘ tails.
+Definition form4 : list RLB -> RLB := RLB_maximum ∘ map RLB_maximum ∘ map (map RLB_nonNegSum) ∘ map inits ∘ tails.
+Definition form5 : list RLB -> RLB := RLB_maximum ∘ map (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) ∘ tails.
+Definition form6 : list RLB -> RLB := RLB_maximum ∘ map (fold_right RLB_nonNegPlus (finite 0)) ∘ tails.
+Definition form7 : list RLB -> RLB := RLB_maximum ∘ scan_right RLB_nonNegPlus (finite 0).
+Definition form8 : list RLB -> RLB := fst ∘ fold_right RLB_maxSoFarAndPreviousSum (finite 0, finite 0).
 
 Theorem form1_eq_form2 : form1 = form2.
 Proof.
@@ -28,9 +30,9 @@ Proof.
   unfold form3.
   f_equal.
   rewrite compose_assoc.
-  rewrite (compose_assoc _ _ _ _ (concat ∘ map tails) (map Rsum) maximum).
-  rewrite <- (compose_assoc _ _ _ _ (map tails) concat (map Rsum)).
-  rewrite (map_promotion Rsum).
+  rewrite (compose_assoc _ _ _ _ (concat ∘ map inits) (map RLB_nonNegSum) RLB_maximum).
+  rewrite <- (compose_assoc _ _ _ _ (map inits) concat (map RLB_nonNegSum)).
+  rewrite (map_promotion RLB_nonNegSum).
   reflexivity.
 Qed.
 
@@ -50,7 +52,17 @@ Proof.
   f_equal.
   rewrite compose_assoc.
   rewrite compose_assoc.
-  rewrite (map_distr (map Rsum) tails).
-  rewrite (map_distr maximum (compose (map Rsum) tails)).
+  rewrite (map_distr (map RLB_nonNegSum) inits).
+  rewrite (map_distr RLB_maximum (compose (map RLB_nonNegSum) inits)).
   reflexivity.
 Qed.
+
+Theorem form4_eq_form6 : form5 = form6.
+Proof.
+  unfold form5.
+  unfold form6.
+  f_equal.
+  f_equal.
+  f_equal.
+  (* apply horners_rule. *)
+Admitted.

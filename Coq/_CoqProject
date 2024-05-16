@@ -2,8 +2,12 @@
 -R BirdMeertens BirdMeertens
 -R FreeMonoid FreeMonoid
 BirdMeertens/ListFunctions.v
+BirdMeertens/OptionFunctions.v
 BirdMeertens/Lemmas.v
-BirdMeertens/MonoidMax.v
+BirdMeertens/MonoidRLB_max.v
+BirdMeertens/MonoidRLB_plus.v
+BirdMeertens/RealsWithLowerBound.v
+BirdMeertens/FunctionLemmas.v
 FreeMonoid/Category.v
 FreeMonoid/ExtraLemmas.v
 FreeMonoid/HomExampleBoolOrToNatMax1.v
