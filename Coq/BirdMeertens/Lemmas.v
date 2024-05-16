@@ -12,6 +12,12 @@ Require Import BirdMeertens.FunctionLemmas.
 
 Require Import Psatz.
 
+Definition RLB_nonNegPlus (x y : RLB) : RLB :=
+  if RLB_le_dec (finite 0) (RLB_plus x y) then RLB_plus x y else finite 0.
+Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
+
+Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
+
 Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB),
   x <#> y = if RLB_le_dec (finite 0) (x <+> y) then x <+> y else finite 0.
 Proof.
@@ -137,6 +143,67 @@ Proof.
     * lra.
 Qed.
 
+Definition MaxNonNegSumInits : list RLB -> RLB := RLB_maximum ∘ map RLB_nonNegSum ∘ inits.
+
+Lemma MaxNonNegSumInits_mor (x : RLB) (xs : list RLB) : MaxNonNegSumInits (x :: xs) = x <#> MaxNonNegSumInits xs.
+Proof.
+  unfold MaxNonNegSumInits.
+  unfold compose.
+  (* Compute inits (x :: xs). *)
+  (* = [[]; [x]; [x; y1]; [x; y1; y2]; ...] if xs = [y1; y2; ...] *)
+
+  assert (H: inits (x :: xs) = [] :: map (cons x) (inits xs)).
+  {
+    admit.
+  }
+  rewrite H. clear H.
+  
+  (* map RLB_nonNegSum (inits (x :: xs)) = map RLB_nonNegSum ([] :: map (cons x) (inits xs)) *)
+  simpl.
+  (* = RLB_nonNegSum [] :: map RLB_nonNegSum (map (cons x) (inits xs)) *)
+  (* = (finite 0) :: map (fun l => RLB_nonNegSum (x :: l)) (inits xs) *)
+  simpl.
+
+  assert (H1: map RLB_nonNegSum (map (cons x) (inits xs)) = map (fun l => x <#> RLB_nonNegSum l) (inits xs)).
+  {
+    induction xs as [| y ys IH].
+    - simpl. reflexivity.
+    - admit.
+  }
+  rewrite H1. clear H1.
+
+  (* Now, RLB_maximum (finite 0 :: map (fun l => x <#> RLB_nonNegSum l) (inits xs)) *)
+  (* = RLB_max (finite 0) (RLB_maximum (map (fun l => x <#> RLB_nonNegSum l) (inits xs))) *)
+  simpl.
+
+  (* = RLB_maximum (map (fun l => x <#> RLB_nonNegSum l) (inits xs)) *)
+
+  (* = x <#> RLB_maximum (map RLB_nonNegSum (inits xs)) *)
+  (* = x <#> MaxNonNegSumInits xs *)
+
+  induction xs as [| y ys IH].
+  - simpl.
+    unfold RLB_maximum.
+    simpl.
+    unfold Rmax.
+    pose (RLB_nonNegPlusNotNegInf x (finite 0)).
+    destruct e.
+    rewrite H.
+    simpl.
+    unfold MonoidRLB_max.identity.
+    rewrite H.
+    case (Rle_dec 0 x0).
+      + intros.
+        reflexivity.
+      + intros.
+        exfalso.
+        admit.
+  - simpl.
+    unfold RLB_maximum.
+    unfold MonoidRLB_max.identity.
+    admit.
+Admitted.
+
 Lemma horners_rule_attept3 : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) = fold_right RLB_nonNegPlus (finite 0).
 Proof.
   unfold compose.
@@ -145,53 +212,5 @@ Proof.
   induction x as [|x xs IH]; simpl.
   - reflexivity. (* Base case: both sides are empty *)
   - rewrite <- IH.
-    unfold RLB_maximum.
-    unfold MonoidRLB_max.RLB_FreeMonoid.extend.
-    unfold MonoidRLB_max.identity.
-    simpl.
-    unfold MonoidRLB_max.RLB_FreeMonoid.extend_monoid.
-    simpl.
-    induction (map RLB_nonNegSum (inits (x :: xs))), (map RLB_nonNegSum (inits xs)).
-    + exfalso.
-      unfold RLB_maximum in IH.
-      simpl in IH.
-      induction xs in IH.
-      * simpl in IH.
-        discriminate.
-      * simpl in IH.
-        (* assert ()
-        unfold RLB_nonNegPlus in IH.
-        case_eq (a <#> fold_right RLB_nonNegPlus (finite 0) xs).
-        -- intros.
-           rewrite H in IH.
-           discriminate.
-        -- intros. *)
-        (* rewrite <- IHxs.
-        case_eq (a <#> fold_right RLB_nonNegPlus (finite 0) xs).
-        -- intros.
-           rewrite H in IH.
-           discriminate.
-        -- intros.
-        rewrite <- IHxs. *)
-      
-    (* assert (RLB_maximum [x] = x).
-    + unfold RLB_maximum.
-      unfold MonoidRLB_max.RLB_FreeMonoid.extend.
-      unfold MonoidRLB_max.identity.
-      apply RLB_max_right_id.
-    + rewrite <- H at 2.
-      rewrite <- RLB_maximum_distr.
-    rewrite <- (app_nil_l x).
-    RLB_maximum_distr
-    rewrite (rev_cons xs x).
-    rewrite RLB_maximum_distr.
-    rewrite RLB_maximum_distr.
-    rewrite IH.
-    f_equal.
-    apply RLB_maximum_idempotent. *)
-Admitted.
-
-Lemma horners_rule_attept3_false : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) <> fold_right RLB_nonNegPlus (finite 0).
-Proof.
-  
-Admitted.
+    apply (MaxNonNegSumInits_mor x xs).
+Qed.

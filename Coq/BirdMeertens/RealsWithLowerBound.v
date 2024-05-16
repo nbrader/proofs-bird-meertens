@@ -132,20 +132,6 @@ Definition RLB_ge (x y : RLB) : Prop :=
   end.
 End RLB_ge.
 
-Definition RLB_nonNegPlus (x y : RLB) : RLB :=
-  if RLB_le_dec (finite 0) (RLB_plus x y) then RLB_plus x y else finite 0.
-Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
-
-Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
-
-Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB),
-  x <#> y = if RLB_le_dec (finite 0) (RLB_plus x y) then RLB_plus x y else finite 0.
-Proof.
-  intros x y.
-  unfold RLB_nonNegPlus.
-  destruct (RLB_le_dec (finite 0) (RLB_plus x y)); reflexivity.
-Qed.
-
 End RealsWithLowerBound.
 
 Export RealsWithLowerBound.
