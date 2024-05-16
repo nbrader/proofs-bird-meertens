@@ -12,12 +12,26 @@ Require Import BirdMeertens.FunctionLemmas.
 
 Require Import Psatz.
 
+(* Refs:
+ - RLB_nonNegPlus
+ - RLB_nonNegSum
+ - RLB_nonNegPlusEitherPlusOr0
+ - RLB_nonNegPlusNotNegInf
+ - horners_rule_attept3 -> (* Refs: NONE *)
+ - form6
+ - form7
+*)
 Definition RLB_nonNegPlus (x y : RLB) : RLB :=
   if RLB_le_dec (finite 0) (RLB_plus x y) then RLB_plus x y else finite 0.
 Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
 
+(* Refs:
+ - horners_rule_attept3 -> (* Refs: NONE *)
+ - MaxNonNegSumInits_mor -> (* Refs: horners_rule_attept3 -> (* Refs: NONE *) *)
+*)
 Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
 
+(* Refs: NONE *)
 Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB),
   x <#> y = if RLB_le_dec (finite 0) (x <+> y) then x <+> y else finite 0.
 Proof.
@@ -26,6 +40,9 @@ Proof.
   destruct (RLB_le_dec (finite 0) (x <+> y)); reflexivity.
 Qed.
 
+(* Refs:
+ - MaxNonNegSumInits_mor -> (* Refs: horners_rule_attept3 -> (* Refs: NONE *) *)
+*)
 Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
 Proof.
   intros x y.
@@ -52,12 +69,17 @@ Proof.
     + exists 0. simpl. reflexivity.
 Qed.
 
+(* Refs:
+ - form8 -> (* Refs: NONE *)
+*)
 Definition RLB_maxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
   | (u, v) => let w := (v <#> x)  in (u <|> w, w)
 end.
 Notation "x <.> y" := (RLB_maxSoFarAndPreviousSum x y) (at level 50, left associativity).
 
-
+(* Refs:
+ - form4_eq_form5 -> (* Refs: NONE *)
+*)
 Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
   map f ∘ map g = map (f ∘ g).
 Proof.
@@ -72,7 +94,9 @@ Proof.
     reflexivity.
 Qed.
 
-
+(* Refs:
+ - form2_eq_form3 -> (* Refs: NONE *)
+*)
 Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
   map f ∘ concat = concat ∘ map (map f).
 Proof.
@@ -84,7 +108,9 @@ Proof.
   apply concat_map.
 Qed.
 
-
+(* Refs:
+ - form3_eq_form4 -> (* Refs: NONE *)
+*)
 Lemma fold_promotion : RLB_maximum ∘ concat = RLB_maximum ∘ map RLB_maximum.
 Proof.
   unfold compose.
@@ -100,7 +126,7 @@ Proof.
     apply RLB_maximum_idempotent.
 Qed.
 
-
+(* Refs: NONE *)
 Lemma horners_rule_false : RLB_maximum ∘ map RLB_sum ∘ inits <> fold_right RLB_plus neg_inf.
 Proof.
   intros H. (* Assume horners_rule is true and aim for a contradiction. *)
@@ -118,6 +144,7 @@ Proof.
     discriminate Hempty. (* `finite 0 = neg_inf` is impossible, which means our initial assumption H must be false. *)
 Qed.
 
+(* Refs: NONE *)
 Lemma horners_rule_false_2 : ~(RLB_maximum ∘ map RLB_sum ∘ inits = fold_right RLB_plus (finite 0)).
 Proof.
   apply functions_not_equal.
@@ -143,8 +170,14 @@ Proof.
     * lra.
 Qed.
 
+(* Refs:
+ - MaxNonNegSumInits_mor -> (* Refs: horners_rule_attept3 -> (* Refs: NONE *) *)
+*)
 Definition MaxNonNegSumInits : list RLB -> RLB := RLB_maximum ∘ map RLB_nonNegSum ∘ inits.
 
+(* Refs:
+ - horners_rule_attept3 -> (* Refs: NONE *)
+*)
 Lemma MaxNonNegSumInits_mor (x : RLB) (xs : list RLB) : MaxNonNegSumInits (x :: xs) = x <#> MaxNonNegSumInits xs.
 Proof.
   unfold MaxNonNegSumInits.
@@ -204,6 +237,7 @@ Proof.
     admit.
 Admitted.
 
+(* Refs: NONE *)
 Lemma horners_rule_attept3 : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) = fold_right RLB_nonNegPlus (finite 0).
 Proof.
   unfold compose.
