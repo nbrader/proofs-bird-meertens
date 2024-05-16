@@ -12,78 +12,39 @@ Require Import BirdMeertens.FunctionLemmas.
 
 Require Import Psatz.
 
-Definition RLB_nonNegPlus : RLB -> RLB -> RLB := fun x y => (x <+> y) <|> finite 0.
-Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
-
-Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB), (RLB_le (finite 0) (x <+> y) -> x <#> y = x <+> y) /\ (RLB_ge (finite 0) (x <+> y) -> x <#> y = finite 0).
+Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB),
+  x <#> y = if RLB_le_dec (finite 0) (x <+> y) then x <+> y else finite 0.
 Proof.
-  intros.
-  split.
+  intros x y.
   unfold RLB_nonNegPlus.
-  unfold RLB_max.
-  case_eq (x <+> y).
-  - intros.
-    intros.
-    unfold RLB_le in H0.
-    unfold Rmax.
-    case_eq (Rle_dec r 0).
-    + intros.
-      rewrite (Rle_antisym 0 r H0).
-      * reflexivity.
-      * apply r0.
-    + intros.
-      reflexivity.
-  - simpl.
-    intros.
-    contradiction.
-  - intros.
-    unfold RLB_nonNegPlus.
-    unfold RLB_max.
-    unfold Rmax.
-    unfold RLB_ge in H.
-    case (x <+> y) in *.
-    + intros.
-      case (Rle_dec r 0).
-      * intros.
-        reflexivity.
-      * intros.
-        contradiction.
-    + reflexivity.
+  destruct (RLB_le_dec (finite 0) (x <+> y)); reflexivity.
 Qed.
 
 Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
 Proof.
-  intros.
-  pose (RLB_nonNegPlusEitherPlusOr0 x y).
-  destruct a.
-  case_eq (x <+> y).
-  - intros.
-    exists r.
-    rewrite H.
-    + apply H1.
-    + rewrite H1.
-      
-Admitted.
-
-(* Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
-Proof.
-  intros.
-  pose (H := RLB_nonNegPlusEitherPlusOr0 x y (x <#> y) eq_refl).
-  case_eq (x <#> y).
-  - intros.
-    exists r.
-    reflexivity.
-  - intros.
-    exfalso.
-    unfold RLB_nonNegPlus in H0.
-    case x, y in H0.
-    + discriminate.
-    + discriminate.
-    + discriminate.
-    + discriminate.
-Qed. *)
-
-Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
+  intros x y.
+  unfold RLB_nonNegPlus.
+  destruct x, y.
+  - (* Case: x = finite r, y = finite r0 *)
+    destruct (RLB_le_dec (finite 0) (finite r <+> finite r0)).
+    + exists (r + r0). simpl. reflexivity.
+    + exists 0. reflexivity.
+  - (* Case: x = finite r, y = neg_inf *)
+    simpl. destruct (RLB_le_dec (finite 0) neg_inf).
+    + (* This case is impossible since neg_inf is not >= finite 0 *)
+      exfalso. simpl in r0. exact r0.
+    + exists 0. simpl. reflexivity.
+  - (* Case: x = neg_inf, y = finite r *)
+    simpl. destruct (RLB_le_dec (finite 0) neg_inf).
+    + (* This case is impossible since neg_inf is not >= finite 0 *)
+      exfalso. simpl in r0. exact r0.
+    + exists 0. simpl. reflexivity.
+  - (* Case: x = neg_inf, y = neg_inf *)
+    simpl. destruct (RLB_le_dec (finite 0) neg_inf).
+    + (* This case is impossible since neg_inf is not >= finite 0 *)
+      exfalso. simpl in r. exact r.
+    + exists 0. simpl. reflexivity.
+Qed.
 
 Definition RLB_maxSoFarAndPreviousSum : RLB -> (RLB * RLB) -> (RLB * RLB) := fun x uv => match uv with
   | (u, v) => let w := (v <#> x)  in (u <|> w, w)

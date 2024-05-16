@@ -19,7 +19,6 @@ Definition option_to_RLB (x : option R) : RLB := match x with
   | None => neg_inf
 end.
 
-
 Section RLB_max.
 Definition RLB_max (x y : RLB) : RLB :=
   match x, y with
@@ -57,17 +56,14 @@ Qed.
 
 Lemma RLB_max_left_id : forall x : RLB, RLB_max neg_inf x = x.
 Proof.
-  (* exact (fun x => eq_refl). *)
   intro x; reflexivity.
 Qed.
 
 Lemma RLB_max_right_id : forall x : RLB, RLB_max x neg_inf = x.
 Proof.
-  (* exact (fun x : RLB => option_ind (fun x0 : option R => RLB_max x0 None = x0) (fun a : R => eq_refl) eq_refl x). *)
   intro x; induction x; reflexivity.
 Qed.
 End RLB_max.
-
 
 Section RLB_plus.
 Definition RLB_plus (x y : RLB) : RLB :=
@@ -109,7 +105,6 @@ Proof.
 Qed.
 End RLB_plus.
 
-
 Section RLB_le.
 Definition RLB_le (x y : RLB) : Prop :=
   match x, y with
@@ -117,6 +112,15 @@ Definition RLB_le (x y : RLB) : Prop :=
   | _, neg_inf => False  (* Everything (other than negative infinity) is greater than negative infinity. *)
   | finite a, finite b => a <= b
   end.
+
+Definition RLB_le_dec (x y : RLB) : {RLB_le x y} + {~ RLB_le x y}.
+Proof.
+  destruct x, y; simpl.
+  - destruct (Rle_dec r r0); [left | right]; assumption.
+  - right. intro. apply H.
+  - left. exact I.
+  - left. exact I.
+Qed.
 End RLB_le.
 
 Section RLB_ge.
@@ -127,6 +131,20 @@ Definition RLB_ge (x y : RLB) : Prop :=
   | finite a, finite b => b <= a
   end.
 End RLB_ge.
+
+Definition RLB_nonNegPlus (x y : RLB) : RLB :=
+  if RLB_le_dec (finite 0) (RLB_plus x y) then RLB_plus x y else finite 0.
+Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
+
+Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
+
+Lemma RLB_nonNegPlusEitherPlusOr0 : forall (x y : RLB),
+  x <#> y = if RLB_le_dec (finite 0) (RLB_plus x y) then RLB_plus x y else finite 0.
+Proof.
+  intros x y.
+  unfold RLB_nonNegPlus.
+  destruct (RLB_le_dec (finite 0) (RLB_plus x y)); reflexivity.
+Qed.
 
 End RealsWithLowerBound.
 
