@@ -64,5 +64,5 @@ Proof.
   f_equal.
   f_equal.
   f_equal.
-  (* apply horners_rule. *)
-Admitted.
+  apply horners_rule.
+Qed.

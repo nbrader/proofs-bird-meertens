@@ -17,7 +17,7 @@ Require Import Psatz.
  - RLB_nonNegSum
  - RLB_nonNegPlusEitherPlusOr0
  - RLB_nonNegPlusNotNegInf
- - horners_rule_attept3 -> (* Refs: NONE *)
+ - horners_rule -> (* Refs: NONE *)
  - form6
  - form7
 *)
@@ -26,8 +26,8 @@ Definition RLB_nonNegPlus (x y : RLB) : RLB :=
 Notation "x <#> y" := (RLB_nonNegPlus x y) (at level 50, left associativity).
 
 (* Refs:
- - horners_rule_attept3 -> (* Refs: NONE *)
- - MaxNonNegSumInits_mor -> (* Refs: horners_rule_attept3 -> (* Refs: NONE *) *)
+ - horners_rule -> (* Refs: NONE *)
+ - MaxNonNegSumInits_mor -> (* Refs: horners_rule -> (* Refs: NONE *) *)
 *)
 Definition RLB_nonNegSum : list RLB -> RLB := fold_right RLB_nonNegPlus (finite 0).
 
@@ -41,7 +41,7 @@ Proof.
 Qed.
 
 (* Refs:
- - MaxNonNegSumInits_mor -> (* Refs: horners_rule_attept3 -> (* Refs: NONE *) *)
+ - MaxNonNegSumInits_mor -> (* Refs: horners_rule -> (* Refs: NONE *) *)
 *)
 Lemma RLB_nonNegPlusNotNegInf : forall (x y : RLB), exists r, (x <#> y) = finite r.
 Proof.
@@ -171,12 +171,12 @@ Proof.
 Qed.
 
 (* Refs:
- - MaxNonNegSumInits_mor -> (* Refs: horners_rule_attept3 -> (* Refs: NONE *) *)
+ - MaxNonNegSumInits_mor -> (* Refs: horners_rule -> (* Refs: NONE *) *)
 *)
 Definition MaxNonNegSumInits : list RLB -> RLB := RLB_maximum ∘ map RLB_nonNegSum ∘ inits.
 
 (* Refs:
- - horners_rule_attept3 -> (* Refs: NONE *)
+ - horners_rule -> (* Refs: NONE *)
 *)
 Lemma MaxNonNegSumInits_mor (x : RLB) (xs : list RLB) : MaxNonNegSumInits (x :: xs) = x <#> MaxNonNegSumInits xs.
 Proof.
@@ -237,8 +237,8 @@ Proof.
     admit.
 Admitted.
 
-(* Refs: NONE *)
-Lemma horners_rule_attept3 : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) = fold_right RLB_nonNegPlus (finite 0).
+(* Refs: form4_eq_form6 -> (* Refs: NONE *) *)
+Lemma horners_rule : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) = fold_right RLB_nonNegPlus (finite 0).
 Proof.
   unfold compose.
   apply functional_extensionality.
