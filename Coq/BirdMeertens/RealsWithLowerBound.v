@@ -132,6 +132,41 @@ Definition RLB_ge (x y : RLB) : Prop :=
   end.
 End RLB_ge.
 
+Lemma RLB_max_implementation (x y : RLB) : RLB_max x y = if RLB_le_dec x y then y else x.
+Proof.
+  destruct (RLB_le_dec x y).
+  - case x, y.
+    + unfold RLB_le in r.
+      unfold RLB_max.
+      f_equal.
+      unfold Rmax.
+      destruct Rle_dec.
+      * reflexivity.
+      * contradiction.
+    + unfold RLB_le in r.
+      contradiction.
+    + simpl.
+      reflexivity.
+    + simpl.
+      reflexivity.
+  - case x, y.
+    + unfold RLB_le in n.
+      unfold RLB_max.
+      f_equal.
+      unfold Rmax.
+      destruct Rle_dec.
+      * contradiction.
+      * reflexivity.
+    + unfold RLB_le in r.
+      reflexivity.
+    + exfalso.
+      apply n.
+      unfold RLB_le.
+      exact I.
+    + simpl.
+      reflexivity.
+Qed.
+
 End RealsWithLowerBound.
 
 Export RealsWithLowerBound.

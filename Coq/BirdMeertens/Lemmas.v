@@ -179,71 +179,39 @@ Fixpoint MaxNonNegSumInitsInd (xs : list RLB) : RLB := match xs with
   | x' :: xs' => x' <#> MaxNonNegSumInitsInd xs'
 end.
 
+(* Refs: NONE *)
+Lemma MaxNonNegSumInits_extensionally_equal : MaxNonNegSumInits = MaxNonNegSumInitsInd.
+Proof.
+  apply functional_extensionality.
+  intros.
+  unfold MaxNonNegSumInits.
+  unfold compose.
+  induction x.
+  - simpl.
+    unfold RLB_maximum.
+    unfold MonoidRLB_max.RLB_FreeMonoid.extend.
+    simpl.
+    unfold MonoidRLB_max.identity.
+    reflexivity.
+  - simpl.
+    rewrite <- IHx. clear IHx.
+    unfold RLB_nonNegPlus.
+    destruct (RLB_le_dec (finite 0) (a <+> RLB_maximum (map RLB_nonNegSum (inits x)))).
+    + rewrite cons_append.
+      rewrite RLB_maximum_distr.
+      rewrite (RLB_maximum_singleton (finite 0)).
+      (* rewrite (RLB_max_implementation (finite 0) (a <+> RLB_maximum (map RLB_nonNegSum (inits x)))) in r. *)
+Admitted.
+
 (* Refs:
  - horners_rule -> (* Refs: NONE *)
 *)
 Lemma MaxNonNegSumInits_mor (x : RLB) (xs : list RLB) : MaxNonNegSumInits (x :: xs) = x <#> MaxNonNegSumInits xs.
 Proof.
-  unfold MaxNonNegSumInits.
-  unfold compose.
+  rewrite MaxNonNegSumInits_extensionally_equal.
   simpl.
-  unfold RLB_maximum.
-  unfold Rmax.
-  
-  (* Compute inits (x :: xs). *)
-  (* = [[]; [x]; [x; y1]; [x; y1; y2]; ...] if xs = [y1; y2; ...] *)
-  assert (H: inits (x :: xs) = [] :: map (cons x) (inits xs)).
-  {
-    simpl.
-    reflexivity.
-  }
-  (* rewrite H. clear H. *)
-  
-  (* map RLB_nonNegSum (inits (x :: xs)) = map RLB_nonNegSum ([] :: map (cons x) (inits xs)) *)
-  simpl.
-  (* = RLB_nonNegSum [] :: map RLB_nonNegSum (map (cons x) (inits xs)) *)
-  (* = (finite 0) :: map (fun l => RLB_nonNegSum (x :: l)) (inits xs) *)
-  simpl.
-
-  assert (H1: map RLB_nonNegSum (map (cons x) (inits xs)) = map (fun l => x <#> RLB_nonNegSum l) (inits xs)).
-  {
-    induction xs as [| y ys IH].
-    - simpl. reflexivity.
-    - admit.
-  }
-  rewrite H1. clear H1.
-
-  (* Now, RLB_maximum (finite 0 :: map (fun l => x <#> RLB_nonNegSum l) (inits xs)) *)
-  (* = RLB_max (finite 0) (RLB_maximum (map (fun l => x <#> RLB_nonNegSum l) (inits xs))) *)
-  simpl.
-
-  (* = RLB_maximum (map (fun l => x <#> RLB_nonNegSum l) (inits xs)) *)
-
-  (* = x <#> RLB_maximum (map RLB_nonNegSum (inits xs)) *)
-  (* = x <#> MaxNonNegSumInits xs *)
-
-  (* induction xs as [| y ys IH].
-  - simpl.
-    unfold RLB_maximum.
-    simpl.
-    unfold Rmax.
-    pose (RLB_nonNegPlusNotNegInf x (finite 0)).
-    destruct e.
-    rewrite H.
-    simpl.
-    unfold MonoidRLB_max.identity.
-    rewrite H.
-    case (Rle_dec 0 x0).
-      + intros.
-        reflexivity.
-      + intros.
-        exfalso.
-        admit.
-  - simpl.
-    unfold RLB_maximum.
-    unfold MonoidRLB_max.identity.
-    admit. *)
-Admitted.
+  reflexivity.
+Qed.
 
 (* Refs: form4_eq_form6 -> (* Refs: NONE *) *)
 Lemma horners_rule : (RLB_maximum ∘ map RLB_nonNegSum ∘ inits) = fold_right RLB_nonNegPlus (finite 0).
@@ -263,4 +231,5 @@ Definition foldl [A B : Type] (f : A -> B -> A) (i : A) (xs : list B) := fold_le
 (* Refs: NONE *)
 Lemma generalised_horners_rule (op : R -> R -> R) : foldl (fun x y => x + y) 0 ∘ map (foldl op 1) ∘ tails = foldl (fun x y => x * y + 1) 1.
 Proof.
+
 Admitted.

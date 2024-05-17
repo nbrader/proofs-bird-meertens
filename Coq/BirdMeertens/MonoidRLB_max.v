@@ -1,5 +1,6 @@
 Require Import Coq.Reals.Reals.
 Require Import Coq.Lists.List.
+Import ListNotations.
 
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.RealsWithLowerBound.
@@ -102,6 +103,14 @@ Notation "x <|> y" := (RLB_max x y) (at level 50, left associativity).
 Lemma RLB_maximum_distr (xs ys : list RLB) : RLB_maximum (xs ++ ys) = (RLB_maximum xs) <|> (RLB_maximum ys).
 Proof.
   apply RLB_maximum_mor.
+Qed.
+
+Lemma RLB_maximum_singleton (x : RLB) : RLB_maximum [x] = x.
+Proof.
+  unfold RLB_maximum.
+  unfold RLB_FreeMonoid.extend.
+  simpl.
+  apply RLB_max_right_id.
 Qed.
 
 Lemma RLB_maximum_idempotent (xs : list RLB) : RLB_maximum xs = RLB_maximum (RLB_maximum xs :: nil).
