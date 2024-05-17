@@ -18,3 +18,17 @@ maxNonNegSumInitsInd (x:xs) = x `nonNegPlus` maxNonNegSumInitsInd xs
 
 maxNonNegSumInitsInd' :: [Integer] -> Integer
 maxNonNegSumInitsInd' xs = foldr nonNegPlus 0 xs
+
+inits' :: [Integer] -> [[Integer]]
+inits' [] = [[]]
+inits' (x:xs) = [] : map (x:) (inits' xs)
+
+inits'' :: [Integer] -> [[Integer]]
+inits'' = foldr (\x -> ([]:) . map (x:)) [[]]
+
+tails' :: [Integer] -> [[Integer]]
+tails' [] = [[]]
+tails' (x:xs) = (x:xs) : tails' xs
+
+tails'' :: [Integer] -> [[Integer]]
+tails'' = foldr (\x (xs:xss) -> (x:xs) : (xs:xss)) [[]]

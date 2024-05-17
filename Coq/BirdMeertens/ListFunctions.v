@@ -12,17 +12,13 @@ Require Import FreeMonoid.MonoidFree.
 
 Require Import Coq.ssr.ssrfun.
 
-Fixpoint tails {A : Type} (xs : list A) : list (list A) :=
-  match xs with
-  | [] => [[]]
-  | _ :: xs' => xs :: tails xs'
-end.
+Definition tails {A : Type}: list A -> list (list A) := fold_right (fun x xsxss => match xsxss with
+  | [] => [[]] (* This case is impossible. *)
+  | xs :: xss => (x::xs) :: (xs::xss)
+end) [[]].
 
 (* Define the inits function using reverse and tails *)
-Fixpoint inits {A : Type} (xs : list A) : list (list A) := match xs with
-  | nil => [[]]
-  | x' :: xs' => [] :: map (cons x') (inits xs')
-end.
+Definition inits {A : Type}: list A -> list (list A) := fold_right (fun x => (cons []) ∘ map (cons x)) [[]].
 
 Definition concat {A : Type} : list (list A) -> list A := @List.concat A.
 

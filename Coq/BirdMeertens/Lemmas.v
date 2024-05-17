@@ -174,10 +174,7 @@ Qed. *)
  - MaxNonNegSumInits_mor -> (* Refs: horners_rule -> (* Refs: NONE *) *)
 *)
 Definition MaxNonNegSumInits : list RLB -> RLB := RLB_maximum ∘ map RLB_nonNegSum ∘ inits.
-Fixpoint MaxNonNegSumInitsInd (xs : list RLB) : RLB := match xs with
-  | nil => finite 0
-  | x' :: xs' => x' <#> MaxNonNegSumInitsInd xs'
-end.
+Definition MaxNonNegSumInitsInd (xs : list RLB) : RLB := fold_right RLB_nonNegPlus (finite 0) xs.
 
 (* Refs: NONE *)
 Lemma MaxNonNegSumInits_extensionally_equal : MaxNonNegSumInits = MaxNonNegSumInitsInd.
