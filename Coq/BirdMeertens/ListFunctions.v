@@ -19,8 +19,10 @@ Fixpoint tails {A : Type} (xs : list A) : list (list A) :=
 end.
 
 (* Define the inits function using reverse and tails *)
-Definition inits {A : Type} (xs : list A) : list (list A) :=
-  map (@rev A) (tails (rev xs)).
+Fixpoint inits {A : Type} (xs : list A) : list (list A) := match xs with
+  | nil => [[]]
+  | x' :: xs' => [] :: map (cons x') (inits xs')
+end.
 
 Definition concat {A : Type} : list (list A) -> list A := @List.concat A.
 
