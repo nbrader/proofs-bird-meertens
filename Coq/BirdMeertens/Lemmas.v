@@ -253,6 +253,6 @@ Qed.
 Definition foldl [A B : Type] (f : A -> B -> A) (i : A) (xs : list B) := fold_left f xs i.
 
 (* Refs: NONE *)
-Lemma generalised_horners_rule : foldl (fun x y => x + y) 0 ∘ map (foldl (fun x y => x * y + 1) 1) ∘ tails = foldl (fun x y => x * y + 1) 1.
+Lemma generalised_horners_rule (op : R -> R -> R) : foldl (fun x y => x + y) 0 ∘ map (foldl op 1) ∘ tails = foldl (fun x y => x * y + 1) 1.
 Proof.
 Admitted.
