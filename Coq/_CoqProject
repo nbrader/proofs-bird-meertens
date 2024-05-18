@@ -13,6 +13,7 @@ FreeMonoid/ExtraLemmas.v
 FreeMonoid/HomExampleBoolOrToNatMax1.v
 FreeMonoid/MonoidExampleBoolOr.v
 FreeMonoid/MonoidExampleNatMax1.v
+FreeMonoid/MonoidExampleEndo.v
 FreeMonoid/MonoidFree.v
 FreeMonoid/MonoidFreeTest.v
 FreeMonoid/MonoidHom.v
