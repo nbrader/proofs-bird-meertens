@@ -225,20 +225,20 @@ Proof.
 Qed.
 
 (* Refs: NONE *)
-Lemma generalised_horners_rule (op : RLB -> RLB -> RLB) : fold_right (fun x y => x <|> y) (finite 0) ∘ map (fold_right op (finite 0)) ∘ inits = fold_right (fun x y => x <+> y <|> (finite 0)) (finite 0).
+Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) (finite 0) ∘ map (fold_right (fun x y => x <+> y) (finite 0)) ∘ inits = fold_right (fun x y => x <+> y <|> (finite 0)) (finite 0).
 Proof.
   unfold compose.
   apply functional_extensionality.
   intros.
-  induction x as [|x xs IH]; simpl.
-  - rewrite Rmax_idempotent.
+  induction x as [|x xs IH].
+  - simpl.
+    rewrite Rmax_idempotent.
     reflexivity.
-  - destruct (fold_right (fun x0 y : RLB => x0 <|> y) (finite 0) (map (fold_right op (finite 0)) (map (cons x) (inits xs)))).
-    + rewrite <- IH.
-      induction xs.
-      * simpl.
-        unfold RLB_max.
-        rewrite Rmax_idempotent.
-        unfold RLB_plus.
+  - unfold inits.
+    + assert (fold_right (fun x : RLB => cons [] ∘ map (cons x)) [[]] (x :: xs) = (cons [] ∘ map (cons x)) (fold_right (fun x : RLB => cons [] ∘ map (cons x)) [[]] xs)).
+      * unfold fold_right.
+        reflexivity.
+      * rewrite H.
+        fold (inits xs).
 
 Admitted.
