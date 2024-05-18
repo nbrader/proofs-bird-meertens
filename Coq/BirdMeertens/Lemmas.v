@@ -203,21 +203,42 @@ Proof.
     lra.
 Qed.
 
-Definition distributes_over_RLB_plus (op : RLB -> RLB -> RLB) := forall s t x, op (s <+> t) x = op s x <+> op t x.
+Definition distributes_over_Rmax (op : R -> R -> R) := forall s t x, op (Rmax s t) x = Rmax  (op s x) (op t x).
 
-(* ((1#6)#7)#8
+Lemma plus_distributes_over_Rmax : distributes_over_Rmax (fun x y => x + y).
+Proof.
+  unfold distributes_over_Rmax.
+  unfold Rmax.
+  intros.
+  destruct (Rle_dec s t), (Rle_dec (s + x) (t + x)); lra.
+Qed.
 
-x#y = x*y + 1
+Definition distributes_over_RLB_max (op : RLB -> RLB -> RLB) := forall s t x, op (s <|> t) x = op s x <|> op t x.
 
-((1#6)#7)#8 = ((1*6 + 1)*7 + 1)*8 + 1
-
-            = ((1*6 + 1)*7*8 + 8) + 1
-            = ((1*6*7*8 + 7*8) + 8) + 1
-            = (((0 + 1*6*7*8) + 7*8) + 8) + 1 *)
-
+Lemma RLB_plus_distributes_over_RLB_max : distributes_over_RLB_max RLB_plus.
+Proof.
+  unfold distributes_over_RLB_max, RLB_max, RLB_plus.
+  intros s t x.
+  case s, t, x; try reflexivity.
+  f_equal.
+  apply plus_distributes_over_Rmax.
+Qed.
 
 (* Refs: NONE *)
-Lemma generalised_horners_rule (op : R -> R -> R) : fold_right (fun x y => x + y) 0 ∘ map (fold_right op 1) ∘ inits = fold_right (fun x y => x * y + 1) 1.
+Lemma generalised_horners_rule (op : RLB -> RLB -> RLB) : fold_right (fun x y => x <|> y) (finite 0) ∘ map (fold_right op (finite 0)) ∘ inits = fold_right (fun x y => x <+> y <|> (finite 0)) (finite 0).
 Proof.
-  
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - rewrite Rmax_idempotent.
+    reflexivity.
+  - destruct (fold_right (fun x0 y : RLB => x0 <|> y) (finite 0) (map (fold_right op (finite 0)) (map (cons x) (inits xs)))).
+    + rewrite <- IH.
+      induction xs.
+      * simpl.
+        unfold RLB_max.
+        rewrite Rmax_idempotent.
+        unfold RLB_plus.
+
 Admitted.
