@@ -7,8 +7,6 @@ Open Scope R_scope.
 
 Require Import Coq.Arith.PeanoNat.
 Require Import BirdMeertens.OptionFunctions.
-Require Import FreeMonoid.StructMagma.
-Require Import FreeMonoid.StructSemigroup.
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.
 Require Import FreeMonoid.MonoidFree.
