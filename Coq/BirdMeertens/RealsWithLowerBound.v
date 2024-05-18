@@ -207,18 +207,46 @@ Proof.
   pose (x := finite (-1)).
   pose (y := finite 0).
   pose (z := finite 1).
-  exists x.
-  exists y.
-  exists z.
+  exists x, y, z.
+
+  (* Unfold RLB_nonNegPlus and check the equality *)
   unfold RLB_nonNegPlus at 2 4.
-  destruct (RLB_le_dec (finite 0) (y <+> z)), (RLB_le_dec (finite 0) (x <+> y)).
-    - unfold RLB_nonNegPlus.
-      destruct (RLB_le_dec (finite 0) (x <+> (y <+> z))), (RLB_le_dec (finite 0) (x <+> y <+> z)); simpl in *; lra.
-    - unfold RLB_nonNegPlus.
-      destruct (RLB_le_dec (finite 0) (x <+> (y <+> z))), (RLB_le_dec (finite 0) (finite 0 <+> z)).
-      + simpl in *.
-        admit.
-Admitted.
+
+  (* Case analysis on the conditions *)
+  simpl.
+  destruct (RLB_le_dec (finite 0) (finite (0 + 1))) as [Hyz | Hyz].
+  destruct (RLB_le_dec (finite 0) (finite (-1 + 0))) as [Hxy | Hxy];
+  destruct (RLB_le_dec (finite 0) (finite (-1 + (0 + 1)))) as [Hx_yz | Hx_yz];
+  destruct (RLB_le_dec (finite 0) (finite ((-1 + 0) + 1))) as [Hx_y_z | Hx_y_z]; simpl in *;
+  try lra.
+
+  - intro.
+    unfold RLB_nonNegPlus in *.
+    simpl in *.
+    destruct (RLB_le_dec (finite 0) (finite (-1 + (0 + 1)))) in H;
+    destruct (RLB_le_dec (finite 0) (finite (0 + 1))).
+    + assert (-1 + (0 + 1) = 0).
+      * lra.
+      * rewrite H0 in H.
+        assert ((0 + 1) = 1).
+        -- lra.
+        -- rewrite H1 in H.
+           inversion H.
+           lra.
+    + apply n.
+      unfold RLB_le.
+      lra.
+    + apply n.
+      unfold RLB_le.
+      lra.
+    + apply n.
+      unfold RLB_le.
+      lra.
+  - exfalso.
+    apply Hyz.
+    unfold RLB_le.
+    lra.
+Qed.
 
 Lemma RLB_nonNegPlus_left_id_false : exists x : RLB, ~(finite 0 <#> x = x).
 Proof.
