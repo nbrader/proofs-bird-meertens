@@ -165,11 +165,59 @@ Proof.
     apply (MaxNonNegSumInits_mor x xs).
 Qed.
 
-(* Refs: generalised_horners_rule -> (* Refs: NONE *) *)
-Definition foldl [A B : Type] (f : A -> B -> A) (i : A) (xs : list B) := fold_left f xs i.
+Definition distributes_over_plus_false (op : R -> R -> R) := exists s t x, op (s + t) x <> op s x + op t x.
+
+Lemma Rmax_distributes_over_plus_false : distributes_over_plus_false Rmax.
+Proof.
+  unfold distributes_over_plus_false.
+  exists 2, 2, 3.
+  unfold Rmax.
+  intro.
+  assert (3 + 3 = 6) by lra.
+  assert (2 + 2 = 4) by lra.
+  destruct (Rle_dec (2 + 2) 3), (Rle_dec 2 3); lra.
+Qed.
+
+Definition distributes_over_RLB_plus_false (op : RLB -> RLB -> RLB) := exists s t x,op (s <+> t) x <> op s x <+> op t x.
+
+Lemma RLB_nonNegPlus_distributes_over_plus_false : distributes_over_RLB_plus_false RLB_nonNegPlus.
+Proof.
+  unfold distributes_over_RLB_plus_false.
+  exists (finite 2), (finite 2), (finite 3).
+  unfold RLB_nonNegPlus, RLB_plus.
+  intro.
+  assert (2 + 2 + 3 = 7) as H0 by lra; rewrite H0 in *; clear H0.
+  assert (2 + 3 = 5) as H0 by lra; rewrite H0 in *; clear H0.
+  destruct (RLB_le_dec (finite 0) (finite 7)), (RLB_le_dec (finite 0) (finite 5)).
+  - assert (5 + 5 = 10) as H0 by lra; rewrite H0 in *; clear H0.
+    inversion H.
+    lra.
+  - apply n.
+    unfold RLB_le.
+    lra.
+  - apply n.
+    unfold RLB_le.
+    lra.
+  - apply n.
+    unfold RLB_le.
+    lra.
+Qed.
+
+Definition distributes_over_RLB_plus (op : RLB -> RLB -> RLB) := forall s t x, op (s <+> t) x = op s x <+> op t x.
+
+(* ((1#6)#7)#8
+
+x#y = x*y + 1
+
+((1#6)#7)#8 = ((1*6 + 1)*7 + 1)*8 + 1
+
+            = ((1*6 + 1)*7*8 + 8) + 1
+            = ((1*6*7*8 + 7*8) + 8) + 1
+            = (((0 + 1*6*7*8) + 7*8) + 8) + 1 *)
+
 
 (* Refs: NONE *)
-Lemma generalised_horners_rule (op : R -> R -> R) : foldl (fun x y => x + y) 0 ∘ map (foldl op 1) ∘ tails = foldl (fun x y => x * y + 1) 1.
+Lemma generalised_horners_rule (op : R -> R -> R) : fold_right (fun x y => x + y) 0 ∘ map (fold_right op 1) ∘ inits = fold_right (fun x y => x * y + 1) 1.
 Proof.
-
+  
 Admitted.
