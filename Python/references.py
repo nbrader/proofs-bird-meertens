@@ -2,9 +2,12 @@ import os
 import re
 from collections import defaultdict
 
-# Regular expressions to match definitions and references
+# Regular expressions to match definitions, references, and comment markers
 definition_pattern = re.compile(r'\b(Definition|Lemma|Theorem|Fixpoint|Inductive|Record)\s+(\w+)', re.MULTILINE)
 reference_pattern = re.compile(r'\b(\w+)\b')
+end_pattern = re.compile(r'\b(Qed|Defined|Admitted)\b', re.MULTILINE)
+comment_start_pattern = re.compile(r'\(\*')
+comment_end_pattern = re.compile(r'\*\)')
 
 # Set of Coq keywords and tactics to exclude from dependencies
 coq_keywords = {
@@ -39,14 +42,30 @@ def parse_coq_file(file_path, defined_names):
     
     # Track current definition being processed
     current_definition = None
+    inside_comment = False
     
     lines = content.splitlines()
     for line in lines:
+        # Handle multi-line comments
+        if inside_comment:
+            if comment_end_pattern.search(line):
+                inside_comment = False
+            continue
+        elif comment_start_pattern.search(line):
+            if not comment_end_pattern.search(line):  # Comment continues on next line
+                inside_comment = True
+            continue
+
         # Check if the line starts a new definition
         match = definition_pattern.match(line)
         if match:
             current_definition = match.group(2)
             dependencies[current_definition] = set()
+            continue
+
+        # Check if the line ends a definition
+        if end_pattern.search(line):
+            current_definition = None
             continue
         
         # If within a definition, find references
