@@ -8,15 +8,12 @@ Open Scope R_scope.
 
 Require Import Coq.Arith.PeanoNat.
 Require Import BirdMeertens.OptionFunctions.
-Require Import FreeMonoid.StructMagma.
-Require Import FreeMonoid.StructSemigroup.
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.
 Require Import FreeMonoid.MonoidFree.
 Require Import Coq.Init.Datatypes.
 
 Require Import Coq.ssr.ssrfun.
-
 
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
