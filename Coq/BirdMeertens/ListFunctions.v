@@ -1,12 +1,7 @@
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
-Require Import Coq.Lists.List.
-Import ListNotations.
-
-Require Import OptionFunctions.
-
-Require Import FreeMonoid.StructMonoid.
-Require Import FreeMonoid.MonoidFree.
+Require Import Coq.Lists.List. Export Coq.Lists.List.
+Import ListNotations. Export ListNotations.
 
 Require Import Coq.ssr.ssrfun.
 
@@ -67,29 +62,6 @@ Theorem cons_append : forall (X : Type) (x : X) (xs : list X),
 Proof.
   intros X x xs.
   reflexivity.
-Qed.
-
-Context {A : Type} (HmagmaA : Magma A) (HsemigroupA : Semigroup A) (HmonoidA : Monoid A).
-
-Module ABasis.
-  Definition Basis := A.
-End ABasis.
-
-Module AFreeMonoid := FreeMonoidModule ABasis.
-
-Definition identity (x : A) : A := x.
-
-Lemma monoid_concat `{Monoid A} (idH : idempotent m_op) : let f := fold_right m_op mn_id in f ∘ concat = f ∘ map f.
-Proof.
-  intros.
-  unfold f.
-  unfold compose.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH]; simpl.
-  - reflexivity.
-  - rewrite <- IH.
-    apply AFreeMonoid.extend_monoid_homomorphism.
 Qed.
 
 Lemma fold_left_nil : forall [A B : Type] (f : A -> B -> A) (i : A),
