@@ -1,6 +1,7 @@
 -docroot MyProject
 -R BirdMeertens BirdMeertens
 -R FreeMonoid FreeMonoid
+BirdMeertens/dependencies.v
 BirdMeertens/ListFunctions.v
 BirdMeertens/OptionFunctions.v
 BirdMeertens/Lemmas.v
