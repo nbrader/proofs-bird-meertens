@@ -5,8 +5,6 @@ Import ListNotations.
 
 Require Import OptionFunctions.
 
-Require Import FreeMonoid.StructMagma.
-Require Import FreeMonoid.StructSemigroup.
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidFree.
 
