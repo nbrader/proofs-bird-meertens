@@ -1,4 +1,5 @@
 (* dependencies.v *)
+Require Import BirdMeertens.BirdMeertens.
 Require Import BirdMeertens.FunctionLemmas.
 Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
@@ -26,5 +27,11 @@ Require Import FreeMonoid.StructSemigroup.
 Require Import FreeMonoid.TypeCategory.
 
 (* Add theorems/lemmas from each module to check dependencies *)
+Print Assumptions RLB_sum_implementation_correctness.
 Print Assumptions BirdMeertens.Lemmas.plus_distributes_over_Rmax.
+Print Assumptions BirdMeertens.BirdMeertens.form1_eq_form2.
+Print Assumptions BirdMeertens.BirdMeertens.form2_eq_form3.
+Print Assumptions BirdMeertens.BirdMeertens.form3_eq_form4.
+Print Assumptions BirdMeertens.BirdMeertens.form4_eq_form5.
+Print Assumptions BirdMeertens.BirdMeertens.form4_eq_form6.
 Print Assumptions BirdMeertens.Lemmas.horners_rule.
