@@ -214,6 +214,11 @@ Proof.
   intros.
   induction x as [|x xs IH].
   - simpl.
+    rewrite Z.max_l.
+    + reflexivity.
+    + discriminate.
+  - replace (fold_right (fun x0 y : Z => x0 <#> y <|> 0) 0 (x :: xs)) with (x <#> fold_right (fun x0 y : Z => x0 <#> y <|> 0) 0 xs <|> 0) by reflexivity.
+    rewrite <- IH.
     (* rewrite max_idempotent.
     reflexivity.
   - unfold inits.
