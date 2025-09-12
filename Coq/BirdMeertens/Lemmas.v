@@ -224,58 +224,6 @@ Proof.
       reflexivity.
 Qed.
 
-(* Simple test lemma to verify basic Coq understanding *)
-Lemma test_simple : forall x : Z, x + 0 = x.
-Proof.
-  intro x.
-  ring.
-Qed.
-
-(* Test nonNegPlus with simple cases *)
-Lemma nonNegPlus_zero_right : forall x : Z, x <#> 0 = if Z.leb 0 x then x else 0.
-Proof.
-  intro x.
-  unfold nonNegPlus.
-  rewrite Z.add_0_r.
-  reflexivity.
-Qed.
-
-(* Test how nonNegPlus behaves with Z.max in simple case *)
-Lemma nonNegPlus_max_simple : forall x : Z, nonNegPlus (Z.max x x) 0 = Z.max (nonNegPlus x 0) (nonNegPlus x 0).
-Proof.
-  intro x.
-  rewrite max_idempotent.
-  rewrite max_idempotent.
-  reflexivity.
-Qed.
-
-(* Try distributivity in one specific case first *)
-Lemma nonNegPlus_distributes_case1 : forall s t x : Z, 
-  s = t -> nonNegPlus (Z.max s t) x = Z.max (nonNegPlus s x) (nonNegPlus t x).
-Proof.
-  intros s t x H_eq.
-  rewrite H_eq.
-  rewrite max_idempotent.
-  rewrite max_idempotent.
-  reflexivity.
-Qed.
-
-(* Let me search for useful lemmas first *)
-(* Remove search commands for now since they cause output issues
-Search Z.max.
-Search Z.leb.
-Search Z.compare.
-Search (_ < _)%Z.
-Check Z.max_r.
-Check Z.lt_le_incl.
-Check Z.leb_le.
-*)
-
-(* Simplified approach - let me admit this and focus on what I can prove *)
-Lemma nonNegPlus_distributes_case2 : forall s t x : Z, 
-  (s < t)%Z -> nonNegPlus (Z.max s t) x = Z.max (nonNegPlus s x) (nonNegPlus t x).
-Proof.
-Admitted.
 
 Lemma nonNegPlus_distributes_over_max : distributes_over_max nonNegPlus.
 Proof.
