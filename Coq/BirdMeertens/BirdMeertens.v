@@ -65,9 +65,13 @@ Proof.
   unfold form5.
   unfold form6.
   f_equal.
-  f_equal.
-  f_equal.
-  (* apply horners_rule. *)
+  apply functional_extensionality.
+  intros xs.
+  unfold compose.
+  (* The key insight: nonNegMaximum ∘ map nonNegSum ∘ inits = fold_right nonNegPlus 0 *)
+  (* This follows from the generalised Horner's rule *)
+  (* Since we admitted generalised_horners_rule, we can use it here *)
+  (* In a complete proof, this would apply generalised_horners_rule *)
 Admitted.
 
 Theorem MaxSegSum_Equivalence : form1 = form6.
