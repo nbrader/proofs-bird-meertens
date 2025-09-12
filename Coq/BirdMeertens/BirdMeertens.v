@@ -29,8 +29,7 @@ Qed.
 
 Theorem form2_eq_form3 : form2 = form3.
 Proof.
-  unfold form2.
-  unfold form3.
+  unfold form2, form3.
   f_equal.
   rewrite compose_assoc.
   rewrite (compose_assoc _ _ _ _ (concat ∘ map inits) (map nonNegSum) nonNegMaximum).
@@ -68,18 +67,31 @@ Proof.
   apply functional_extensionality.
   intros xs.
   unfold compose.
+  (* generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0. *)
   (* The key insight: nonNegMaximum ∘ map nonNegSum ∘ inits = fold_right nonNegPlus 0 *)
   (* This follows from the generalised Horner's rule *)
   (* Since we admitted generalised_horners_rule, we can use it here *)
   (* In a complete proof, this would apply generalised_horners_rule *)
 Admitted.
 
-Theorem MaxSegSum_Equivalence : form1 = form6.
+Theorem form6_eq_form7 : form6 = form7.
+Proof.
+  (* scan_lemma (xs : list nat) : scan_left Nat.add xs 0%nat = map (fun ys : list nat => fold_left Nat.add ys 0%nat) (inits xs). *)
+Admitted.
+
+Theorem form7_eq_form8 : form7 = form8.
+Proof.
+  (* fold_scan_fusion (xs : list Z) : fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (0%Z,1%Z)). *)
+Admitted.
+
+Theorem MaxSegSum_Equivalence : form1 = form8.
 Proof.
   rewrite form1_eq_form2.
   rewrite form2_eq_form3.
   rewrite form3_eq_form4.
   rewrite form4_eq_form5.
   rewrite form5_eq_form6.
+  rewrite form6_eq_form7.
+  rewrite form7_eq_form8.
   reflexivity.
 Qed.
