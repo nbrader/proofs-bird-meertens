@@ -71,6 +71,11 @@ Current total admitted proofs: **5** (as of 2025-09-13)
 **RECENTLY COMPLETED:**
 - ✅ **`scan_lemma` in `Lemmas.v:408-412`** - **COMPLETED**
 - ✅ **`form6_eq_form7` in `BirdMeertens.v:88`** - **COMPLETED** (using auxiliary lemma)
+- ✅ **New utility lemmas in `ListFunctions.v`** - **4 COMPLETED**:
+  - `scan_right_singleton` (line 159-164) - scan_right behavior on single elements
+  - `scan_right_nil` (line 166-171) - scan_right behavior on empty lists  
+  - `tails_nil` (line 173-177) - tails behavior on empty lists
+  - `tails_singleton` (line 179-183) - tails behavior on single elements
   
   **Statement:** `Lemma scan_lemma (xs : list nat) : scan_left Nat.add xs 0%nat = map (fun ys : list nat => fold_left Nat.add ys 0%nat) (inits xs).`
   
@@ -102,10 +107,19 @@ Current total admitted proofs: **5** (as of 2025-09-13)
 - ✅ **`form6_eq_form7`** in `BirdMeertens.v:88` - **COMPLETED** using auxiliary lemma `scan_right_tails_fold`
 - **`form7_eq_form8`** in `BirdMeertens.v:93` - Depends on `fold_scan_fusion`
 
-**New Auxiliary Lemmas:**
-- **`scan_right_tails_fold`** in `ListFunctions.v:106` - **ADMITTED**
+**Auxiliary Lemmas (In Development):**
+- **`scan_right_tails_fold`** in `ListFunctions.v:217` - **ADMITTED** (main target)
   - Statement: `scan_right f i xs = map (fold_right f i) (tails xs)`
   - Foundation lemma enabling completion of `form6_eq_form7`
+  - **Progress**: Computational examples proven, utility lemmas completed
+  - **Challenge**: `tails` structural properties due to complex `fold_right` definition
+
+**Supporting Lemmas (Also In Development):**
+- **`tails_cons`** in `ListFunctions.v:170` - **ADMITTED**
+  - Statement: `tails (x :: xs) = (x :: xs) :: tails xs`  
+  - Key structural property needed for main theorem
+- **`fold_right_tails_structure`** in `ListFunctions.v:134` - **ADMITTED**
+  - Attempts to understand `fold_right` pattern in `tails` definition
 
 **Recently Completed:**
 - ✅ `nonNegPlus_distributes_over_max` in `Lemmas.v:186-247` - Distributivity of nonNegPlus over Z.max, moved from ProofStrategy and completed
