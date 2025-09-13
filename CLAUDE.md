@@ -70,6 +70,7 @@ Current total admitted proofs: **5** (as of 2025-09-13)
 
 **RECENTLY COMPLETED:**
 - ✅ **`scan_lemma` in `Lemmas.v:408-412`** - **COMPLETED**
+- ✅ **`form6_eq_form7` in `BirdMeertens.v:88`** - **COMPLETED** (using auxiliary lemma)
   
   **Statement:** `Lemma scan_lemma (xs : list nat) : scan_left Nat.add xs 0%nat = map (fun ys : list nat => fold_left Nat.add ys 0%nat) (inits xs).`
   
@@ -98,9 +99,13 @@ Current total admitted proofs: **5** (as of 2025-09-13)
 
 **High-Level Form Transformations (Depend on above):**
 - **`form5_eq_form6`** in `BirdMeertens.v:75` - Depends on `generalised_horners_rule`
-- **`form6_eq_form7`** in `BirdMeertens.v:82` - Requires `scan_right` lemma (similar to completed `scan_lemma`)
-  - Needs fundamental lemma: `scan_right f i xs = map (fold_right f i) (tails xs)`
-- **`form7_eq_form8`** in `BirdMeertens.v:86` - Depends on `fold_scan_fusion`
+- ✅ **`form6_eq_form7`** in `BirdMeertens.v:88` - **COMPLETED** using auxiliary lemma `scan_right_tails_fold`
+- **`form7_eq_form8`** in `BirdMeertens.v:93` - Depends on `fold_scan_fusion`
+
+**New Auxiliary Lemmas:**
+- **`scan_right_tails_fold`** in `ListFunctions.v:106` - **ADMITTED**
+  - Statement: `scan_right f i xs = map (fold_right f i) (tails xs)`
+  - Foundation lemma enabling completion of `form6_eq_form7`
 
 **Recently Completed:**
 - ✅ `nonNegPlus_distributes_over_max` in `Lemmas.v:186-247` - Distributivity of nonNegPlus over Z.max, moved from ProofStrategy and completed

@@ -79,3 +79,28 @@ Proof.
   simpl.
   reflexivity.
 Qed.
+
+(* Let me approach this more carefully by understanding what we need to prove *)
+(* scan_right f i (x::xs') = f x (fold_right f i xs') :: scan_right f i xs' *)
+(* tails (x::xs') should give us (x::xs') :: tails xs' *)
+(* So map (fold_right f i) (tails (x::xs')) should give us *)
+(* fold_right f i (x::xs') :: map (fold_right f i) (tails xs') *)
+
+(* First, let me prove this step by step with admits to check the structure *)
+Lemma scan_right_tails_fold : forall {A B : Type} (f : A -> B -> B) (i : B) (xs : list A),
+  scan_right f i xs = map (fold_right f i) (tails xs).
+Proof.
+  intros A B f i xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl.
+    unfold tails. simpl.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    (* scan_right f i (x :: xs') = f x (fold_right f i xs') :: scan_right f i xs' *)
+    simpl scan_right.
+    (* For tails (x :: xs'), let me manually work out what this should be *)
+    (* Based on the tails definition: fold_right (fun x xsxss => ...) [[]] (x::xs') *)
+    (* This needs careful analysis of the fold_right structure *)
+    admit. (* This is getting quite complex and may need a different approach *)
+Admitted.

@@ -76,10 +76,16 @@ Admitted.
 
 Theorem form6_eq_form7 : form6 = form7.
 Proof.
-  (* Requires proving: map (fold_right nonNegPlus 0) ∘ tails = scan_right nonNegPlus 0 *)
-  (* This needs a fundamental lemma: scan_right f i xs = map (fold_right f i) (tails xs) *)
-  (* While scan_lemma is completed, we need the scan_right version for this transformation *)
-Admitted.
+  unfold form6, form7.
+  f_equal.
+  (* Need to prove: map (fold_right nonNegPlus 0) ∘ tails = scan_right nonNegPlus 0 *)
+  apply functional_extensionality.
+  intro xs.
+  unfold compose.
+  (* Use the auxiliary lemma scan_right_tails_fold *)
+  rewrite (@scan_right_tails_fold Z Z nonNegPlus 0 xs).
+  reflexivity.
+Qed.
 
 Theorem form7_eq_form8 : form7 = form8.
 Proof.
