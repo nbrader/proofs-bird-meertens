@@ -76,7 +76,8 @@ Admitted.
 
 Theorem form6_eq_form7 : form6 = form7.
 Proof.
-  (* scan_lemma (xs : list nat) : scan_left Nat.add xs 0%nat = map (fun ys : list nat => fold_left Nat.add ys 0%nat) (inits xs). *)
+  (* Uses scan_lemma which is now completed in Lemmas.v *)
+  (* Need to implement the specific transformation using the available lemmas *)
 Admitted.
 
 Theorem form7_eq_form8 : form7 = form8.

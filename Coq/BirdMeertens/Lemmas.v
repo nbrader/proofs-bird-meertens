@@ -130,11 +130,6 @@ Proof.
     exact IH.
 Qed.
 
-(* Lemma foldl_promotion (xss : list (list nat)) :
-  fold_left Nat.add (concat xss) 0%nat =
-  fold_left Nat.add (map (fun xs => fold_left Nat.add xs 0%nat) xss) 0%nat.
-Proof.
-Admitted. *)
 
 (* Instead, let's add a simple provable lemma about nonNegPlus *)
 Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
@@ -145,33 +140,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* Refs: NONE *)
-(*
-Lemma horners_rule_false_2 : ~(maximum ∘ map RLB_sum ∘ inits = fold_right RLB_plus (finite 0)).
-Proof.
-  apply functions_not_equal.
-  (* Use a specific counterexample where the lemma fails. *)
-  (* Consider the list [finite 1, finite (-1)] *)
-  exists [finite 1; finite (-1)].
-  simpl.
-  unfold RLB_sum, maximum, map, inits.
-  simpl. (* At this point you would simplify the expressions based on the actual definitions of RLB_sum and maximum *)
-
-  (* Assume specific behavior:
-      - RLB_sum [finite 1, finite (-1)] evaluates to finite 0
-      - maximum [finite 0, finite 1] evaluates to finite 1 *)
-  (* These assumptions are based on typical sum and maximum operations, assuming finite 0 is a neutral element and maximum picks the max value *)
-
-  intuition.
-  inversion H. (* Use inversion to exploit the injectivity of finite *)
-  unfold Rmax in H1. (* Expand Rmax definition *)
-  destruct (Rle_dec (1 + 0) 0) in H1. (* Apply a lemma or use built-in Real number inequalities *)
-  + lra.
-  + destruct (Rle_dec (1 + (-1 + 0)) (1 + 0)) in H1.
-    * lra.
-    * lra.
-Qed.
-*)
 
 (* Refs:
  - MaxNonNegSumInits_mor -> (* Refs: horners_rule -> (* Refs: NONE *) *)
@@ -254,56 +222,6 @@ Proof.
     rewrite H_max_neg.
     reflexivity.
 Qed.
-(* Proof.
-  unfold distributes_over_max, nonNegPlus.
-  intros s t x.
-  rewrite max_add_distributes.
-  (* Case analysis on the boolean conditions *)
-  destruct (Z.leb 0 (s + x)) eqn:Hs;
-  destruct (Z.leb 0 (t + x)) eqn:Ht;
-  destruct (Z.leb 0 (Z.max (s + x) (t + x))) eqn:Hmax.
-  - (* Case 1: s+x >= 0, t+x >= 0, max >= 0 *)
-    apply Z.leb_le in Hs. apply Z.leb_le in Ht. apply Z.leb_le in Hmax.
-    reflexivity.
-  - (* Case 2: s+x >= 0, t+x >= 0, but max < 0 (impossible) *)
-    apply Z.leb_le in Hs. apply Z.leb_le in Ht. apply Z.leb_gt in Hmax.
-    exfalso.
-    assert (0 <= Z.max (s + x) (t + x)) by
-      (apply Z.le_trans with (m := s + x); [assumption | apply Z.le_max_l]).
-    lia.
-  - (* Case 3: s+x >= 0, t+x < 0, max >= 0 *)
-    apply Z.leb_le in Hs. apply Z.leb_gt in Ht. apply Z.leb_le in Hmax.
-    simpl.
-    rewrite Z.max_l by (apply Hs).
-    rewrite Z.max_l by (apply Hs).
-    reflexivity.
-  - (* Case 4: s+x >= 0, t+x < 0, but max < 0 (impossible) *)
-    apply Z.leb_le in Hs. apply Z.leb_gt in Ht. apply Z.leb_gt in Hmax.
-    exfalso.
-    assert (0 <= Z.max (s + x) (t + x)) by
-      (apply Z.le_trans with (m := s + x); [assumption | apply Z.le_max_l]).
-    lia.
-  - (* Case 5: s+x < 0, t+x >= 0, max >= 0 *)
-    apply Z.leb_gt in Hs. apply Z.leb_le in Ht. apply Z.leb_le in Hmax.
-    simpl.
-    rewrite Z.max_r by (apply Ht).
-    rewrite Z.max_r by (apply Ht).
-    reflexivity.
-  - (* Case 6: s+x < 0, t+x >= 0, but max < 0 (impossible) *)
-    apply Z.leb_gt in Hs. apply Z.leb_le in Ht. apply Z.leb_gt in Hmax.
-    exfalso.
-    assert (0 <= Z.max (s + x) (t + x)) by
-      (apply Z.le_trans with (m := t + x); [assumption | apply Z.le_max_r]).
-    lia.
-  - (* Case 7: s+x < 0, t+x < 0, but max >= 0 (impossible) *)
-    apply Z.leb_gt in Hs. apply Z.leb_gt in Ht. apply Z.leb_le in Hmax.
-    exfalso.
-    assert (Z.max (s + x) (t + x) < 0) by (apply Z.max_lub_lt; lia).
-    lia.
-  - (* Case 8: s+x < 0, t+x < 0, max < 0 *)
-    apply Z.leb_gt in Hs. apply Z.leb_gt in Ht. apply Z.leb_gt in Hmax.
-    simpl. reflexivity.
-Qed. *)
 
 (* Refs: NONE *)
 Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
@@ -328,12 +246,6 @@ Proof.
     (* The proof would need substantial development of intermediate lemmas *)
     
 Admitted. (* Complex inductive case requires more foundational lemmas about fold operations *)
-
-(* Lemma horner_rule (xs : list nat) :
-  fold_left Nat.add (map (fun ys => fold_left Nat.mul ys 1%nat) (tails xs)) 0%nat =
-  fold_left (fun acc y => (acc * y + 1)%nat) xs 1%nat.
-Proof.
-Admitted. *)
 
 (* First, let me establish what inits actually does step by step *)
 Lemma inits_cons : forall (A : Type) (x : A) (xs : list A),
