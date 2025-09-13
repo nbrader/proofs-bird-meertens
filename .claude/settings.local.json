@@ -4,7 +4,9 @@
       "Bash(./build_coq.sh:*)",
       "Bash(git push:*)",
       "Bash(make:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(find:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

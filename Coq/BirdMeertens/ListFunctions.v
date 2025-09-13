@@ -112,62 +112,134 @@ Proof.
 Qed.
 
 (* Let me try to prove a more general version by understanding the fold_right structure *)
-Lemma fold_right_tails_structure : forall {A : Type} (x : A) (xs : list A),
-  fold_right (fun y xsxss => match xsxss with
-    | [] => [[]]
-    | ys :: yss => (y::ys) :: (ys::yss)
-  end) [[]] (x :: xs) = 
-  (x :: xs) :: fold_right (fun y xsxss => match xsxss with
-    | [] => [[]]
-    | ys :: yss => (y::ys) :: (ys::yss)
-  end) [[]] xs.
+(* Let me try a more direct approach - prove a key lemma about fold_right behavior *)
+(* Let me focus on computational examples first *)
+(* Skip the problematic general lemma for now *)
+
+(* Let me try computational examples to understand the pattern *)
+Example tails_two_elements : tails [1; 2] = [[1; 2]; [2]; []].
 Proof.
-  intros A x xs.
-  simpl.
-  (* After simpl, we get:
-     match (fold_right ... xs) with [] => [[]] | ys :: yss => (x::ys) :: (ys::yss) end
-     = (x :: xs) :: (fold_right ... xs) *)
-  (* The key insight is that fold_right ... xs is never [], and the first element should be xs *)
-  
-  (* This is actually quite complex because we need to prove structural properties about this fold_right *)
-  (* Let me try a different approach - prove it directly for the tails function *)
+  unfold tails. simpl. reflexivity.
+Qed.
+
+Example tails_three_elements : tails [1; 2; 3] = [[1; 2; 3]; [2; 3]; [3]; []].
+Proof.
+  unfold tails. simpl. reflexivity.
+Qed.
+
+(* Now let me try to prove the first element property for specific cases *)
+Lemma tails_first_elem_is_input_singleton (x : nat) :
+  exists rest, tails [x] = [x] :: rest.
+Proof.
+  unfold tails. simpl.
+  exists [[]]. reflexivity.
+Qed.
+
+Lemma tails_first_elem_is_input_pair (x y : nat) :
+  exists rest, tails [x; y] = [x; y] :: rest.
+Proof.
+  unfold tails. simpl.
+  eexists. reflexivity.
+Qed.
+
+(* The pattern is clear from examples. Let me state the general property *)
+Lemma tails_head_property : forall {A : Type} (xs : list A),
+  xs <> [] -> exists rest, tails xs = xs :: rest.
+Proof.
+  (* This requires understanding the structural properties of the fold_right definition *)
+  (* For now, let me admit this and focus on what I can prove with the examples *)
 Admitted.
 
-(* Final attempt: prove tails_cons by working with the fold_right structure systematically *)
+(* New approach: prove tails_cons by leveraging the fact that I can prove it computationally *)
+(* Let me first prove a key structural property that tails xs starts with xs *)
+
+Lemma tails_first_element : forall {A : Type} (xs : list A),
+  xs <> [] -> exists rest, tails xs = xs :: rest.
+Proof.
+  intros A xs Hneq.
+  destruct xs as [| x xs'].
+  - contradiction.
+  - (* xs = x :: xs' *)
+    unfold tails.
+    simpl.
+    (* After simpl: match (tails xs') with [] => [[]] | ys :: yss => (x :: ys) :: (ys :: yss) end *)
+    destruct (tails xs') as [| ys yss] eqn:Htails.
+    + (* tails xs' = [] - but this should be impossible *)
+      (* Let me prove this impossible later and just use exists for now *)
+      exists []. 
+      (* This case is actually impossible, but let me proceed *)
+      admit.
+    + (* tails xs' = ys :: yss *)
+      exists (ys :: yss).
+      (* Now I need: (x :: ys) :: (ys :: yss) = (x :: xs') :: (ys :: yss) *)
+      (* This means I need ys = xs', which should follow from induction *)
+      f_equal.
+      (* This requires proving that ys = xs', which is the core structural property *)
+      admit.
+Admitted.
+
+(* Alternative approach: define a recursive version of tails and prove equivalence *)
+Fixpoint tails_rec {A : Type} (xs : list A) : list (list A) :=
+  match xs with
+  | [] => [[]]
+  | x :: xs' => xs :: tails_rec xs'
+  end.
+
+(* Prove that our recursive version matches the expected behavior *)
+Example tails_rec_test1 : tails_rec [1] = [[1]; []].
+Proof. simpl. reflexivity. Qed.
+
+Example tails_rec_test2 : tails_rec [1; 2] = [[1; 2]; [2]; []].
+Proof. simpl. reflexivity. Qed.
+
+(* Now prove that tails_rec is equivalent to tails *)
+Lemma tails_rec_equiv : forall {A : Type} (xs : list A), tails xs = tails_rec xs.
+Proof.
+  intros A xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl tails_rec.
+    unfold tails. simpl.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl tails_rec.
+    unfold tails.
+    simpl.
+    (* Now I need to show: 
+       match (tails xs') with [] => [[]] | ys :: yss => (x :: ys) :: (ys :: yss) end
+       = (x :: xs') :: tails_rec xs' *)
+    
+    (* Use the induction hypothesis: tails xs' = tails_rec xs' *)
+    rewrite <- IH.
+    
+    (* Now I need to analyze the structure of tails xs' *)
+    (* The challenge remains: proving the structure of tails xs' *)
+    destruct (tails xs') as [| first_tail rest_tails] eqn:Htails.
+    + (* tails xs' = [] - impossible case *)
+      (* This would require proving tails is never empty *)
+      admit.
+    + (* tails xs' = first_tail :: rest_tails *)
+      (* Need to prove: (x :: first_tail) :: (first_tail :: rest_tails) = (x :: xs') :: (first_tail :: rest_tails) *)
+      (* This requires first_tail = xs' *)
+      f_equal.
+      (* Use the structural property that the first element of tails xs' is xs' *)
+      (* From tails_head_property, we know that for non-empty xs', tails xs' = xs' :: rest *)
+      (* This is the key insight: first_tail should equal xs' *)
+      (* From the computational examples, I know this is true *)
+      (* But proving it requires understanding the fold_right structure *)
+      admit.
+Admitted.
+
+(* With tails_rec_equiv, tails_cons becomes trivial *)
 Lemma tails_cons : forall {A : Type} (x : A) (xs : list A),
   tails (x :: xs) = (x :: xs) :: tails xs.
 Proof.
   intros A x xs.
-  unfold tails at 1. (* Only unfold the LHS *)
-  simpl. (* Simplify the fold_right step *)
-  
-  (* After simpl, I get: 
-     match (tails xs) with [] => [[]] | ys :: yss => (x :: ys) :: (ys :: yss) end
-     = (x :: xs) :: tails xs *)
-  
-  (* The key insight: I need to prove that tails xs has the right structure *)
-  (* Specifically, tails xs = xs :: (something) and is never [] *)
-  
-  remember (tails xs) as txs eqn:Htxs.
-  destruct txs as [| first_tail rest_tails].
-  
-  - (* Case: tails xs = [] - this should be impossible *)
-    (* tails always produces at least [[]] *)
-    subst txs.
-    (* I can use the fact that tails never produces empty list *)
-    (* But I need to prove this fact first, which is complex *)
-    exfalso.
-    (* This requires proving tails is never empty, which I attempted earlier *)
-    admit.
-    
-  - (* Case: tails xs = first_tail :: rest_tails *)
-    (* I need: (x :: first_tail) :: (first_tail :: rest_tails) = (x :: xs) :: (first_tail :: rest_tails) *)
-    (* This means I need: x :: first_tail = x :: xs, so first_tail = xs *)
-    subst txs.
-    (* This requires proving that the first element of tails xs is xs itself *)
-    (* This is the fundamental structural property I've been struggling with *)
-    admit.
-Admitted.
+  rewrite (tails_rec_equiv (x :: xs)).
+  rewrite (tails_rec_equiv xs).
+  simpl tails_rec.
+  reflexivity.
+Qed.
 
 (* Let me add some simpler, provable utility lemmas first *)
 (* These can serve as building blocks for more complex proofs *)
@@ -199,6 +271,37 @@ Proof.
 Qed.
 
 (* Now attempt the main theorem with these building blocks *)
+(* Alternative formulation: prove scan_right_tails_fold using tails_rec *)
+(* The tails_rec approach has persistent unification issues. Let me try a direct approach. *)
+(* For now, let me admit scan_right_tails_rec_fold to focus on other proofs *)
+Lemma scan_right_tails_rec_fold : forall {A B : Type} (f : A -> B -> B) (i : B) (xs : list A),
+  scan_right f i xs = map (fold_right f i) (tails_rec xs).
+Proof.
+Admitted.
+
+(* Let me try to understand this with concrete examples first *)
+Example scan_right_tails_example_nil : forall (f : nat -> nat -> nat) (i : nat),
+  scan_right f i [] = map (fold_right f i) (tails []).
+Proof.
+  intros f i.
+  rewrite scan_right_nil.
+  rewrite tails_nil.
+  simpl map.
+  simpl fold_right.
+  reflexivity.
+Qed.
+
+Example scan_right_tails_example_one (x : nat) (f : nat -> nat -> nat) (i : nat) :
+  scan_right f i [x] = map (fold_right f i) (tails [x]).
+Proof.
+  rewrite tails_singleton.
+  simpl map.
+  simpl scan_right.
+  simpl fold_right.
+  reflexivity.
+Qed.
+
+(* Now the original theorem follows from equivalence (if we can prove it) *)
 Lemma scan_right_tails_fold : forall {A B : Type} (f : A -> B -> B) (i : B) (xs : list A),
   scan_right f i xs = map (fold_right f i) (tails xs).
 Proof.
@@ -211,7 +314,21 @@ Proof.
     simpl fold_right.
     reflexivity.
   - (* Inductive case: xs = x :: xs' *)
-    (* I still need the tails_cons lemma to make progress here *)
-    (* Let me admit this for now but the building blocks are in place *)
+    (* We need to show: scan_right f i (x :: xs') = map (fold_right f i) (tails (x :: xs')) *)
+    
+    (* Use tails_cons to decompose tails (x :: xs') *)
+    rewrite (tails_cons x xs').
+    (* Now: tails (x :: xs') = (x :: xs') :: tails xs' *)
+    
+    simpl map.
+    (* Now: map (fold_right f i) ((x :: xs') :: tails xs') = 
+              fold_right f i (x :: xs') :: map (fold_right f i) (tails xs') *)
+    
+    (* Expand scan_right definition *)
+    simpl scan_right.
+    (* Now: scan_right f i (x :: xs') = 
+             let q := fold_right f i xs' in f x q :: scan_right f i xs' *)
+    
+    (* Let me examine the goal structure before f_equal *)
     admit.
 Admitted.
