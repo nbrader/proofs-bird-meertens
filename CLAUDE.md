@@ -63,6 +63,24 @@ The project structure allows for cross-language validation of the formal Coq pro
 - 🔄 Some proofs may still use `Admitted` - check individual files for remaining proof obligations
 - 🔄 Complete formal verification may require finishing any remaining admitted lemmas
 
+### Remaining Admitted Proofs Analysis
+
+After completing `leb_max_simple`, analysis of remaining admitted proofs shows they require advanced mathematical reasoning:
+
+**Complex Proofs (Require Expertise):**
+- `nonNegPlus_max_direct` in `ProofStrategy.v:102-104` - Distributivity of nonNegPlus over Z.max, requires boolean/proposition conversion techniques
+- `nonNegPlus_distributes_over_max` in `Lemmas.v:185-186` - Mathematical distributivity property 
+- `generalised_horners_rule` in `Lemmas.v:241-252` - Key theorem for Bird-Meertens formalism equivalences
+- `scan_lemma` in `Lemmas.v:260-262` - Complex scan/fold relationship
+- `fold_scan_fusion` in `Lemmas.v:264-266` - Advanced scan fusion property
+- Form equivalence theorems in `BirdMeertens.v` (`form5_eq_form6`, `form6_eq_form7`, `form7_eq_form8`) - High-level mathematical transformations
+
+**Proof Complexity Notes:**
+- Boolean/proposition conversions between `Z.leb` and `Z.le` require careful handling
+- Case analysis on multiple boolean conditions creates complex proof obligations
+- Max distribution properties need intricate mathematical reasoning
+- Most proofs depend on completing foundational lemmas first
+
 ### Key Files
 - `Coq/BirdMeertens/ProofStrategy.v` - Helper lemmas and proof strategies
 - `Coq/BirdMeertens/Lemmas.v` - Main mathematical lemmas 

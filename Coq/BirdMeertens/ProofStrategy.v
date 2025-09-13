@@ -102,62 +102,6 @@ Admitted. (* Sketch for now *)
 Lemma nonNegPlus_max_direct : forall s t x,
   nonNegPlus (Z.max s t) x = Z.max (nonNegPlus s x) (nonNegPlus t x).
 Admitted.
-(* Proof.
-  intros s t x.
-  unfold nonNegPlus.
-  rewrite max_add_distributes.
-  (* Case analysis on the boolean conditions *)
-  destruct (Z.leb 0 (s + x)) eqn:Hs;
-  destruct (Z.leb 0 (t + x)) eqn:Ht;
-  destruct (Z.leb 0 (Z.max (s + x) (t + x))) eqn:Hmax.
-  
-  (* Case 1: All non-negative *)
-  - simpl. reflexivity.
-  
-  (* Case 2: s+x >= 0, t+x >= 0, but max < 0 - contradiction *)
-  - rewrite Z.leb_le in Hs, Ht.
-    rewrite Z.leb_gt in Hmax.
-    exfalso. apply Hmax.
-    apply Z.le_trans with (m := s + x); [exact Hs | apply Z.le_max_l].
-    
-  (* Case 3: s+x >= 0, t+x < 0, max >= 0 *)
-  - rewrite Z.leb_le in Hs, Hmax.
-    rewrite Z.leb_gt in Ht.
-    simpl. 
-    (* max (s+x) (t+x) = s+x since t+x < 0 <= s+x *)
-    rewrite Z.max_l; [reflexivity | apply Z.lt_le_incl; exact Ht].
-    
-  (* Case 4: s+x >= 0, t+x < 0, max < 0 - contradiction *)
-  - rewrite Z.leb_le in Hs.
-    rewrite Z.leb_gt in Ht, Hmax.
-    exfalso. apply Hmax.
-    apply Z.le_trans with (m := s + x); [exact Hs | apply Z.le_max_l].
-    
-  (* Case 5: s+x < 0, t+x >= 0, max >= 0 *)
-  - rewrite Z.leb_le in Ht, Hmax.
-    rewrite Z.leb_gt in Hs.
-    simpl.
-    (* max (s+x) (t+x) = t+x since s+x < 0 <= t+x *)
-    rewrite Z.max_r; [reflexivity | apply Z.lt_le_incl; exact Hs].
-    
-  (* Case 6: s+x < 0, t+x >= 0, max < 0 - contradiction *)
-  - rewrite Z.leb_le in Ht.
-    rewrite Z.leb_gt in Hs, Hmax.
-    exfalso. apply Hmax.
-    apply Z.le_trans with (m := t + x); [exact Ht | apply Z.le_max_r].
-    
-  (* Case 7: s+x < 0, t+x < 0, max >= 0 - contradiction *)
-  - rewrite Z.leb_gt in Hs, Ht.
-    rewrite Z.leb_le in Hmax.
-    exfalso.
-    assert (Z.max (s + x) (t + x) < 0).
-    { apply Z.max_lub_lt; assumption. }
-    apply (Z.lt_irrefl 0).
-    apply Z.lt_le_trans with (m := Z.max (s + x) (t + x)); assumption.
-    
-  (* Case 8: All negative - both sides equal 0 *)
-  - simpl. reflexivity.
-Qed. *)
 
 (* ==== PROOF STRATEGY FOR generalised_horners_rule ==== *)
 
