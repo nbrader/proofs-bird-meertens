@@ -66,7 +66,7 @@ The project structure allows for cross-language validation of the formal Coq pro
 
 ### Remaining Admitted Proofs Analysis
 
-Current total admitted proofs: **7** (as of 2025-09-13)
+Current total admitted proofs: **5** (as of 2025-09-13)
 
 **RECENTLY COMPLETED:**
 - ✅ **`scan_lemma` in `Lemmas.v:408-412`** - **COMPLETED**
@@ -84,10 +84,23 @@ Current total admitted proofs: **7** (as of 2025-09-13)
   - Inductive case: Uses `inits_cons` lemma and `map_map` to handle the structural transformation
   - Key insight: `fold_left f (x::ys) acc = fold_left f ys (acc+x)` allows relating scan with accumulator to fold over cons-extended lists
 
-**Other Complex Proofs (Require Expertise):**
-- `generalised_horners_rule` in `Lemmas.v:313` - Key theorem for Bird-Meertens formalism equivalences
-- `fold_scan_fusion` in `Lemmas.v:327` - Advanced scan fusion property
-- Form equivalence theorems in `BirdMeertens.v` (`form5_eq_form6`, `form6_eq_form7`, `form7_eq_form8`) - High-level mathematical transformations
+**REMAINING ADMITTED PROOFS (5 total):**
+
+**High Complexity - Core Mathematical Theorems:**
+- **`generalised_horners_rule`** in `Lemmas.v:248` - **VERY COMPLEX**
+  - Key theorem for Bird-Meertens formalism proving fold equivalences over inits
+  - Comment: "Complex inductive case requires more foundational lemmas about fold operations"
+  - Foundation for other proofs - must be completed first
+  
+- **`fold_scan_fusion`** in `Lemmas.v:373` - **COMPLEX**
+  - Advanced scan fusion property involving fold_left, scan_left, and pattern matching
+  - Statement: `fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (0%Z,1%Z))`
+
+**High-Level Form Transformations (Depend on above):**
+- **`form5_eq_form6`** in `BirdMeertens.v:75` - Depends on `generalised_horners_rule`
+- **`form6_eq_form7`** in `BirdMeertens.v:82` - Requires `scan_right` lemma (similar to completed `scan_lemma`)
+  - Needs fundamental lemma: `scan_right f i xs = map (fold_right f i) (tails xs)`
+- **`form7_eq_form8`** in `BirdMeertens.v:86` - Depends on `fold_scan_fusion`
 
 **Recently Completed:**
 - ✅ `nonNegPlus_distributes_over_max` in `Lemmas.v:186-247` - Distributivity of nonNegPlus over Z.max, moved from ProofStrategy and completed

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(./build_coq.sh:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(make:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

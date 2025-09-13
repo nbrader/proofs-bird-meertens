@@ -76,8 +76,9 @@ Admitted.
 
 Theorem form6_eq_form7 : form6 = form7.
 Proof.
-  (* Uses scan_lemma which is now completed in Lemmas.v *)
-  (* Need to implement the specific transformation using the available lemmas *)
+  (* Requires proving: map (fold_right nonNegPlus 0) ∘ tails = scan_right nonNegPlus 0 *)
+  (* This needs a fundamental lemma: scan_right f i xs = map (fold_right f i) (tails xs) *)
+  (* While scan_lemma is completed, we need the scan_right version for this transformation *)
 Admitted.
 
 Theorem form7_eq_form8 : form7 = form8.
