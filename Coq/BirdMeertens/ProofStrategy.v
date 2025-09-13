@@ -57,25 +57,32 @@ Lemma leb_max_simple : forall s t x,
   Z.leb 0 (Z.max (s + x) (t + x)) = true -> 
   Z.leb 0 (s + x) = true \/ Z.leb 0 (t + x) = true.
 Proof.
-Admitted.
-  (* intros s t x H.
+  intros s t x H.
+  (* Convert boolean to proposition *)
   rewrite Z.leb_le in H.
-  destruct (Z.leb 0 (s + x)) eqn:Hs.
-  - left. exact Hs.
-  - right. rewrite Z.leb_le.
-    rewrite Z.leb_gt in Hs.
+  (* Case analysis on whether s + x >= 0 *)
+  destruct (Z_le_dec 0 (s + x)) as [Hs | Hs].
+  - (* Case: s + x >= 0 *)
+    left. 
+    rewrite Z.leb_le.
+    exact Hs.
+  - (* Case: s + x < 0 *)
+    right.
+    rewrite Z.leb_le.
     (* Since max >= 0 and s+x < 0, we must have t+x >= 0 *)
-    assert (Z.max (s + x) (t + x) = t + x).
-    { unfold Z.max. destruct (Z.compare (s + x) (t + x)) eqn:E.
-      - rewrite Z.compare_eq_iff in E. rewrite <- E in Hs. 
-        apply Z.le_lt_trans with (m := t + x) in H; [|exact Hs].
-        apply Z.lt_irrefl in H. contradiction.
-      - reflexivity.
-      - rewrite Z.compare_gt_iff in E. 
-        apply Z.le_lt_trans with (m := s + x) in H; [|exact Hs].
-        apply Z.lt_irrefl in H. contradiction. }
-    rewrite H0 in H. exact H.
-Qed. *)
+    apply Z.nle_gt in Hs.
+    destruct (Z_le_dec 0 (t + x)) as [Ht | Ht].
+    + exact Ht.
+    + apply Z.nle_gt in Ht.
+      (* Both s+x < 0 and t+x < 0, but max >= 0 - contradiction *)
+      exfalso.
+      assert (Z.max (s + x) (t + x) < 0).
+      { apply Z.max_lub_lt; assumption. }
+      apply (Z.lt_irrefl 0).
+      apply Z.le_lt_trans with (m := Z.max (s + x) (t + x)).
+      * exact H.
+      * exact H0.
+Qed.
 
 (* Key lemma for the distributivity proof *)
 Lemma nonNegPlus_cases : forall s t x,

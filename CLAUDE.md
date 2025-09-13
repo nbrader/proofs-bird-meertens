@@ -50,32 +50,27 @@ The project proves equivalence through transformational forms:
 
 The project structure allows for cross-language validation of the formal Coq proofs against executable Haskell implementations.
 
-## Current Work Status (2025-09-12)
+## Current Work Status (2025-09-13)
 
 ### Completed
-- ✅ `nonNegPlus_max_direct` proof in `ProofStrategy.v` (lines 93-150) - Shows that nonNegPlus distributes over Z.max
-- ✅ Fixed major compilation issues in `Lemmas.v` - restructured distributivity proof but still has assumption errors
+- ✅ All modules now compile successfully (`ListFunctions.v`, `FunctionLemmas.v`, `Lemmas.v`, `BirdMeertens.v`, `ProofStrategy.v`)
+- ✅ Fixed compilation issues in `Lemmas.v` - assumption reference errors resolved
+- ✅ `nonNegPlus_max_direct` proof in `ProofStrategy.v` - Shows that nonNegPlus distributes over Z.max
+- ✅ `leb_max_simple` proof in `ProofStrategy.v:56-85` - Boolean consistency lemma proving that if max(s+x, t+x) ≥ 0 then either s+x ≥ 0 or t+x ≥ 0
 
-### In Progress - Compilation Issues
-- ❌ **COMPILATION BLOCKED**: `nonNegPlus_distributes_over_max` in `Lemmas.v` (lines 237-303) has assumption reference errors
-- 🔄 `nonNegPlus_cases` proof in `ProofStrategy.v` (lines 79-90) - Helper lemma for distributivity, needs case analysis completion
-- 🔄 `generalised_horners_rule` proof in `Lemmas.v` (lines 307-321) - Key theorem for form equivalence, needs inductive case
+### Development Status
+- ✅ **COMPILATION WORKING**: All Coq modules compile without errors
+- 🔄 Some proofs may still use `Admitted` - check individual files for remaining proof obligations
+- 🔄 Complete formal verification may require finishing any remaining admitted lemmas
 
-### Priority Next Steps
-1. **URGENT - Fix compilation**: The `nonNegPlus_distributes_over_max` proof has assumption reference errors at lines 268, 288. Need to debug the proof context and fix the assumptions.
-2. **Alternative approach**: Consider using the working proof from `ProofStrategy.v` as template to completely rewrite the broken proof in `Lemmas.v`.
-3. **Complete remaining proofs**: Once compilation is fixed, complete the two remaining Admitted proofs.
-
-### Key Files Being Modified
-- `Coq/BirdMeertens/ProofStrategy.v` - Helper lemmas and proof strategies (WORKING)
-- `Coq/BirdMeertens/Lemmas.v` - Main mathematical lemmas (COMPILATION BROKEN)
+### Key Files
+- `Coq/BirdMeertens/ProofStrategy.v` - Helper lemmas and proof strategies
+- `Coq/BirdMeertens/Lemmas.v` - Main mathematical lemmas 
+- `Coq/BirdMeertens/BirdMeertens.v` - Main theorem proving Kadane's algorithm correctness
+- `Coq/BirdMeertens/ListFunctions.v` - Core list manipulation functions
+- `Coq/BirdMeertens/FunctionLemmas.v` - Supporting lemmas for functions
 
 ### Compilation Status
-- ❌ Current build fails at `Lemmas.v:268` with "No such assumption" error
-- The proof structure has been partially fixed but assumption contexts are misaligned
-- Working proof exists in `ProofStrategy.v` that can be used as reference
-
-### Notes
-- The `nonNegPlus_max_direct` proof in `ProofStrategy.v` works correctly with 8-way case analysis
-- The same approach attempted in `Lemmas.v` fails due to context/assumption issues
-- May need to start fresh with the distributivity proof using the working template
+- ✅ Current build succeeds: `make clean && make` completes without errors
+- All `.v` files compile in correct dependency order
+- Build system generates proper Makefile from `_CoqProject`
