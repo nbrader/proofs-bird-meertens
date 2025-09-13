@@ -55,8 +55,8 @@ The project structure allows for cross-language validation of the formal Coq pro
 ### Completed
 - ✅ All modules now compile successfully (`ListFunctions.v`, `FunctionLemmas.v`, `Lemmas.v`, `BirdMeertens.v`, `ProofStrategy.v`)
 - ✅ Fixed compilation issues in `Lemmas.v` - assumption reference errors resolved
-- ✅ `nonNegPlus_max_direct` proof in `ProofStrategy.v` - Shows that nonNegPlus distributes over Z.max
 - ✅ `leb_max_simple` proof in `ProofStrategy.v:56-85` - Boolean consistency lemma proving that if max(s+x, t+x) ≥ 0 then either s+x ≥ 0 or t+x ≥ 0
+- ✅ `nonNegPlus_max_direct` proof in `ProofStrategy.v:102-156` - **COMPLETED**: Proves distributivity of nonNegPlus over Z.max using exhaustive case analysis on boolean conditions
 
 ### Development Status
 - ✅ **COMPILATION WORKING**: All Coq modules compile without errors
@@ -68,12 +68,14 @@ The project structure allows for cross-language validation of the formal Coq pro
 After completing `leb_max_simple`, analysis of remaining admitted proofs shows they require advanced mathematical reasoning:
 
 **Complex Proofs (Require Expertise):**
-- `nonNegPlus_max_direct` in `ProofStrategy.v:102-104` - Distributivity of nonNegPlus over Z.max, requires boolean/proposition conversion techniques
 - `nonNegPlus_distributes_over_max` in `Lemmas.v:185-186` - Mathematical distributivity property 
 - `generalised_horners_rule` in `Lemmas.v:241-252` - Key theorem for Bird-Meertens formalism equivalences
 - `scan_lemma` in `Lemmas.v:260-262` - Complex scan/fold relationship
 - `fold_scan_fusion` in `Lemmas.v:264-266` - Advanced scan fusion property
 - Form equivalence theorems in `BirdMeertens.v` (`form5_eq_form6`, `form6_eq_form7`, `form7_eq_form8`) - High-level mathematical transformations
+
+**Recently Completed:**
+- ✅ `nonNegPlus_max_direct` in `ProofStrategy.v:102-156` - Distributivity of nonNegPlus over Z.max, solved using exhaustive case analysis with lia tactic
 
 **Proof Complexity Notes:**
 - Boolean/proposition conversions between `Z.leb` and `Z.le` require careful handling
