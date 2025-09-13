@@ -66,11 +66,26 @@ The project structure allows for cross-language validation of the formal Coq pro
 
 ### Remaining Admitted Proofs Analysis
 
-After completing `leb_max_simple`, analysis of remaining admitted proofs shows they require advanced mathematical reasoning:
+Current total admitted proofs: **7** (as of 2025-09-13)
 
-**Complex Proofs (Require Expertise):**
+**RECENTLY COMPLETED:**
+- ✅ **`scan_lemma` in `Lemmas.v:408-412`** - **COMPLETED**
+  
+  **Statement:** `Lemma scan_lemma (xs : list nat) : scan_left Nat.add xs 0%nat = map (fun ys : list nat => fold_left Nat.add ys 0%nat) (inits xs).`
+  
+  **Solution:** The key issue was a type scope conflict caused by `Open Scope Z_scope.` at the top of the file, which made numeric operations default to Z instead of nat. Fixed by:
+  1. Creating separate Z and nat versions of the lemmas
+  2. Using explicit `%nat` scoping annotations  
+  3. Implementing a generalized helper lemma `scan_left_inits_general` that works with arbitrary accumulators
+  4. Using proper proof structure with `induction`, `map_map`, and `map_ext`
+  
+  **Proof Structure:**
+  - Base case: Empty list trivially satisfies the equality
+  - Inductive case: Uses `inits_cons` lemma and `map_map` to handle the structural transformation
+  - Key insight: `fold_left f (x::ys) acc = fold_left f ys (acc+x)` allows relating scan with accumulator to fold over cons-extended lists
+
+**Other Complex Proofs (Require Expertise):**
 - `generalised_horners_rule` in `Lemmas.v:313` - Key theorem for Bird-Meertens formalism equivalences
-- `scan_lemma` in `Lemmas.v:323` - Complex scan/fold relationship  
 - `fold_scan_fusion` in `Lemmas.v:327` - Advanced scan fusion property
 - Form equivalence theorems in `BirdMeertens.v` (`form5_eq_form6`, `form6_eq_form7`, `form7_eq_form8`) - High-level mathematical transformations
 
@@ -90,6 +105,15 @@ After completing `leb_max_simple`, analysis of remaining admitted proofs shows t
 - `Coq/BirdMeertens/BirdMeertens.v` - Main theorem proving Kadane's algorithm correctness
 - `Coq/BirdMeertens/ListFunctions.v` - Core list manipulation functions
 - `Coq/BirdMeertens/FunctionLemmas.v` - Supporting lemmas for functions
+
+### Proof Completion Requirements
+**CRITICAL**: When working on admitted proofs, follow these strict guidelines:
+1. **Never remove an admitted proof without first proving it untrue**
+2. To decrease admitted proof count, you must either:
+   - Complete the proof with a valid proof ending in `Qed.`
+   - Prove the statement is false/contradictory and then remove it with a comment explaining why
+3. **Do not simply delete or comment out admitted proofs** - this is incorrect methodology
+4. Always verify the admitted count decreases through legitimate proof completion
 
 ### Compilation Status
 - ✅ Current build succeeds: `make clean && make` completes without errors
