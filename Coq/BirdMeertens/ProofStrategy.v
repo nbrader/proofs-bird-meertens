@@ -96,72 +96,72 @@ Proof.
   intros s t x.
   unfold nonNegPlus.
   rewrite max_add_distributes.
-  (* This requires careful case analysis *)
-Admitted. (* Sketch for now *)
-
-(* Simplified approach: direct case analysis *)
-Lemma nonNegPlus_max_direct : forall s t x,
-  nonNegPlus (Z.max s t) x = Z.max (nonNegPlus s x) (nonNegPlus t x).
-Proof.
-  intros s t x.
-  unfold nonNegPlus.
-  rewrite max_add_distributes.
-  (* Case analysis on whether each sum is non-negative *)
+  
+  (* Case analysis on the boolean conditions *)
   destruct (Z.leb 0 (s + x)) eqn:Hs, (Z.leb 0 (t + x)) eqn:Ht.
   
-  (* Case 1: both s+x >= 0 and t+x >= 0 *)
-  - (* Then max(s+x, t+x) >= 0, so nonNegPlus of max is the max itself *)
-    (* And max(s+x, 0) = s+x and max(t+x, 0) = t+x *)
-    simpl.
+  (* Case 1: s+x >= 0 and t+x >= 0 *)
+  - simpl.
+    (* Since both are non-negative, max is also non-negative *)
     assert (H_max_nonneg: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_le in Hs. apply Z.le_trans with (m := s + x).
-      exact Hs. apply Z.le_max_l. }
+    { apply Z.leb_le. rewrite Z.leb_le in Hs. 
+      apply Z.le_trans with (m := s + x). exact Hs. apply Z.le_max_l. }
     rewrite H_max_nonneg.
     reflexivity.
   
-  (* Case 2: s+x >= 0 but t+x < 0 *)  
+  (* Case 2: s+x >= 0 but t+x < 0 *)
   - simpl.
-    (* max(s+x, t+x) = s+x since s+x >= 0 > t+x *)
+    (* Since s+x >= 0 > t+x, max(s+x, t+x) = s+x >= 0 *)
     assert (H_max_pos: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_le in Hs. rewrite Z.leb_gt in Ht.
-      apply Z.le_trans with (m := s + x). exact Hs.
-      apply Z.le_max_l. }
+    { apply Z.leb_le. rewrite Z.leb_le in Hs.
+      apply Z.le_trans with (m := s + x). exact Hs. apply Z.le_max_l. }
     rewrite H_max_pos.
-    (* Now goal is: Z.max (s + x) (t + x) = (s + x) <|> 0 *)
-    (* Since s+x >= 0 and t+x < 0, we have Z.max (s+x) (t+x) = s+x *)
-    (* And s+x <|> 0 = Z.max (s+x) 0 = s+x since s+x >= 0 *)
+    (* The RHS becomes: if (Z.leb 0 (t + x)) then ... else if (Z.leb (s+x) (t+x)) then t+x else s+x *)
+    (* Since t+x < 0, the first condition is false, so we get: if (Z.leb (s+x) (t+x)) then t+x else s+x *)
+    (* Since s+x >= 0 > t+x, Z.leb (s+x) (t+x) = false, so we get s+x *)
+    simpl.
     rewrite Z.leb_le in Hs. rewrite Z.leb_gt in Ht.
-    assert (H_sx_ge_tx: s + x >= t + x). { lia. }
-    rewrite Z.max_l.
-    + rewrite Z.max_l; [reflexivity | exact Hs].
-    + apply Z.ge_le. exact H_sx_ge_tx.
+    assert (H_ge: s + x >= t + x). { lia. }
+    assert (H_leb_false: Z.leb (s + x) (t + x) = false).
+    { apply Z.leb_gt. apply Z.lt_le_trans with (m := 0). exact Ht. exact Hs. }
+    rewrite H_leb_false.
+    rewrite Z.max_l; [reflexivity | apply Z.ge_le; exact H_ge].
   
   (* Case 3: s+x < 0 but t+x >= 0 *)
   - simpl.
+    (* Since t+x >= 0 > s+x, max(s+x, t+x) = t+x >= 0 *)
     assert (H_max_pos: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-      apply Z.le_trans with (m := t + x). exact Ht.
-      apply Z.le_max_r. }
+    { apply Z.leb_le. rewrite Z.leb_le in Ht.
+      apply Z.le_trans with (m := t + x). exact Ht. apply Z.le_max_r. }
     rewrite H_max_pos.
-    (* Now goal is: Z.max (s + x) (t + x) = 0 <|> (t + x) *)
-    (* Since s+x < 0 and t+x >= 0, we have Z.max (s+x) (t+x) = t+x *)
-    (* And 0 <|> t+x = Z.max 0 (t+x) = t+x since t+x >= 0 *)
+    (* The RHS becomes: if (Z.leb 0 (t + x)) then t+x else 0 *)
+    (* Since t+x >= 0, this gives t+x *)
+    simpl. 
     rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-    assert (H_tx_ge_sx: t + x >= s + x). { lia. }
-    rewrite Z.max_r.
-    + rewrite Z.max_r; [reflexivity | exact Ht].
-    + apply Z.ge_le. exact H_tx_ge_sx.
+    assert (H_ge: t + x >= s + x). { lia. }
+    rewrite Z.max_r; [reflexivity | apply Z.ge_le; exact H_ge].
   
   (* Case 4: both s+x < 0 and t+x < 0 *)
-  - (* Then max(s+x, t+x) < 0, so result is 0 *)
-    (* And max(0, 0) = 0 *)
-    simpl.
+  - simpl.
+    (* Both negative, so max is also negative *)
     assert (H_max_neg: Z.leb 0 (Z.max (s + x) (t + x)) = false).
-    { apply Z.leb_gt. rewrite Z.leb_gt in Hs. rewrite Z.leb_gt in Ht.
+    { apply Z.leb_gt. rewrite Z.leb_gt in Hs, Ht.
       apply Z.max_lub_lt; assumption. }
     rewrite H_max_neg.
     reflexivity.
 Qed.
+
+(* COMPLETED: Moved to Lemmas.v as nonNegPlus_distributes_over_max *)
+(* 
+Lemma nonNegPlus_max_direct proved distributivity of nonNegPlus over Z.max:
+  forall s t x, nonNegPlus (Z.max s t) x = Z.max (nonNegPlus s x) (nonNegPlus t x)
+  
+This proof has been successfully moved to Lemmas.v and is now used for 
+nonNegPlus_distributes_over_max : distributes_over_max nonNegPlus.
+
+The proof technique used exhaustive case analysis on the four combinations of 
+whether s + x ≥ 0 and t + x ≥ 0, using the lia tactic for arithmetic reasoning.
+*)
 
 (* ==== PROOF STRATEGY FOR generalised_horners_rule ==== *)
 
