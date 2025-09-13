@@ -4,6 +4,7 @@ Require Import Coq.Lists.List. Export Coq.Lists.List.
 Import ListNotations. Export ListNotations.
 
 Require Import Coq.ssr.ssrfun.
+Require Import Coq.micromega.Lia.
 
 Definition tails {A : Type}: list A -> list (list A) := fold_right (fun x xsxss => match xsxss with
   | [] => [[]] (* This case is impossible. *)
@@ -150,8 +151,48 @@ Proof.
   (* For now, let me admit this and focus on what I can prove with the examples *)
 Admitted.
 
-(* New approach: prove tails_cons by leveraging the fact that I can prove it computationally *)
-(* Let me first prove a key structural property that tails xs starts with xs *)
+(* New approach: try to prove the structural property directly using the fold_right definition *)
+(* Let me analyze what happens with the fold_right step by step *)
+
+(* Key insight from computational examples: I need to prove that after fold_right builds tails xs',
+   the pattern match always picks the second case and first_elem = xs' *)
+
+(* Let me try a more direct approach using the pattern I observed *)
+(* The key insight: for any non-empty list xs, tails xs starts with xs itself *)
+
+(* Based on computational examples, I know the pattern works. *)
+(* Let me try to complete scan_right_tails_fold by assuming the structural property *)
+
+(* First, let me state the key property I need as an axiom/assumption for now *)
+Axiom tails_first_is_input : forall {A : Type} (xs : list A),
+  xs <> [] -> exists rest, tails xs = xs :: rest.
+
+(* With this assumption, I can complete scan_right_tails_fold *)
+Lemma scan_right_tails_fold_with_axiom : forall {A B : Type} (f : A -> B -> B) (i : B) (xs : list A),
+  scan_right f i xs = map (fold_right f i) (tails xs).
+Proof.
+  intros A B f i xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl scan_right.
+    simpl tails.
+    simpl map.
+    simpl fold_right.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    (* Use the axiom to get tails structure *)
+    assert (Hneq: x :: xs' <> []).
+    { discriminate. }
+    
+    destruct (tails_first_is_input (x :: xs') Hneq) as [rest Htails].
+    
+    rewrite Htails.
+    simpl map.
+    simpl scan_right.
+    
+    (* Let me check what the goal looks like at this point *)
+    admit.
+Admitted.
 
 Lemma tails_first_element : forall {A : Type} (xs : list A),
   xs <> [] -> exists rest, tails xs = xs :: rest.
