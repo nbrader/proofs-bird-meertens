@@ -435,28 +435,14 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma fold_scan_fusion (xs : list Z) : fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (0%Z,1%Z)).
+Lemma fold_scan_fusion (xs : list Z) : fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (1%Z,1%Z)).
 Proof.
   induction xs as [|x xs' IH].
   - (* Base case: empty list *)
     simpl scan_left.
     simpl fold_left.
     simpl fst.
-    (* Goal is: fold_left Z.add [1] 0 = 0, but fold_left Z.add [1] 0 = 1 *)
-    (* The base case is incorrect - scan_left produces [1] not [] *)
-    admit.
+    reflexivity.
   - (* Inductive case: This is where it gets complex *)
-Admitted.
-
-
-Lemma fold_scan_fusion_tl (xs : list Z) : fold_left Z.add (tl (scan_left Z.mul xs 1%Z)) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (0%Z,1%Z)).
-Proof.
-  induction xs as [| x xs' IH].
-  - simpl. reflexivity.
-  - simpl scan_left; simpl tl.
-    (* Inductive step: compute both sides and apply IH *)
-    simpl fold_left.
-    (* The proof proceeds by unfolding definitions and using IH; we leave the
-       detailed mechanical steps to be completed if desired. *)
-    admit.
+    simpl.
 Admitted.
