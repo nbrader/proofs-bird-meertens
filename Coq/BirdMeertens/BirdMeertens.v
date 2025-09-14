@@ -11,6 +11,7 @@ Open Scope Z_scope.
 
 Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
+Require Import CoqUtilLib.ListFunctions.
 
 (* Forms of MaxSegSum *)
 Definition form1 : list Z -> Z := nonNegMaximum ∘ map nonNegSum ∘ segs.
