@@ -556,14 +556,8 @@ Theorem fold_left_right_add_equiv :
     fold_left Z.add xs z = fold_right Z.add z xs.
 Proof.
   intros xs z.
-  (* This is a well-known theorem that for associative and commutative operations,
-     fold_left and fold_right are equivalent. The proof requires careful induction
-     and manipulation of the associative and commutative properties of Z.add.
-     
-     The key insight is that both folds compute the same sum: z + sum(xs),
-     just in different orders, and since addition is associative and commutative,
-     the order doesn't matter. *)
-Admitted.
+  apply fold_left_right_equiv; intros; ring.
+Qed.
 
 (* Corollary: fold_left Z.add xs 0 = fold_right Z.add 0 xs *)
 Corollary fold_left_right_add_0 : 
