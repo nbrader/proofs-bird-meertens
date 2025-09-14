@@ -119,16 +119,21 @@ Theorem form5_eq_form6 : form5 = form6.
 Proof.
   unfold form5, form6.
   f_equal.
-  - (* map over tails *)
-    apply functional_extensionality.
-    intros xs.
-    unfold compose.
-    (* Apply map_ext to lift the pointwise lemma *)
-    admit.
-  - (* tails = tails_rec *)
-    apply functional_extensionality.
-    apply tails_rec_equiv.
-Admitted.
+  apply functional_extensionality.
+  intros xs.
+  unfold compose.
+  f_equal.
+  (* Need to show: map (nonNegMaximum ∘ map nonNegSum ∘ inits) (tails xs) 
+                   = map (fold_right nonNegPlus 0) (tails_rec xs) *)
+  (* Now both sides use tails xs *)
+  apply map_ext.
+  intros l.
+  (* Need: nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l *)
+  (* This is exactly what generalised_horners_rule_nonNeg states *)
+  apply generalised_horners_rule_nonNeg.
+  apply functional_extensionality.
+  apply tails_rec_equiv.
+Qed.
 
 Theorem form6_eq_form7 : form6 = form7.
 Proof.
