@@ -64,14 +64,18 @@ Proof.
   unfold form5.
   unfold form6.
   f_equal.
-  apply functional_extensionality.
-  intros xs.
-  unfold compose.
+  - apply functional_extensionality.
+    intros xs.
+    pose proof generalised_horners_rule.
+    unfold compose.
   (* generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0. *)
   (* The key insight: nonNegMaximum ∘ map nonNegSum ∘ inits = fold_right nonNegPlus 0 *)
   (* This follows from the generalised Horner's rule *)
   (* Since we admitted generalised_horners_rule, we can use it here *)
   (* In a complete proof, this would apply generalised_horners_rule *)
+    admit.
+  - apply functional_extensionality.
+    apply tails_rec_equiv.
 Admitted.
 
 Theorem form6_eq_form7 : form6 = form7.
@@ -79,7 +83,6 @@ Proof.
   unfold form6, form7.
   (* Need to prove: nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec = nonNegMaximum ∘ scan_right nonNegPlus 0 *)
   (* The key insight: we need to show the inner functions are equal *)
-  f_equal.
   apply functional_extensionality.
   intro xs.
   unfold compose.

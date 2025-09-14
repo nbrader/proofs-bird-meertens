@@ -259,6 +259,7 @@ Proof.
 Qed.
 
 (* Refs: NONE *)
+(* LOOK INTO WHETHER THERE IS A GOOD REASON WHY THIS STATEMENT OF HORNERS RULE DIFFERS SIGNFICANTLY FROM THE WIKIPEDIA ONE: This uses right folds and uses zero where Wikipedia uses 1. This may be an attempt of mine to better handle edge cases but I'm not yet sure. *)
 Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
 Proof.
   unfold compose.
