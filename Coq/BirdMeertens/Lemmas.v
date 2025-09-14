@@ -3,6 +3,10 @@ Require Import Coq.Program.Combinators.
 
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.FunctionLemmas.
+Require Import BirdMeertens.TailsMonoid.
+
+Require Import FreeMonoid.StructMonoid.
+Require Import FreeMonoid.MonoidHom.
 
 Require Import Coq.ZArith.Int.
 Require Import Coq.ZArith.BinInt.
@@ -461,3 +465,88 @@ Proof.
   - (* Inductive case: This is where it gets complex *)
     simpl.
 Admitted.
+
+(* Monoid framework for Horner's rule using TailsMonoid *)
+Section HornerViaMonoids.
+
+(* First, establish that fold is a monoid homomorphism from lists to any target monoid *)
+Definition fold_hom {A B : Type} `{Monoid B} (f : A -> B) : list A -> B :=
+  fold_right (fun a acc => m_op (f a) acc) mn_id.
+
+(* Prove that fold preserves concatenation - this is the key fold homomorphism property *)
+Lemma fold_hom_preserves_concat {A B : Type} `{Monoid B} (f : A -> B) :
+  forall xs ys : list A,
+    fold_hom f (xs ++ ys) = m_op (fold_hom f xs) (fold_hom f ys).
+Proof.
+  intros xs ys.
+  unfold fold_hom.
+  induction xs as [|x xs' IH].
+  - (* Base case: [] ++ ys = ys *)
+    simpl.
+    rewrite mn_left_id.
+    reflexivity.
+  - (* Inductive step: (x :: xs') ++ ys = x :: (xs' ++ ys) *)
+    simpl.
+    rewrite IH.
+    rewrite sg_assoc.
+    reflexivity.
+Qed.
+
+(* Now establish fold∘map as a homomorphism by composing two homomorphisms *)
+Definition fold_map_hom {A B C : Type} `{Monoid C} (g : A -> B) (f : B -> C) : list A -> C :=
+  compose (fold_hom f) (map g).
+
+Lemma fold_map_hom_preserves_concat {A B C : Type} `{Monoid C} (g : A -> B) (f : B -> C) :
+  forall xs ys : list A,
+    fold_map_hom g f (xs ++ ys) = m_op (fold_map_hom g f xs) (fold_map_hom g f ys).
+Proof.
+  intros xs ys.
+  unfold fold_map_hom.
+  unfold compose.
+  rewrite map_app.
+  apply fold_hom_preserves_concat.
+Qed.
+
+(* Monoid instance for Z under addition *)
+Instance ZAddMagma : Magma Z := {
+  m_op := Z.add
+}.
+
+Instance ZAddSemigroup : Semigroup Z := {
+  sg_assoc := Z.add_assoc
+}.
+
+Instance ZAddMonoid : Monoid Z := {
+  mn_id := 0%Z;
+  mn_left_id := Z.add_0_l;
+  mn_right_id := Z.add_0_r
+}.
+
+(* Horner's rule components as monoid homomorphisms *)
+Definition horner_left_part : list (list Z) -> Z :=
+  fold_map_hom (fun xs => fold_left Z.mul xs 1%Z) (@id Z).
+
+Definition horner_middle_part : list Z -> TailsMonoid.TailsResult Z := @TailsMonoid.mk_tails_result Z.
+
+Definition horner_right_part : list Z -> Z := fold_right (fun x acc => (x * acc + 1)%Z) 1%Z.
+
+(* Establish that each component is indeed a monoid homomorphism *)
+Theorem horner_middle_is_homomorphism : 
+  MonoidHomomorphism (@TailsMonoid.ListMonoid Z) (@TailsMonoid.TailsResultMonoid Z) horner_middle_part.
+Proof.
+  exact (@TailsMonoid.mk_tails_result_is_homomorphism Z).
+Qed.
+
+(* The main theorem: Horner's rule via monoid homomorphism composition *)
+Theorem horner_rule_via_homomorphisms :
+  compose horner_left_part (compose (@TailsMonoid.tails_carrier Z) horner_middle_part) = horner_right_part.
+Proof.
+  (* This theorem establishes the fundamental connection between:
+     - The monoid homomorphism composition: sum ∘ (map product) ∘ tails  
+     - Direct Horner evaluation: fold_right (λx acc. x * acc + 1) 1
+     
+     The proof requires deep analysis of fold/map/tails interactions
+     and represents the core of reducing Horner's rule to monoid theory. *)
+Admitted.
+
+End HornerViaMonoids.

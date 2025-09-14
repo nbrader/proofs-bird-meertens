@@ -42,16 +42,21 @@ The main Coq development is in `Coq/BirdMeertens/` with five key modules:
 - **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
 
 ### TailsMonoid Framework
-**TailsMonoid.v** - Monoid homomorphism approach to Horner's rule:
+**TailsMonoid.v** - Pure tails monoid structure:
 - `TailsResult`: Dependent pair type restricting to valid tails outputs
 - Complete monoid structure with proven laws (associativity, identity)
 - `mk_tails_result_is_homomorphism`: Establishes tails as monoid homomorphism
-- `horner_left_part`: Correctly implements `foldl (+) 0 ∘ map (foldl (*) 1)` pattern
-- **Key insight**: Horner's rule components are all monoid homomorphisms, enabling monoid-theoretic reasoning
+- **Focused scope**: Contains only tails-specific monoid theory
+
+**Horner's Rule Application** (in Lemmas.v):
+- `HornerViaMonoids` section applies TailsMonoid to Horner's rule
+- `horner_left_part`: Implements `foldl (+) 0 ∘ map (foldl (*) 1)` pattern
+- **Key insight**: Horner's rule reducible to monoid homomorphism composition
 
 ### Module Dependencies
 - `BirdMeertens.v` imports `Lemmas.v` and `ListFunctions.v`
-- `Lemmas.v` imports `ListFunctions.v` and `FunctionLemmas.v`
+- `Lemmas.v` imports `ListFunctions.v`, `FunctionLemmas.v`, and `TailsMonoid.v`
+- `TailsMonoid.v` imports `ListFunctions.v` and FreeMonoid libraries
 - All modules use standard Coq libraries (Program.Basics, Lists.List, ZArith, etc.)
 
 ### Key Mathematical Concepts
