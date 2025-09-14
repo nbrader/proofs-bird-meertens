@@ -108,11 +108,9 @@ Lemma map_horner_sub :
     nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l.
 Proof.
   intros l.
-  unfold nonNegMaximum, nonNegSum, nonNegPlus.
-  (* After unfolding, the LHS becomes exactly the LHS of generalised_horners_rule *)
-  (* Now you can apply the Horner’s rule lemma *)
-  admit.
-Admitted.
+  (* This is exactly the same as generalised_horners_rule_nonNeg *)
+  apply generalised_horners_rule_nonNeg.
+Qed.
 
 (* Now we can lift it over a list of lists using map_ext *)
 Theorem form5_eq_form6 : form5 = form6.
