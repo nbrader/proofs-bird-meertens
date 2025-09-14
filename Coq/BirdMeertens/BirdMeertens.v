@@ -96,35 +96,58 @@ Proof.
   exact (@scan_right_tails_rec_fold Z Z nonNegPlus 0 xs).
 Qed.
 
+Lemma fold_scan_fusion_pair :
+  forall (xs : list Z),
+    fold_right
+      (fun x uv => let '(u, v) := uv in (Z.max u (nonNegPlus x v), nonNegPlus x v))
+      (0, 0) xs
+    =
+    (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
+     fold_right nonNegPlus 0 xs).
+Proof.
+  (* prove this lemma by induction on xs; this is the key "fusion" lemma.
+     If you already have a slightly different lemma, adjust the statement above
+     (or the proof below) to match your actual lemma name/type. *)
+Admitted.
+
+(* A helper lemma: fold_right preserves pointwise equal functions *)
+Lemma fold_right_ext {A B} (f g : A -> B -> B) (l : list A) (b : B) :
+  (forall x y, f x y = g x y) ->
+  fold_right f b l = fold_right g b l.
+Proof.
+  intros Hfg. induction l as [|x xs IH]; simpl; f_equal; auto.
+Qed.
+
 Theorem form7_eq_form8 : form7 = form8.
 Proof.
   unfold form7, form8.
   apply functional_extensionality.
   intro xs.
-  unfold compose.
-  (* Goal: nonNegMaximum (scan_right nonNegPlus 0 xs) = fst (fold_right maxSoFarAndPreviousSum (0, 0) xs) *)
-  
-  (* Let's examine what these functions actually do:
-     - LHS: nonNegMaximum (scan_right nonNegPlus 0 xs) computes max of all suffixes summed with nonNegPlus
-     - RHS: fst (fold_right maxSoFarAndPreviousSum (0, 0) xs) maintains running max and current sum
-  *)
-  
-  induction xs as [|x xs' IH].
-  - (* Base case: empty list *)
-    simpl. unfold nonNegMaximum. simpl. reflexivity.
-  - (* Inductive case: x :: xs' *)
-    simpl scan_right.
-    simpl fold_right.
-    unfold nonNegMaximum at 1.
-    simpl fold_right at 1.
-    unfold maxSoFarAndPreviousSum.
-    simpl fst.
-    
-    (* Now I need to relate Z.max with the behavior of maxSoFarAndPreviousSum *)
-    (* This is getting complex and would need the fold_scan_fusion lemma *)
-    (* or a different approach to relate scan_right with fold_right accumulation *)
-    
-Admitted.
+  unfold compose, maxSoFarAndPreviousSum.
+
+  (* Step 1: swap the lambda order inside fold_right *)
+  assert (Hswap : forall x uv,
+            (fun (x : Z) (uv : Z * Z) => let (u, v) := uv in (u <|> (v <#> x), v <#> x))
+            x uv
+            = (fun (x : Z) (uv : Z * Z) => let (u, v) := uv in (u <|> (x <#> v), x <#> v))
+              x uv).
+  { intros x [u v]. simpl. f_equal.
+    - rewrite nonNegPlus_comm.
+      reflexivity.              (* u <|> … stays the same *)
+    - apply nonNegPlus_comm.    (* v <#> x = x <#> v *)
+  }
+
+  (* Step 2: rewrite fold_right using Hswap *)
+  rewrite (fold_right_ext _ _ xs (0,0) Hswap).
+
+  (* Step 3: now it matches Hpair (fold_scan_fusion lemma) *)
+  pose proof fold_scan_fusion_pair xs as Hpair.
+  (* Hpair: fold_right (fun x uv => (u <|> (x <#> v), x <#> v)) (0,0) xs
+            = (fold_right Z.max 0 (scan_right nonNegPlus 0 xs), fold_right nonNegPlus 0 xs) *)
+
+  (* Step 4: take fst of both sides *)
+  now rewrite Hpair.
+Qed.
 
 Theorem MaxSegSum_Equivalence : form1 = form8.
 Proof.

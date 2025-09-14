@@ -253,6 +253,13 @@ Proof.
   apply fold_right_nonNegPlus_cons.
 Qed.
 
+Lemma fold_right_map_nonNegPlus_commute_counterexample :
+  exists a l, fold_right Z.max 0 (map (fun v => nonNegPlus a v) l) <> nonNegPlus a (fold_right Z.max 0 l).
+Proof.
+  exists 1%Z, [-2%Z].
+  simpl. unfold nonNegPlus. compute. congruence.
+Qed.
+
 (* 3) helper: push map (cons a) inside fold_right Z.max via map_map
    (this is just a composition-of-maps step) *)
 Lemma map_map_inits_cons_step :
@@ -262,73 +269,6 @@ Lemma map_map_inits_cons_step :
 Proof.
   intros; apply map_fold_right_nonNegPlus_inits_cons.
 Qed.
-
-(* Refs: NONE *)
-(* LOOK INTO WHETHER THERE IS A GOOD REASON WHY THIS STATEMENT OF HORNERS RULE DIFFERS SIGNFICANTLY FROM THE WIKIPEDIA ONE: This uses right folds and uses zero where Wikipedia uses 1. This may be an attempt of mine to better handle edge cases but I'm not yet sure. *)
-Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
-Proof.
-  unfold compose.
-  apply functional_extensionality.
-  intros x.
-  induction x as [|a xs IH].
-  - (* Base case: empty list *)
-    simpl.
-    unfold inits. simpl.
-    reflexivity.
-  - (* Inductive case: a :: xs *)
-    (* First, let's expand the inits function *)
-    rewrite inits_cons.
-    simpl map.
-    
-    (* LHS becomes: fold_right Z.max 0 (fold_right nonNegPlus 0 [] :: map (fold_right nonNegPlus 0) (map (cons a) (inits xs))) *)
-    (* which simplifies to: fold_right Z.max 0 (0 :: map (fold_right nonNegPlus 0) (map (cons a) (inits xs))) *)
-    simpl fold_right at 1. simpl fold_right at 1.
-    rewrite Z.max_comm. simpl Z.max.
-    
-    (* Now we have: Z.max (fold_right Z.max 0 (map (fold_right nonNegPlus 0) (map (cons a) (inits xs)))) 0 *)
-    (* Which is: Z.max (fold_right Z.max 0 (map (fun l => fold_right nonNegPlus 0 (a :: l)) (inits xs))) 0 *)
-    
-    rewrite map_map.
-    
-    (* The RHS expands to: fold_right (fun x y => nonNegPlus x y <|> 0) 0 (a :: xs) *)
-    (* Which is: nonNegPlus a (fold_right (fun x y => nonNegPlus x y <|> 0) 0 xs) <|> 0 *)
-    simpl fold_right at 2.
-    
-    (* We need to show the relationship between the compositions *)
-    (* Key insight: fold_right nonNegPlus 0 (a :: l) = nonNegPlus a (fold_right nonNegPlus 0 l) *)
-    
-    (* Let's use the fact that nonNegPlus has certain algebraic properties *)
-    assert (H_fold_cons: forall l, fold_right nonNegPlus 0 (a :: l) = nonNegPlus a (fold_right nonNegPlus 0 l)).
-    { intro l. simpl. reflexivity. }
-    
-    rewrite map_ext with (g := fun l => nonNegPlus a (fold_right nonNegPlus 0 l)).
-    2: { intro l. apply H_fold_cons. }
-    
-    (* Now we can use properties about max and nonNegPlus distribution *)
-    (* The proof involves showing that max distributes over the composition in a specific way *)
-
-    (* For now, let's use a key lemma that would need to be proven separately *)
-    assert (H_key: Z.max (fold_right Z.max 0 (map (fun l => nonNegPlus a (fold_right nonNegPlus 0 l)) (inits xs))) 0 = 
-                   nonNegPlus a (fold_right (fun x y => nonNegPlus x y <|> 0) 0 xs) <|> 0).
-    { (* Let me try to prove this by induction on xs *)
-      induction xs as [|b bs IH_inner].
-      - (* Base case: xs = [] *)
-        simpl inits. simpl map. simpl fold_right.
-        unfold nonNegPlus. simpl.
-        rewrite Z.add_0_r.
-        destruct (Z.leb 0 a) eqn:Ha; simpl.
-        + (* a >= 0 case - complex goal after simplifications *)
-          admit.
-        + (* a < 0 case - complex goal after simplifications *)  
-          admit.
-      - (* Inductive case: xs = b :: bs *)
-        (* This gets quite complex with the interaction of inits, map, and fold operations *)
-        (* The proof would need careful analysis of how nonNegPlus distributes over the structures *)
-        admit.
-    }
-    
-    exact H_key.
-Admitted. (* Still requires the key lemma about max/nonNegPlus interaction *)
 
 Lemma fold_left_cons_Z :
   forall (xs : list Z) (x acc : Z),
@@ -358,8 +298,6 @@ Lemma scan_lemma_Z (xs : list Z) :
 Proof.
   apply (scan_left_inits_general_Z xs 0).
 Qed.
-
-
 
 (* Key lemma: fold_left distributes over cons *)
 Lemma fold_left_cons : forall (xs : list nat) (x acc : nat),
@@ -578,3 +516,9 @@ Proof.
 Qed.
 
 End HornerViaMonoids.
+
+(* Refs: NONE *)
+(* LOOK INTO WHETHER THERE IS A GOOD REASON WHY THIS STATEMENT OF HORNERS RULE DIFFERS SIGNFICANTLY FROM THE WIKIPEDIA ONE: This uses right folds and uses zero where Wikipedia uses 1. This may be an attempt of mine to better handle edge cases but I'm not yet sure. *)
+Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
+Proof.
+Admitted.
