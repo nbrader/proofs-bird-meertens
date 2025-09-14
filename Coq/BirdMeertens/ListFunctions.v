@@ -169,41 +169,74 @@ Proof. simpl. reflexivity. Qed.
 Example tails_rec_test2 : tails_rec [1; 2] = [[1; 2]; [2]; []].
 Proof. simpl. reflexivity. Qed.
 
-(* Now prove that tails_rec is equivalent to tails *)
+Lemma fold_right_tails_never_nil : forall {A : Type} (xs : list A),
+  fold_right (fun x xsxss => match xsxss with 
+                             | [] => [[]] 
+                             | xs :: xss => (x::xs) :: (xs::xss) 
+                             end) [[]] xs <> [].
+Proof.
+  intros A xs.
+  induction xs as [| x xs' IH].
+  - simpl. discriminate.
+  - simpl. 
+    destruct (fold_right _ [[]] xs') eqn:E.
+    + (* If fold_right produced [], that contradicts IH *)
+      exfalso. apply IH. reflexivity.
+    + discriminate.
+Qed.
+
+Lemma fold_right_tails_cons : forall {A : Type} (x : A) (xs : list A),
+  exists t ts, fold_right (fun x xsxss => match xsxss with 
+                                          | [] => [[]] 
+                                          | xs :: xss => (x::xs) :: (xs::xss) 
+                                          end) [[]] xs = t :: ts.
+Proof.
+  intros A x xs.
+  induction xs as [| y ys IH].
+  - simpl. exists [], []. reflexivity.
+  - simpl.
+    destruct (fold_right _ [[]] ys) eqn:E.
+    + pose proof (fold_right_tails_never_nil ys).
+      contradiction.
+    + exists (y :: l), (l :: l0). reflexivity.
+Qed.
+
 Lemma tails_rec_equiv : forall {A : Type} (xs : list A), tails xs = tails_rec xs.
 Proof.
   intros A xs.
   induction xs as [| x xs' IH].
-
+  
   - (* Base case: xs = [] *)
     simpl tails_rec.
     unfold tails. simpl.
     reflexivity.
-
+    
   - (* Inductive case: xs = x :: xs' *)
-    (* Let me try a direct computational approach for the two cases of xs' *)
-    destruct xs' as [|y ys].
+    simpl tails_rec.
+    unfold tails at 1.
+    simpl fold_right.
+    
+    (* The key insight: fold_right on xs' produces tails xs' *)
+    assert (Htails: fold_right (fun x xsxss => match xsxss with 
+                                               | [] => [[]] 
+                                               | xs :: xss => (x::xs) :: (xs::xss) 
+                                               end) [[]] xs' = tails xs').
+    { unfold tails. reflexivity. }
+    
+    rewrite Htails.
+    rewrite IH.
+    
+    (* Now we need to show the pattern match on tails_rec xs' *)
+    destruct xs' as [| y ys].
+    
     + (* xs' = [] *)
-      simpl tails_rec.
-      unfold tails. simpl fold_right.
+      simpl.
       reflexivity.
+      
     + (* xs' = y :: ys *)
       simpl tails_rec.
-      unfold tails. simpl fold_right.
-      (* Goal: (x :: y :: ys) :: 
-               match (fold_right ... ys) with [] => [[]] | xs :: xss => (y :: xs) :: xs :: xss end = 
-               (x :: y :: ys) :: (y :: ys) :: tails_rec ys *)
-      f_equal.
-      
-      (* We need to use IH: tails (y :: ys) = tails_rec (y :: ys) *)
-      (* First, let's fold back the definition *)
-      change (fold_right (fun x0 xsxss => match xsxss with | [] => [[]] | xs :: xss => (x0::xs) :: (xs::xss) end) [[]] ys)
-        with (fold_right (fun x0 xsxss => match xsxss with | [] => [[]] | xs :: xss => (x0::xs) :: (xs::xss) end) [[]] ys).
-      
-      (* The pattern is complex, but we can use the fact that the fold_right never produces [] *)
-      (* For any list ys, the fold_right produces at least [[]] *)
-      (* This proof is getting too complex with the fold_right structure *)
-Admitted.
+      reflexivity.
+Qed.
 
 (* With tails_rec_equiv, tails_cons becomes trivial *)
 Lemma tails_cons : forall {A : Type} (x : A) (xs : list A),
