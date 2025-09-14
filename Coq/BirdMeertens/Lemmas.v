@@ -664,3 +664,44 @@ Add constraints: The theorem might be true for lists with all non-negative eleme
 
 The insight from classic Horner's rule is that the operation needs to have specific algebraic properties for the transformation to work. The nonNegPlus operation with its clamping behavior doesn't have these properties.
  *)
+
+(* This proof assumes the definitions from the provided file are in scope:
+   - nonNegPlus (x <#> y)
+   - nonNegSum
+   - nonNegMaximum
+   - inits
+*)
+
+Theorem generalised_horners_rule_is_false :
+  ~ (forall l : list Z,
+      nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l).
+Proof.
+  (* We prove the negation by finding a counterexample. *)
+  intro H_universal_rule.
+
+  (* We specialize the general hypothesis H with the counterexample [-3; 1; 1]%Z.
+     It's often clearer to use the value directly instead of binding it to a name. *)
+  specialize (H_universal_rule [-3; 1; 1]%Z).
+
+  (* Now, H_universal_rule is the equality for our specific list.
+     We ask Coq to compute both sides. *)
+  compute in H_universal_rule.
+
+  (* The hypothesis H_universal_rule is now `2 = 0`, a contradiction. *)
+  lia.
+Qed.
+
+Theorem generalised_horners_rule_is_false_alt :
+  ~ (forall l : list Z,
+      nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l).
+Proof.
+  intro H_universal_rule.
+  
+  (* Use 'pose' to define a term in the proof context. *)
+  pose (l := [-3; 1; 1]%Z).
+  
+  specialize (H_universal_rule l).
+  
+  compute in H_universal_rule.
+  lia.
+Qed.
