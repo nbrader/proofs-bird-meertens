@@ -6,7 +6,8 @@
       "Bash(make:*)",
       "Bash(git add:*)",
       "Bash(find:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(coqc:*)"
     ],
     "deny": [],
     "ask": []
