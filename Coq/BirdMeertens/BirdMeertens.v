@@ -18,7 +18,7 @@ Definition form2 : list Z -> Z := nonNegMaximum ∘ map nonNegSum ∘ concat ∘
 Definition form3 : list Z -> Z := nonNegMaximum ∘ concat ∘ map (map nonNegSum) ∘ map inits ∘ tails.
 Definition form4 : list Z -> Z := nonNegMaximum ∘ map nonNegMaximum ∘ map (map nonNegSum) ∘ map inits ∘ tails.
 Definition form5 : list Z -> Z := nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails.
-Definition form6 : list Z -> Z := nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails.
+Definition form6 : list Z -> Z := nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
 Definition form7 : list Z -> Z := nonNegMaximum ∘ scan_right nonNegPlus 0.
 Definition form8 : list Z -> Z := fst ∘ fold_right maxSoFarAndPreviousSum (0, 0).
 
@@ -77,19 +77,49 @@ Admitted.
 Theorem form6_eq_form7 : form6 = form7.
 Proof.
   unfold form6, form7.
+  (* Need to prove: nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec = nonNegMaximum ∘ scan_right nonNegPlus 0 *)
+  (* The key insight: we need to show the inner functions are equal *)
   f_equal.
-  (* Need to prove: map (fold_right nonNegPlus 0) ∘ tails = scan_right nonNegPlus 0 *)
   apply functional_extensionality.
   intro xs.
   unfold compose.
-  (* Use the auxiliary lemma scan_right_tails_fold *)
-  rewrite (@scan_right_tails_fold Z Z nonNegPlus 0 xs).
-  reflexivity.
+  (* Now the goal is: nonNegMaximum (map (fold_right nonNegPlus 0) (tails_rec xs)) = nonNegMaximum (scan_right nonNegPlus 0 xs) *)
+  (* We need to lift the list-level equality to the nonNegMaximum level *)
+  f_equal.
+  (* This gives us: map (fold_right nonNegPlus 0) (tails_rec xs) = scan_right nonNegPlus 0 xs *)
+  (* Which is exactly what scan_right_tails_rec_fold gives us, but in reverse *)
+  symmetry.
+  exact (@scan_right_tails_rec_fold Z Z nonNegPlus 0 xs).
 Qed.
 
 Theorem form7_eq_form8 : form7 = form8.
 Proof.
-  (* fold_scan_fusion (xs : list Z) : fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (0%Z,1%Z)). *)
+  unfold form7, form8.
+  apply functional_extensionality.
+  intro xs.
+  unfold compose.
+  (* Goal: nonNegMaximum (scan_right nonNegPlus 0 xs) = fst (fold_right maxSoFarAndPreviousSum (0, 0) xs) *)
+  
+  (* Let's examine what these functions actually do:
+     - LHS: nonNegMaximum (scan_right nonNegPlus 0 xs) computes max of all suffixes summed with nonNegPlus
+     - RHS: fst (fold_right maxSoFarAndPreviousSum (0, 0) xs) maintains running max and current sum
+  *)
+  
+  induction xs as [|x xs' IH].
+  - (* Base case: empty list *)
+    simpl. unfold nonNegMaximum. simpl. reflexivity.
+  - (* Inductive case: x :: xs' *)
+    simpl scan_right.
+    simpl fold_right.
+    unfold nonNegMaximum at 1.
+    simpl fold_right at 1.
+    unfold maxSoFarAndPreviousSum.
+    simpl fst.
+    
+    (* Now I need to relate Z.max with the behavior of maxSoFarAndPreviousSum *)
+    (* This is getting complex and would need the fold_scan_fusion lemma *)
+    (* or a different approach to relate scan_right with fold_right accumulation *)
+    
 Admitted.
 
 Theorem MaxSegSum_Equivalence : form1 = form8.
@@ -103,3 +133,4 @@ Proof.
   rewrite form7_eq_form8.
   reflexivity.
 Qed.
+Print Assumptions MaxSegSum_Equivalence.

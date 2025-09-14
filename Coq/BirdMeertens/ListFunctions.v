@@ -171,7 +171,6 @@ Proof. simpl. reflexivity. Qed.
 
 (* Now prove that tails_rec is equivalent to tails *)
 Lemma tails_rec_equiv : forall {A : Type} (xs : list A), tails xs = tails_rec xs.
-
 Proof.
   intros A xs.
   induction xs as [| x xs' IH].
@@ -182,46 +181,28 @@ Proof.
     reflexivity.
 
   - (* Inductive case: xs = x :: xs' *)
-    simpl tails_rec.
-    unfold tails.
-    simpl.
-
-    (* At this point, the goal is:
-       match (tails xs') with ... end = (x :: xs') :: tails_rec xs'
-       We use the induction hypothesis to replace (tails xs') with (tails_rec xs'). *)
-    rewrite <- IH.
-
-    (* The goal is now:
-       match (tails_rec xs') with ... end = (x :: xs') :: tails_rec xs'
-       To solve this, we must know the structure of (tails_rec xs').
-       We analyze the two possible cases for xs'. *)
-    destruct xs' as [|y ys'].
-    + (* Case 1: xs' = [] *)
-      (* The term (tails_rec xs') becomes (tails_rec []), which simplifies to [[]].
-         The 'match' expression on the left becomes:
-         match [[]] with
-         | [] => ...
-         | xs :: xss => (x :: xs) :: (xs :: xss)
-         end
-         This takes the second branch where xs=[] and xss=[]. The expression
-         evaluates to (x :: []) :: ([] :: []), which is [[x]; []].
-         The right-hand side also simplifies to [[x]; []]. *)
-      simpl.
+    (* Let me try a direct computational approach for the two cases of xs' *)
+    destruct xs' as [|y ys].
+    + (* xs' = [] *)
+      simpl tails_rec.
+      unfold tails. simpl fold_right.
       reflexivity.
-    + (* Case 2: xs' = y :: ys' *)
-      (* This is the complex case you highlighted.
-         The term (tails_rec xs') becomes (tails_rec (y :: ys')), which simplifies to
-         (y :: ys') :: tails_rec ys'. This is a non-empty list.
-         The 'match' expression on the left becomes:
-         match ((y :: ys') :: tails_rec ys') with
-         | [] => ...
-         | xs :: xss => (x :: xs) :: (xs :: xss)
-         end
-         This takes the second branch, where xs = (y :: ys') and xss = tails_rec ys'.
-         The expression evaluates to (x :: (y :: ys')) :: ((y :: ys') :: tails_rec ys').
-         This simplifies to (x :: xs') :: tails_rec xs'.
-         The right-hand side is (x :: xs') :: tails_rec xs', so they are equal. *)
-      simpl.
+    + (* xs' = y :: ys *)
+      simpl tails_rec.
+      unfold tails. simpl fold_right.
+      (* Goal: (x :: y :: ys) :: 
+               match (fold_right ... ys) with [] => [[]] | xs :: xss => (y :: xs) :: xs :: xss end = 
+               (x :: y :: ys) :: (y :: ys) :: tails_rec ys *)
+      f_equal.
+      
+      (* We need to use IH: tails (y :: ys) = tails_rec (y :: ys) *)
+      (* First, let's fold back the definition *)
+      change (fold_right (fun x0 xsxss => match xsxss with | [] => [[]] | xs :: xss => (x0::xs) :: (xs::xss) end) [[]] ys)
+        with (fold_right (fun x0 xsxss => match xsxss with | [] => [[]] | xs :: xss => (x0::xs) :: (xs::xss) end) [[]] ys).
+      
+      (* The pattern is complex, but we can use the fact that the fold_right never produces [] *)
+      (* For any list ys, the fold_right produces at least [[]] *)
+      (* This proof is getting too complex with the fold_right structure *)
 Admitted.
 
 (* With tails_rec_equiv, tails_cons becomes trivial *)
@@ -330,12 +311,29 @@ Proof.
     f_equal.
 Qed.
 
+(* Now we can prove the original theorem using the equivalence *)
+
 Lemma scan_right_tails_rec_fold : forall {A B : Type} (f : A -> B -> B) (i : B) (xs : list A),
   scan_right f i xs = map (fold_right f i) (tails_rec xs).
 Proof.
   intros A B f i xs.
-  (* Rewrite tails_rec xs to tails xs using the equivalence lemma. *)
-  rewrite <- (tails_rec_equiv xs).
-  (* The goal is now identical to the main theorem. *)
-  apply scan_right_tails_fold.
+  induction xs as [| x xs' IH].
+  
+  - (* Base case: xs = [] *)
+    reflexivity.
+    
+  - (* Inductive case: xs = x :: xs' *)
+    (* Let's debug by doing step by step *)
+    simpl scan_right.
+    simpl tails_rec.
+    simpl map.
+    (* Now the goal should be: 
+       f x (fold_right f i xs') :: scan_right f i xs' = 
+       fold_right f i (x :: xs') :: map (fold_right f i) (tails_rec xs') *)
+    (* Since fold_right f i (x :: xs') = f x (fold_right f i xs'), 
+       the goal becomes:
+       f x (fold_right f i xs') :: scan_right f i xs' = 
+       f x (fold_right f i xs') :: map (fold_right f i) (tails_rec xs') *)
+    f_equal.
+    exact IH.
 Qed.
