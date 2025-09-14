@@ -549,12 +549,7 @@ Testing Horner's Rule with Tails Instead of InitsText *)
 
 (* Let's check if the theorem would work with tails instead of inits *)
 
-(* Current version (potentially incorrect): *)
-Lemma generalised_horners_rule_nonNeg_inits :
-  forall l : list Z,
-    nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l.
-Proof.
-Admitted.
+(* PROVEN FALSE BY "generalised_horners_rule_is_false" BELOW *)
     
 (* Potential corrected version using tails: *)
 Lemma generalised_horners_rule_nonNeg_tails :
