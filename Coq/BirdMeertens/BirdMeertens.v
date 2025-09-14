@@ -76,10 +76,29 @@ Lemma fold_left_nil :
     fold_left f [] a = a.
 Proof. reflexivity. Qed.
 
-Lemma map_nonNegPlus_max : forall x l,
-  nonNegMaximum (map (fun ys => nonNegPlus x ys) l) = nonNegPlus x (nonNegMaximum l).
+Lemma map_nonNegPlus_max_is_false : 
+  ~ (forall x l, nonNegMaximum (map (fun ys => nonNegPlus x ys) l) = nonNegPlus x (nonNegMaximum l)).
 Proof.
-Admitted.
+  intro H.
+  (* Instantiate with x = 1 and l = [] *)
+  specialize (H 1 []).
+  
+  (* Simplify the left side *)
+  simpl in H.
+  unfold nonNegMaximum in H.
+  simpl in H.
+  
+  (* Now H states: 0 = nonNegPlus 1 0 *)
+  unfold nonNegPlus in H.
+  simpl in H.
+  
+  (* Since 1 + 0 = 1 and 0 <=? 1 is true *)
+  (* We have nonNegPlus 1 0 = 1 *)
+  (* So H becomes: 0 = 1 *)
+  
+  (* This is a contradiction *)
+  discriminate H.
+Qed.
 
 Lemma generalised_horners_rule_nonNeg :
   forall l : list Z,
