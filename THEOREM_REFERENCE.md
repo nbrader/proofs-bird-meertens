@@ -1,17 +1,15 @@
 # BIRDMEERTENS THEOREM REFERENCE CATALOG
 
-**Purpose**: Quick searchable reference for all proven theorems  
+**Purpose**: Quick searchable reference for all theorems and lemmas  
 **Usage**: Search by theorem name, mathematical property, or list operation  
-**Last Updated**: 2025-09-14 after tails_rec breakthrough  
 
 ---
 
-## 📊 CURRENT STATUS
+## 📊 PROJECT GOAL
 
-- **Completed proofs (Qed)**: 26 total
-- **Admitted proofs**: 3 critical blockers  
-- **Completion rate**: 89.7%
-- **Strategic breakthrough**: `form6_eq_form7` now pure (no admitted dependencies)
+**Objective**: Complete all admitted proofs to achieve full verification of Kadane's algorithm correctness through the Bird-Meertens transformation chain.
+
+**Recent Progress**: Strategic breakthrough using `tails_rec` approach enabled completion of `form6_eq_form7`.
 
 ---
 
@@ -26,14 +24,13 @@
 - **`form4_eq_form5`** - Map distribution properties
 - **`form6_eq_form7`** 🎯 - **PURE PROOF** using tails_rec strategy (scan_right relationship)
 
-### 🚫 ADMITTED (Blockers)
+### 🚫 ADMITTED (Remaining Work)
 - **`form5_eq_form6`** - Requires `generalised_horners_rule`
 - **`form7_eq_form8`** - Requires `fold_scan_fusion`
 
 ### 🏆 MAIN THEOREM
 - **`MaxSegSum_Equivalence`** - **form1 = form8** (Kadane's correctness)
-  - **Status**: Completed but depends on 2 admitted theorems above
-  - **Dependencies**: form5_eq_form6, form7_eq_form8
+  - **Goal**: Complete all admitted proofs to achieve full verification
 
 ---
 

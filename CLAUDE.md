@@ -21,15 +21,15 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 ### Python Analysis Tools
 - `python Python/references.py` - Generates dependency graph in TGF format
 - `python Python/summarize_dependencies.py` - Analyzes Coq dependencies
-- `python check_pure_proofs.py` - THIS SHOULD BE MOVED TO THE PYTHON FOLDER AND MADE TO WORK FROM THERE
-- `python completed_proofs_report.py` - THIS SHOULD BE MOVED TO THE PYTHON FOLDER AND MADE TO WORK FROM THERE
-- `python theorem_catalog.py` - THIS SHOULD BE MOVED TO THE PYTHON FOLDER AND MADE TO WORK FROM THERE
-- THERE ARE ALSO SHELL AND BATCH SCRIPTS WHICH SHOULD BE MOVED TO THE RELEVANT PLACES.
+- `python check_pure_proofs.py` - Analyzes proof completeness (TODO: relocate to Python/ folder)
+- `python completed_proofs_report.py` - Reports on completed proofs (TODO: relocate to Python/ folder) 
+- `python theorem_catalog.py` - Catalogs theorem definitions (TODO: relocate to Python/ folder)
+- Various shell and batch scripts for automation (TODO: organize into appropriate directories)
 
 ## Code Architecture
 
 ### Coq Structure
-The main Coq development is in `Coq/BirdMeertens/` with four key modules:
+The main Coq development is in `Coq/BirdMeertens/` with five key modules:
 
 1. **ListFunctions.v** - Core list manipulation functions (`tails`, `inits`, `segs`, `scan_right`, etc.)
 2. **Lemmas.v** - Mathematical definitions and operations (`nonNegPlus`, `nonNegSum`, `nonNegMaximum`) 
@@ -37,9 +37,9 @@ The main Coq development is in `Coq/BirdMeertens/` with four key modules:
 4. **BirdMeertens.v** - Main theorem proving Kadane's algorithm correctness through 8 equivalent forms
 5. **ProofStrategy.v** - A temporary file which should have any useful contents moved out of it before being removed.
 
-2 library folders I'm hoping to make use of:
-Added **CoqUtilLib** - Utility functions for list operations and functional programming  
-Added **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
+**Additional Libraries:**
+- **CoqUtilLib** - Utility functions for list operations and functional programming  
+- **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
 
 ### Module Dependencies
 - `BirdMeertens.v` imports `Lemmas.v` and `ListFunctions.v`
@@ -61,21 +61,21 @@ The project structure allows for cross-language validation of the formal Coq pro
 
 ### Code Duplication Analysis
 
-**⚠️ Critical Issue Identified**: Parallel development has occurred in `ListFunctions.v`:
+**Code Duplication Notice**: Parallel development has created duplicate `ListFunctions.v` files:
 - Main project: `Coq/BirdMeertens/ListFunctions.v` 
 - Library: `Coq/CoqUtilLib/ListFunctions.v`
-- **Identical definitions**: `tails`, `inits`, `scan_right`, `scan_left`
-- **Divergent capabilities**: Library has `take_n`/`drop_n`, main project has Bird-Meertens specific lemmas
+- **Shared definitions**: `tails`, `inits`, `scan_right`, `scan_left`
+- **Divergent features**: Library has `take_n`/`drop_n`, main project has Bird-Meertens specific lemmas
 
-**Recommendation**: Consolidate to avoid maintenance issues - see `LIBRARY_INTEGRATION_ANALYSIS.md` for detailed plan.
+**Note**: Consider consolidation to avoid maintenance overhead - see `LIBRARY_INTEGRATION_ANALYSIS.md` for detailed plan.
 
 ### Progress Made with Libraries
 - `MonoidConcat.v` provides `mconcat` operations relevant for fold proofs
 - Multiple monoid instances could help with `fold_scan_fusion`
 - Rich theoretical framework available for remaining fold-related proofs
 
-**Previous Core Structural Issue** (Now Eliminated):
-The complex `fold_right` definition of `tails` created structural proof difficulties:
+**Core Structural Challenge** (Strategically Bypassed):
+The complex `fold_right` definition of `tails` creates structural proof difficulties:
 
 ```coq
 Definition tails {A : Type}: list A -> list (list A) := fold_right (fun x xsxss => match xsxss with
@@ -85,8 +85,10 @@ end) [[]].
 ```
 
 **Strategic Solution Applied:**
-Instead of proving `tails_rec_equiv`, we redefined `form6` to use the simpler `tails_rec`:
+Rather than proving the complex `tails_rec_equiv`, `form6` was redefined to use the simpler `tails_rec` directly:
 ```coq
+Definition form6 : list Z -> Z := nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
+
 Fixpoint tails_rec {A : Type} (xs : list A) : list (list A) :=
   match xs with
   | [] => [[]]
@@ -94,7 +96,7 @@ Fixpoint tails_rec {A : Type} (xs : list A) : list (list A) :=
   end.
 ```
 
-**Impact**: Eliminated complex structural induction requirements and unification errors.
+**Impact**: Bypassed complex structural induction requirements for the form6→form7 proof while maintaining both `tails` definitions for potential future use.
 
 ### Proof Completion Requirements
 **CRITICAL**: When working on admitted proofs, follow these strict guidelines:
