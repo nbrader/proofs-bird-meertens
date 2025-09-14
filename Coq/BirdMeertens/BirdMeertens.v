@@ -231,7 +231,6 @@ Proof.
   rewrite form7_eq_form8.
   reflexivity.
 Qed.
-
 Print Assumptions MaxSegSum_Equivalence.
 (*
 Axioms:
