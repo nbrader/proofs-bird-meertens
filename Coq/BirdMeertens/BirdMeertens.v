@@ -169,19 +169,6 @@ Proof.
   exact (@scan_right_tails_rec_fold Z Z nonNegPlus 0 xs).
 Qed.
 
-(* Fusion lemma for scan_right vs fold_right with pairs *)
-Lemma fold_scan_fusion_pair :
-  forall (xs : list Z),
-    fold_right
-      (fun x uv => let '(u, v) := uv in (Z.max u (nonNegPlus x v), nonNegPlus x v))
-      (0, 0) xs
-    =
-    (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
-     fold_right nonNegPlus 0 xs).
-Proof.
-  (* Prove by induction on xs *)
-Admitted.
-
 (* fold_right respects pointwise equality of functions *)
 Lemma fold_right_ext {A B} (f g : A -> B -> B) (l : list A) (b : B) :
   (forall x y, f x y = g x y) -> fold_right f b l = fold_right g b l.
