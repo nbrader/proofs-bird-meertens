@@ -41,6 +41,13 @@ The main Coq development is in `Coq/BirdMeertens/` with five key modules:
 - **CoqUtilLib** - Utility functions for list operations and functional programming  
 - **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
 
+### Recent Development: TailsMonoid Framework
+Added **TailsMonoid.v** - Establishes tails as a monoid homomorphism using dependent pair types:
+- `TailsResult`: Dependent pair type restricting to valid tails outputs
+- `tails_result_op`: Monoid operation (head both arguments, append, apply tails)  
+- `mk_tails_result_is_homomorphism`: Proves tails is a monoid homomorphism
+- Framework enables reducing Horner's rule proofs to monoid homomorphism properties
+
 ### Module Dependencies
 - `BirdMeertens.v` imports `Lemmas.v` and `ListFunctions.v`
 - `Lemmas.v` imports `ListFunctions.v` and `FunctionLemmas.v`

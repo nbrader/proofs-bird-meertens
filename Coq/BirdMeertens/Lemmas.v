@@ -436,6 +436,20 @@ Proof.
   reflexivity.
 Qed.
 
+(* Bird's Horner Rule Variant - from Bird_horner_rule_6789_svg.svg diagram *)
+(* This theorem relates sum of products of tails to a Horner-style computation *)
+Definition horner_op (x y : Z) : Z := (x * y + 1)%Z.
+
+Lemma bird_horner_rule_variant : 
+  (fun xs => fold_left Z.add xs 0%Z) ∘ map (fun ys => fold_left Z.mul ys 1%Z) ∘ tails = 
+  fold_right horner_op 1%Z.
+Proof.
+  apply functional_extensionality.
+  intros xs.
+  unfold horner_op.
+  (* This proof will require induction on xs and properties of tails, fold operations *)
+Admitted.
+
 Lemma fold_scan_fusion (xs : list Z) : fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (1%Z,1%Z)).
 Proof.
   induction xs as [|x xs' IH].
