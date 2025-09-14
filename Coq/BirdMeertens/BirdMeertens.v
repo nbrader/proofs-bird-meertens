@@ -60,22 +60,73 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma nonNegPlus_equiv : forall x y : Z, nonNegPlus x y = x <#> y.
+Proof. intros. unfold nonNegPlus, "<#>". reflexivity. Qed.
+
+Lemma nonNegMaximum_equiv : forall l : list Z,
+  nonNegMaximum l = fold_right (fun x y => x <|> y) 0 l.
+Proof.
+  intros l.
+  unfold nonNegMaximum.  (* if needed, otherwise just fold_right directly *)
+  reflexivity.
+Qed.
+
+Lemma fold_left_nil :
+  forall (A B : Type) (f : A -> B -> A) (a : A),
+    fold_left f [] a = a.
+Proof. reflexivity. Qed.
+
+Lemma map_nonNegPlus_max : forall x l,
+  nonNegMaximum (map (fun ys => nonNegPlus x ys) l) = nonNegPlus x (nonNegMaximum l).
+Proof.
+Admitted.
+
+Lemma generalised_horners_rule_nonNeg :
+  forall l : list Z,
+    nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l.
+Proof.
+  intros l.
+  induction l as [| x xs IH].
+  - (* Base case: l = [] *)
+    simpl. reflexivity.
+  - (* Inductive step: l = x :: xs *)
+    simpl.
+    unfold nonNegSum, nonNegMaximum, nonNegPlus.
+
+    (* Step 1: fold_left on [] gives 0 *)
+    rewrite (fold_left_nil Z Z (fun x0 y => if 0 <=? x0 + y then x0 + y else 0) 0).
+
+    (* Step 2: rewrite map (cons x) (inits xs) pointwise *)
+    rewrite map_map. (* outer map *)
+
+    admit.
+Admitted.
+
+(* Auxiliary lemma to connect nonNegSum / nonNegMaximum with <#> / <|> *)
+Lemma map_horner_sub :
+  forall l : list Z,
+    nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l.
+Proof.
+  intros l.
+  unfold nonNegMaximum, nonNegSum, nonNegPlus.
+  (* After unfolding, the LHS becomes exactly the LHS of generalised_horners_rule *)
+  (* Now you can apply the Horner’s rule lemma *)
+  admit.
+Admitted.
+
+(* Now we can lift it over a list of lists using map_ext *)
 Theorem form5_eq_form6 : form5 = form6.
 Proof.
-  unfold form5.
-  unfold form6.
+  unfold form5, form6.
   f_equal.
-  - apply functional_extensionality.
+  - (* map over tails *)
+    apply functional_extensionality.
     intros xs.
-    pose proof generalised_horners_rule.
     unfold compose.
-  (* generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0. *)
-  (* The key insight: nonNegMaximum ∘ map nonNegSum ∘ inits = fold_right nonNegPlus 0 *)
-  (* This follows from the generalised Horner's rule *)
-  (* Since we admitted generalised_horners_rule, we can use it here *)
-  (* In a complete proof, this would apply generalised_horners_rule *)
+    (* Apply map_ext to lift the pointwise lemma *)
     admit.
-  - apply functional_extensionality.
+  - (* tails = tails_rec *)
+    apply functional_extensionality.
     apply tails_rec_equiv.
 Admitted.
 
@@ -96,6 +147,7 @@ Proof.
   exact (@scan_right_tails_rec_fold Z Z nonNegPlus 0 xs).
 Qed.
 
+(* Fusion lemma for scan_right vs fold_right with pairs *)
 Lemma fold_scan_fusion_pair :
   forall (xs : list Z),
     fold_right
@@ -105,50 +157,42 @@ Lemma fold_scan_fusion_pair :
     (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
      fold_right nonNegPlus 0 xs).
 Proof.
-  (* prove this lemma by induction on xs; this is the key "fusion" lemma.
-     If you already have a slightly different lemma, adjust the statement above
-     (or the proof below) to match your actual lemma name/type. *)
+  (* Prove by induction on xs *)
 Admitted.
 
-(* A helper lemma: fold_right preserves pointwise equal functions *)
+(* fold_right respects pointwise equality of functions *)
 Lemma fold_right_ext {A B} (f g : A -> B -> B) (l : list A) (b : B) :
-  (forall x y, f x y = g x y) ->
-  fold_right f b l = fold_right g b l.
+  (forall x y, f x y = g x y) -> fold_right f b l = fold_right g b l.
 Proof.
-  intros Hfg. induction l as [|x xs IH]; simpl; f_equal; auto.
+  intros Hfg; induction l as [|x xs IH]; simpl; f_equal; auto.
 Qed.
 
+(* form7 = form8 *)
 Theorem form7_eq_form8 : form7 = form8.
 Proof.
   unfold form7, form8.
-  apply functional_extensionality.
-  intro xs.
+  apply functional_extensionality; intro xs.
   unfold compose, maxSoFarAndPreviousSum.
 
-  (* Step 1: swap the lambda order inside fold_right *)
+  (* Step 1: swap the lambda inside fold_right *)
   assert (Hswap : forall x uv,
-            (fun (x : Z) (uv : Z * Z) => let (u, v) := uv in (u <|> (v <#> x), v <#> x))
-            x uv
-            = (fun (x : Z) (uv : Z * Z) => let (u, v) := uv in (u <|> (x <#> v), x <#> v))
-              x uv).
-  { intros x [u v]. simpl. f_equal.
-    - rewrite nonNegPlus_comm.
-      reflexivity.              (* u <|> … stays the same *)
-    - apply nonNegPlus_comm.    (* v <#> x = x <#> v *)
-  }
+            (fun (x : Z) (uv : Z * Z) => let (u, v) := uv in (u <|> (v <#> x), v <#> x)) x uv
+            = (fun (x : Z) (uv : Z * Z) => let (u, v) := uv in (u <|> (x <#> v), x <#> v)) x uv).
+  { intros x [u v]; simpl; f_equal.
+    - rewrite nonNegPlus_comm; reflexivity.
+    - apply nonNegPlus_comm. }
 
-  (* Step 2: rewrite fold_right using Hswap *)
+  (* Step 2: rewrite fold_right using pointwise equality *)
   rewrite (fold_right_ext _ _ xs (0,0) Hswap).
 
-  (* Step 3: now it matches Hpair (fold_scan_fusion lemma) *)
+  (* Step 3: apply the fusion lemma *)
   pose proof fold_scan_fusion_pair xs as Hpair.
-  (* Hpair: fold_right (fun x uv => (u <|> (x <#> v), x <#> v)) (0,0) xs
-            = (fold_right Z.max 0 (scan_right nonNegPlus 0 xs), fold_right nonNegPlus 0 xs) *)
 
   (* Step 4: take fst of both sides *)
   now rewrite Hpair.
 Qed.
 
+(* MaxSegSum equivalence *)
 Theorem MaxSegSum_Equivalence : form1 = form8.
 Proof.
   rewrite form1_eq_form2.
@@ -160,4 +204,5 @@ Proof.
   rewrite form7_eq_form8.
   reflexivity.
 Qed.
+
 Print Assumptions MaxSegSum_Equivalence.
