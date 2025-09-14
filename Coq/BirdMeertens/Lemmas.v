@@ -445,6 +445,15 @@ Qed.
 (* This theorem relates sum of products of tails to a Horner-style computation *)
 Definition horner_op (x y : Z) : Z := (x * y + 1)%Z.
 
+Lemma horner_op_not_associative :
+  exists a b c : Z, horner_op (horner_op a b) c <> horner_op a (horner_op b c).
+Proof.
+  exists 0%Z, 0%Z, 1%Z.
+  unfold horner_op. simpl.
+  (* left = ((0*0+1)*1+1) = 2, right = 0*(0*1+1)+1 = 1 *)
+  lia.
+Qed.
+
 Lemma bird_horner_rule_variant : 
   (fun xs => fold_left Z.add xs 0%Z) ∘ map (fun ys => fold_left Z.mul ys 1%Z) ∘ tails = 
   fold_right horner_op 1%Z.
