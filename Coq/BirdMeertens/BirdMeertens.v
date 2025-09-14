@@ -206,3 +206,7 @@ Proof.
 Qed.
 
 Print Assumptions MaxSegSum_Equivalence.
+(* Axioms:
+functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
+form5_eq_form6 : form5 = form6
+fold_scan_fusion_pair : forall xs : list Z, fold_right (fun (x : Z) '(u, v) => (u <|> (x <#> v), x <#> v)) (0, 0) xs = (fold_right Z.max 0 (scan_right nonNegPlus 0 xs), fold_right nonNegPlus 0 xs) *)

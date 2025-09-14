@@ -402,17 +402,30 @@ Proof.
   (* This proof will require induction on xs and properties of tails, fold operations *)
 Admitted.
 
-Lemma fold_scan_fusion (xs : list Z) : fold_left Z.add (scan_left Z.mul xs 1%Z) 0%Z = fst (fold_left (fun '(u,v) x => let w := (v * x)%Z in ((u + w)%Z, w)) xs (1%Z,1%Z)).
+Lemma fold_scan_fusion_pair :
+  forall (xs : list Z),
+    fold_right
+      (fun x uv => let '(u, v) := uv in (Z.max u (nonNegPlus x v), nonNegPlus x v))
+      (0, 0) xs
+    =
+    (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
+     fold_right nonNegPlus 0 xs).
 Proof.
-  induction xs as [|x xs' IH].
-  - (* Base case: empty list *)
-    simpl scan_left.
-    simpl fold_left.
-    simpl fst.
-    reflexivity.
-  - (* Inductive case: This is where it gets complex *)
+  intros xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
     simpl.
-Admitted.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl scan_right.
+    simpl fold_right.
+    (* Destructure the IH *)
+    rewrite IH.
+    (* Now we need to prove the components are equal *)
+    f_equal.
+    (* For the first component, we need Z.max commutativity *)
+    apply Z.max_comm.
+Qed.
 
 (* Monoid framework for Horner's rule using TailsMonoid *)
 Section HornerViaMonoids.
