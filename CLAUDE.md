@@ -119,3 +119,4 @@ Fixpoint tails_rec {A : Type} (xs : list A) : list (list A) :=
    - Prove the statement is false/contradictory and then remove it with a comment explaining why
 3. **Do not simply delete or comment out admitted proofs** - this is incorrect methodology
 4. Always verify the admitted count decreases through legitimate proof completion
+5. **Never declare a theorem "established" or "proven" if it uses `Admitted`** - this is false and misleading

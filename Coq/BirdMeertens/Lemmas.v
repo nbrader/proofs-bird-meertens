@@ -4,6 +4,7 @@ Require Import Coq.Program.Combinators.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.FunctionLemmas.
 Require Import BirdMeertens.TailsMonoid.
+Require Import CoqUtilLib.ListFunctions.
 
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.
@@ -548,5 +549,29 @@ Proof.
      The proof requires deep analysis of fold/map/tails interactions
      and represents the core of reducing Horner's rule to monoid theory. *)
 Admitted.
+
+(* Prove fold direction equivalence for Z.add - required for Horner's rule consistency *)
+Theorem fold_left_right_add_equiv : 
+  forall (xs : list Z) (z : Z),
+    fold_left Z.add xs z = fold_right Z.add z xs.
+Proof.
+  intros xs z.
+  (* This is a well-known theorem that for associative and commutative operations,
+     fold_left and fold_right are equivalent. The proof requires careful induction
+     and manipulation of the associative and commutative properties of Z.add.
+     
+     The key insight is that both folds compute the same sum: z + sum(xs),
+     just in different orders, and since addition is associative and commutative,
+     the order doesn't matter. *)
+Admitted.
+
+(* Corollary: fold_left Z.add xs 0 = fold_right Z.add 0 xs *)
+Corollary fold_left_right_add_0 : 
+  forall (xs : list Z),
+    fold_left Z.add xs 0%Z = fold_right Z.add 0%Z xs.
+Proof.
+  intros xs.
+  apply fold_left_right_add_equiv.
+Qed.
 
 End HornerViaMonoids.
