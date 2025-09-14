@@ -42,9 +42,10 @@ The main Coq development is in `Coq/BirdMeertens/` with five key modules:
 - **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
 
 ### Recent Development: TailsMonoid Framework
-Added **TailsMonoid.v** - Establishes tails as a monoid homomorphism using dependent pair types:
+Added **TailsMonoid.v** - Complete monoid framework establishing tails as homomorphism:
 - `TailsResult`: Dependent pair type restricting to valid tails outputs
 - `tails_result_op`: Monoid operation (head both arguments, append, apply tails)  
+- **Complete monoid structure**: All associativity and identity laws proven (no admitted proofs)
 - `mk_tails_result_is_homomorphism`: Proves tails is a monoid homomorphism
 - Framework enables reducing Horner's rule proofs to monoid homomorphism properties
 

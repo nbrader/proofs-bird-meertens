@@ -79,7 +79,20 @@ Instance TailsResultMagma : Magma TailsResult := {
 Lemma tails_result_op_assoc : forall x y z : TailsResult,
   m_op x (m_op y z) = m_op (m_op x y) z.
 Proof.
-Admitted.
+  intros x y z.
+  simpl. (* Unfold m_op to tails_result_op *)
+  unfold tails_result_op.
+  (* The goal is now: 
+     mk_tails_result (head_of_tails_result x ++ head_of_tails_result (mk_tails_result (head_of_tails_result y ++ head_of_tails_result z))) = 
+     mk_tails_result (head_of_tails_result (mk_tails_result (head_of_tails_result x ++ head_of_tails_result y)) ++ head_of_tails_result z) *)
+  
+  (* Use the head extraction lemma to simplify *)
+  repeat rewrite head_of_tails_result_correct.
+  
+  (* Now the goal becomes equality of mk_tails_result applied to associated lists *)
+  f_equal.
+  apply app_assoc.
+Qed.
 
 Instance TailsResultSemigroup : Semigroup TailsResult := {
   sg_assoc := tails_result_op_assoc
@@ -89,12 +102,75 @@ Instance TailsResultSemigroup : Semigroup TailsResult := {
 Lemma tails_result_left_id : forall x : TailsResult,
   m_op tails_result_id x = x.
 Proof.
-Admitted.
+  intros x.
+  simpl. (* Unfold m_op to tails_result_op *)
+  unfold tails_result_op, tails_result_id.
+  (* The goal is: mk_tails_result (head_of_tails_result (mk_tails_result []) ++ head_of_tails_result x) = x *)
+  
+  rewrite head_of_tails_result_correct.
+  (* Now: mk_tails_result ([] ++ head_of_tails_result x) = x *)
+  
+  simpl. (* [] ++ y = y *)
+  (* Now: mk_tails_result (head_of_tails_result x) = x *)
+  
+  (* Since x is a TailsResult, it has the form mk_tails_result (some list) *)
+  (* The key insight: head_of_tails_result extracts the original list, so applying mk_tails_result to it should give back x *)
+  destruct x as [xss Hxss].
+  simpl.
+  unfold head_of_tails_result, tails_carrier.
+  simpl.
+  
+  (* Hxss tells us that xss = tails_rec (some original list) *)
+  unfold is_tails_result in Hxss.
+  destruct Hxss as [orig_xs Hxss_eq].
+  subst xss.
+  
+  (* Now we need: mk_tails_result (match tails_rec orig_xs with | ys :: _ => ys | [] => [] end) = exist _ (tails_rec orig_xs) _ *)
+  unfold mk_tails_result.
+  
+  (* For tails_rec, the first element is always the original list *)
+  destruct orig_xs as [|h t].
+  - (* orig_xs = [] *)
+    simpl. f_equal. (* Both sides are [] *)
+  - (* orig_xs = h :: t *)  
+    simpl. f_equal. (* Both sides are h :: t *)
+Qed.
 
 Lemma tails_result_right_id : forall x : TailsResult,
   m_op x tails_result_id = x.
 Proof.
-Admitted.
+  intros x.
+  simpl. (* Unfold m_op to tails_result_op *)
+  unfold tails_result_op, tails_result_id.
+  (* The goal is: mk_tails_result (head_of_tails_result x ++ head_of_tails_result (mk_tails_result [])) = x *)
+  
+  rewrite head_of_tails_result_correct.
+  (* Now: mk_tails_result (head_of_tails_result x ++ []) = x *)
+  
+  rewrite app_nil_r.
+  (* Now: mk_tails_result (head_of_tails_result x) = x *)
+  
+  (* This follows the same pattern as left identity *)
+  destruct x as [xss Hxss].
+  simpl.
+  unfold head_of_tails_result, tails_carrier.
+  simpl.
+  
+  (* Hxss tells us that xss = tails_rec (some original list) *)
+  unfold is_tails_result in Hxss.
+  destruct Hxss as [orig_xs Hxss_eq].
+  subst xss.
+  
+  (* Now we need: mk_tails_result (match tails_rec orig_xs with | ys :: _ => ys | [] => [] end) = exist _ (tails_rec orig_xs) _ *)
+  unfold mk_tails_result.
+  
+  (* For tails_rec, the first element is always the original list *)
+  destruct orig_xs as [|h t].
+  - (* orig_xs = [] *)
+    simpl. f_equal. (* Both sides are [] *)
+  - (* orig_xs = h :: t *)  
+    simpl. f_equal. (* Both sides are h :: t *)
+Qed.
 
 Instance TailsResultMonoid : Monoid TailsResult := {
   mn_id := tails_result_id;
