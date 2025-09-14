@@ -535,3 +535,132 @@ End HornerViaMonoids.
 Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
 Proof.
 Admitted.
+
+(* Here is something Claude Opus 4.1 said about the version of horner's rule I'm trying to prove:
+
+Looking at the classic Horner's rule in your image and comparing it to your theorem, I can see a potential issue. The classic Horner's rule works because:
+
+It uses tails (suffixes of the list)
+The operation x ⊗ y = x*y + 1 has special properties that make the fold work
+
+Your version uses inits (prefixes) instead of tails. Let me check if your theorem might actually be correct if we used tails instead:
+
+Testing Horner's Rule with Tails Instead of InitsText *)
+
+(* Let's check if the theorem would work with tails instead of inits *)
+
+(* Current version (potentially incorrect): *)
+Lemma generalised_horners_rule_nonNeg_inits :
+  forall l : list Z,
+    nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l.
+Proof.
+Admitted.
+    
+(* Potential corrected version using tails: *)
+Lemma generalised_horners_rule_nonNeg_tails :
+  forall l : list Z,
+    nonNegMaximum (map nonNegSum (tails l)) = fold_right nonNegPlus 0 l.
+Proof.
+  intros l.
+  induction l as [| x xs IH].
+  - (* Base case: l = [] *)
+    simpl.
+    unfold nonNegSum, nonNegMaximum.
+    simpl.
+    reflexivity.
+  - (* Inductive step: l = x :: xs *)
+    rewrite tails_cons.
+    simpl map.
+    unfold nonNegSum at 1.
+    simpl fold_left.
+    
+    (* nonNegSum (x :: xs) = fold_left nonNegPlus (x :: xs) 0 *)
+    (* This is the full sum of the entire list *)
+    
+    unfold nonNegMaximum at 1.
+    simpl fold_right at 2.
+    
+    (* We have: max(nonNegSum (x::xs), nonNegMaximum (map nonNegSum (tails xs))) *)
+    (* By IH: nonNegMaximum (map nonNegSum (tails xs)) = fold_right nonNegPlus 0 xs *)
+    (* rewrite IH. *)
+    
+    (* So we need: max(nonNegSum (x::xs), fold_right nonNegPlus 0 xs) = nonNegPlus x (fold_right nonNegPlus 0 xs) *)
+    
+    (* This still has issues because nonNegSum uses fold_left *)
+    admit.
+Admitted.
+
+(* Actually, let me reconsider the whole setup.
+
+
+   Looking at the classic Horner's rule pattern:
+   
+   Classic: sum(map product tails) = fold_right (λx y. x*y+1) 1
+   
+   Your version seems to be trying:
+   max(map nonNegSum inits) = fold_right nonNegPlus 0
+   
+   But the classic pattern would suggest:
+   nonNegSum(map nonNegMax inits) = fold_right ??? 0
+   
+   Or perhaps the issue is that nonNegSum should use fold_right not fold_left
+*)
+
+(* Let's redefine nonNegSum to use fold_right: *)
+Definition nonNegSum_right (xs : list Z) : Z := fold_right nonNegPlus 0 xs.
+
+Lemma generalised_horners_rule_nonNeg_corrected :
+  forall l : list Z,
+    nonNegMaximum (map nonNegSum_right (inits l)) = fold_right nonNegPlus 0 l.
+Proof.
+  intros l.
+  induction l as [| x xs IH].
+  - (* Base case: l = [] *)
+    simpl. reflexivity.
+  - (* Inductive step: l = x :: xs *)
+    rewrite inits_cons.
+    simpl map.
+    unfold nonNegSum_right at 1.
+    simpl fold_right at 2.
+    unfold nonNegMaximum at 1.
+    simpl fold_right at 1.
+    
+    (* 0 <|> fold_right Z.max 0 (map nonNegSum_right (map (cons x) (inits xs))) *)
+    (* = nonNegPlus x (fold_right nonNegPlus 0 xs) *)
+    
+    (* rewrite Z.max_0_l. *)
+    (* 2: { apply fold_max_nonneg. } *)
+    
+    rewrite map_map.
+    simpl.
+    
+    (* Now: fold_right Z.max 0 (map (λl. nonNegPlus x (nonNegSum_right l)) (inits xs)) *)
+    (* By IH: nonNegMaximum (map nonNegSum_right (inits xs)) = fold_right nonNegPlus 0 xs *)
+    
+    (* We need the false lemma map_nonNegPlus_max here! *)
+    (* This confirms the issue: even with fold_right, the theorem doesn't work
+       because of how nonNegPlus interacts with max and empty lists *)
+    admit.
+Admitted.
+    
+(* After analyzing your theorem in light of the classic Horner's rule, I think I've found the key issue:
+The problem isn't just fold_left vs fold_right - it's that the theorem statement itself has a fundamental issue with how nonNegPlus interacts with empty lists and the maximum operation.
+Looking at the classic Horner's rule pattern from your image:
+
+It works because multiplication distributes nicely: the operation x*y + 1 has the right algebraic properties
+The base case (empty tail) gives 1, which is the multiplicative identity
+
+In your version:
+
+nonNegPlus x 0 doesn't always equal 0 (it equals max(x, 0))
+This breaks the distributivity needed: max(map (nonNegPlus x) list) ≠ nonNegPlus x (max list) when list is empty
+
+The core mistake in your formulation: The theorem assumes map_nonNegPlus_max is true, but we've proven it's false. This isn't just an implementation detail - it's a fundamental algebraic incompatibility.
+Possible fixes:
+
+Change the base case of nonNegMaximum: Instead of returning 0 for empty lists, return some value that makes the algebra work
+Use a different operation: Replace nonNegPlus with an operation that has better algebraic properties
+Add constraints: The theorem might be true for lists with all non-negative elements, or with other restrictions
+
+The insight from classic Horner's rule is that the operation needs to have specific algebraic properties for the transformation to work. The nonNegPlus operation with its clamping behavior doesn't have these properties.
+ *)
