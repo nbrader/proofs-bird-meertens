@@ -201,6 +201,24 @@ Proof.
   now rewrite Hpair.
 Qed.
 
+Theorem MaxSegSum_Equivalence_Part1 : form1 = form5.
+Proof.
+  rewrite form1_eq_form2.
+  rewrite form2_eq_form3.
+  rewrite form3_eq_form4.
+  rewrite form4_eq_form5.
+  reflexivity.
+Qed.
+Print Assumptions MaxSegSum_Equivalence_Part1.
+
+Theorem MaxSegSum_Equivalence_Part2 : form6 = form8.
+Proof.
+  rewrite form6_eq_form7.
+  rewrite form7_eq_form8.
+  reflexivity.
+Qed.
+Print Assumptions MaxSegSum_Equivalence_Part2.
+
 (* MaxSegSum equivalence *)
 Theorem MaxSegSum_Equivalence : form1 = form8.
 Proof.
