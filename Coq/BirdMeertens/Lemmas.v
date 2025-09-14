@@ -223,30 +223,6 @@ Proof.
     reflexivity.
 Qed.
 
-(* Refs: NONE *)
-Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
-Proof.
-  unfold compose.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH].
-  - simpl.
-    rewrite Z.max_l.
-    + reflexivity.
-    + reflexivity.
-  - (* Inductive case: x :: xs *)
-    (* LHS: fold_right (fun x0 y => x0 <|> y) 0 (map (fold_right (fun x0 y => x0 <#> y) 0) (inits (x :: xs))) *)
-    (* RHS: fold_right (fun x0 y => (x0 <#> y) <|> 0) 0 (x :: xs) *)
-    
-    simpl.
-    unfold inits at 1. simpl.
-    
-    (* We need to show equality of fold_right operations *)
-    (* This is getting quite complex and requires careful analysis of the fold structures *)
-    (* The proof would need substantial development of intermediate lemmas *)
-    
-Admitted. (* Complex inductive case requires more foundational lemmas about fold operations *)
-
 (* First, let me establish what inits actually does step by step *)
 Lemma inits_cons : forall (A : Type) (x : A) (xs : list A),
   inits (x :: xs) = [] :: map (cons x) (inits xs).
@@ -256,6 +232,59 @@ Proof.
   simpl.
   reflexivity.
 Qed.
+
+(* Refs: NONE *)
+Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros x.
+  induction x as [|a xs IH].
+  - (* Base case: empty list *)
+    simpl.
+    unfold inits. simpl.
+    reflexivity.
+  - (* Inductive case: a :: xs *)
+    (* First, let's expand the inits function *)
+    rewrite inits_cons.
+    simpl map.
+    
+    (* LHS becomes: fold_right Z.max 0 (fold_right nonNegPlus 0 [] :: map (fold_right nonNegPlus 0) (map (cons a) (inits xs))) *)
+    (* which simplifies to: fold_right Z.max 0 (0 :: map (fold_right nonNegPlus 0) (map (cons a) (inits xs))) *)
+    simpl fold_right at 1. simpl fold_right at 1.
+    rewrite Z.max_comm. simpl Z.max.
+    
+    (* Now we have: Z.max (fold_right Z.max 0 (map (fold_right nonNegPlus 0) (map (cons a) (inits xs)))) 0 *)
+    (* Which is: Z.max (fold_right Z.max 0 (map (fun l => fold_right nonNegPlus 0 (a :: l)) (inits xs))) 0 *)
+    
+    rewrite map_map.
+    
+    (* The RHS expands to: fold_right (fun x y => nonNegPlus x y <|> 0) 0 (a :: xs) *)
+    (* Which is: nonNegPlus a (fold_right (fun x y => nonNegPlus x y <|> 0) 0 xs) <|> 0 *)
+    simpl fold_right at 2.
+    
+    (* We need to show the relationship between the compositions *)
+    (* Key insight: fold_right nonNegPlus 0 (a :: l) = nonNegPlus a (fold_right nonNegPlus 0 l) *)
+    
+    (* Let's use the fact that nonNegPlus has certain algebraic properties *)
+    assert (H_fold_cons: forall l, fold_right nonNegPlus 0 (a :: l) = nonNegPlus a (fold_right nonNegPlus 0 l)).
+    { intro l. simpl. reflexivity. }
+    
+    rewrite map_ext with (g := fun l => nonNegPlus a (fold_right nonNegPlus 0 l)).
+    2: { intro l. apply H_fold_cons. }
+    
+    (* Now we can use properties about max and nonNegPlus distribution *)
+    (* The proof involves showing that max distributes over the composition in a specific way *)
+    
+    (* For now, let's use a key lemma that would need to be proven separately *)
+    assert (H_key: Z.max (fold_right Z.max 0 (map (fun l => nonNegPlus a (fold_right nonNegPlus 0 l)) (inits xs))) 0 = 
+                   nonNegPlus a (fold_right (fun x y => nonNegPlus x y <|> 0) 0 xs) <|> 0).
+    { (* This would require a complex proof about the interaction between max, nonNegPlus, and fold operations *)
+      (* The FreeMonoid library could help here by providing structured approaches to monoid composition *)
+      admit. }
+    
+    exact H_key.
+Admitted. (* Still requires the key lemma about max/nonNegPlus interaction *)
 
 Lemma fold_left_cons_Z :
   forall (xs : list Z) (x acc : Z),

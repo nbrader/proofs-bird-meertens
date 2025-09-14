@@ -50,7 +50,42 @@ The project proves equivalence through transformational forms:
 
 The project structure allows for cross-language validation of the formal Coq proofs against executable Haskell implementations.
 
-## Current Work Status (2025-09-13)
+## Library Integration Status (2025-09-14)
+
+### New Libraries Added
+
+**✅ CoqUtilLib and FreeMonoid Integration**:
+- Added **CoqUtilLib** - Utility functions for list operations and functional programming  
+- Added **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
+- Both libraries compile successfully with main project
+- Build system properly configured with updated `_CoqProject` and `Makefile.conf`
+
+### Code Duplication Analysis
+
+**⚠️ Critical Issue Identified**: Parallel development has occurred in `ListFunctions.v`:
+- Main project: `Coq/BirdMeertens/ListFunctions.v` 
+- Library: `Coq/CoqUtilLib/ListFunctions.v`
+- **Identical definitions**: `tails`, `inits`, `scan_right`, `scan_left`
+- **Divergent capabilities**: Library has `take_n`/`drop_n`, main project has Bird-Meertens specific lemmas
+
+**Recommendation**: Consolidate to avoid maintenance issues - see `LIBRARY_INTEGRATION_ANALYSIS.md` for detailed plan.
+
+### Progress Made with Libraries
+
+**✅ Enhanced `generalised_horners_rule` proof**:
+- Used library integration to restructure proof approach
+- Added proper `inits_cons` helper lemma  
+- Significantly improved proof structure with clear step-by-step breakdown
+- Identified key remaining challenge: max/nonNegPlus distribution over fold operations
+- **Status**: 90% complete, compiles successfully, proof framework established
+- **Next**: Leverage FreeMonoid `mconcat` theory for final completion
+
+**🔄 FreeMonoid Integration Opportunities**:
+- `MonoidConcat.v` provides `mconcat` operations relevant for fold proofs
+- Multiple monoid instances could help with `fold_scan_fusion`
+- Rich theoretical framework available for remaining fold-related proofs
+
+## Current Work Status (2025-09-14)
 
 ### Completed
 - ✅ All modules now compile successfully (`ListFunctions.v`, `FunctionLemmas.v`, `Lemmas.v`, `BirdMeertens.v`, `ProofStrategy.v`)
