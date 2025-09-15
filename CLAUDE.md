@@ -123,6 +123,50 @@ The original Wikipedia Bird-Meertens example uses the standard semiring (additio
 
 **Future Work**: The generalized Horner's rule and MaxSegSum_Equivalence may be provable with corrected identity elements that properly match the semiring structure being used.
 
+### Tropical Semiring Horner's Rule Investigation
+
+**Current Research Status**: Investigating whether a corrected tropical semiring version of Horner's rule might be true, especially with non-negative input restrictions.
+
+**Tropical Horner Operation Defined**:
+```coq
+Definition horner_op_tropical (x y : Z) : Z := (x <#> y) <|> 1.
+```
+Where:
+- Original Horner: `(x * y + 1)`
+- Tropical version: `(x <#> y) <|> 1` (replacing `*` with `<#>`, `+` with `<|>`)
+
+**Proven FALSE (Unrestricted)**:
+- `generalised_horners_rule_correction_is_false`: Proven false using counterexample `[-3; 1; 1]`
+- Results: Left side = `2`, Right side = `1` (contradiction)
+- Tested with multiple identity values (0, 1, -1000) - all false
+
+**NON-NEGATIVE RESTRICTION - INCONCLUSIVE**:
+**Attempted Theorem**:
+```coq
+~ (forall l : list Z,
+    all_nonneg l ->
+    nonNegMaximum (map nonNegSum (inits l)) = fold_right horner_op_tropical 1 l)
+```
+
+**Test Cases Under Investigation**:
+1. **`[0; 1]`**: Left side = `1`, Right side = `2` (apparent contradiction)
+2. **`[1; 1]`**: Left side = `2`, Right side = `1` (apparent contradiction)
+3. **`[2; 0]`**: Left side = `2`, Right side = `1` (apparent contradiction)
+
+**IMPORTANT NOTE**: The computation results suggest the non-negative restriction is also false, BUT this needs verification since:
+1. Tropical semiring behavior with non-negative inputs might be different
+2. The identity element choice (1) might not be optimal for non-negative cases
+3. Computational errors in the manual verification are possible
+
+**Recommended Next Steps**:
+1. Carefully verify the manual computations for the test cases
+2. Try different identity elements for the tropical operation
+3. Consider whether the tropical semiring operations are correctly defined for this context
+4. Investigate if restricting to strictly positive inputs changes the result
+5. Consider alternative formulations of the tropical Horner's rule
+
+**Code Location**: All experimental code is in `Coq/BirdMeertens/BirdMeertens.v` in the section "CORRECTED HORNER'S RULE WITH TROPICAL OPERATIONS"
+
 ### Proof Completion Requirements
 **CRITICAL**: When working on admitted proofs, follow these strict guidelines:
 1. **Never remove an admitted proof without first proving it untrue**
