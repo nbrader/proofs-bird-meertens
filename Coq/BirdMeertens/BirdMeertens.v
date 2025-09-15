@@ -62,6 +62,12 @@ Qed.
 
 Theorem form5_eq_form6 : form5 = form6.
 Proof.
+  unfold form5, form6.
+  apply functional_extensionality.
+  intro xs.
+  unfold compose.
+  rewrite tails_rec_equiv.
+  simpl.
   (* proof requires horners_rule *)
 Admitted.
 
