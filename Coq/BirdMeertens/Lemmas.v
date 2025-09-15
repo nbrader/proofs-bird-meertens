@@ -374,6 +374,30 @@ Proof.
   reflexivity.
 Qed.
 
+(* Theorem: nonNegPlus is not associative *)
+Theorem nonNegPlus_not_associative : ~ (forall x y z : Z, nonNegPlus (nonNegPlus x y) z = nonNegPlus x (nonNegPlus y z)).
+Proof.
+  intro H.
+  (* Use counterexample: x = -10, y = -10, z = 1 *)
+  specialize (H (-10) (-10) 1).
+  unfold nonNegPlus in H.
+  simpl in H.
+  (* Left side: nonNegPlus (nonNegPlus (-10) (-10)) 1 *)
+  (* = nonNegPlus (max(0, -10 + -10)) 1 *)
+  (* = nonNegPlus (max(0, -20)) 1 *)
+  (* = nonNegPlus 0 1 *)
+  (* = max(0, 0 + 1) = 1 *)
+
+  (* Right side: nonNegPlus (-10) (nonNegPlus (-10) 1) *)
+  (* = nonNegPlus (-10) (max(0, -10 + 1)) *)
+  (* = nonNegPlus (-10) (max(0, -9)) *)
+  (* = nonNegPlus (-10) 0 *)
+  (* = max(0, -10 + 0) = 0 *)
+
+  (* So we have 1 = 0, which is a contradiction *)
+  discriminate H.
+Qed.
+
 Lemma fold_scan_fusion_pair :
   forall (xs : list Z),
     fold_right
@@ -424,17 +448,25 @@ Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold
 Proof.
 Admitted.
 
+(* Helper lemma for the specific application context *)
+Lemma generalised_horners_rule'_applied : forall xs : list Z,
+  nonNegMaximum (map (fun x : list Z => nonNegMaximum (map nonNegSum (inits x))) (tails_rec xs)) =
+  nonNegMaximum (map (fold_right nonNegPlus 0) (tails_rec xs)).
+Proof.
+  intro xs.
+  f_equal.
+  apply map_ext.
+  intro ys.
+  (* Here we need to prove: nonNegMaximum (map nonNegSum (inits ys)) = fold_right nonNegPlus 0 ys *)
+  (* This is the core equivalence that needs to be established *)
+  admit.
+Admitted.
+
 Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails = nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
 Proof.
-  intros.
-  rewrite tails_rec_equiv_ext.
-  pose proof generalised_horners_rule as H.
-  fold nonNegMaximum in H.
-  replace (fun x y : Z => x <#> y) with nonNegPlus in H by reflexivity.
-  fold nonNegSum in H.
-  replace (fold_right nonNegPlus 0) with nonNegSum in *.
-  - admit. (* I could use "rewrite H." but I'm not sure I actually need it for this... *)
-  - unfold nonNegSum. apply functional_extensionality. intros. rewrite <- fold_left_right_equiv. reflexivity.
-    + intros. admit. (* apply nonNegPlus_assoc. *)
-    + intros. admit. (* apply nonNegPlus_comm. *)
-Admitted.
+  apply functional_extensionality.
+  intro xs.
+  unfold compose.
+  rewrite tails_rec_equiv.
+  apply generalised_horners_rule'_applied.
+Qed.
