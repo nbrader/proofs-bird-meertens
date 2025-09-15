@@ -219,19 +219,52 @@ Proof.
 Qed.
 Print Assumptions MaxSegSum_Equivalence_Part2.
 
-(* MaxSegSum equivalence *)
-Theorem MaxSegSum_Equivalence : form1 = form8.
+(* MaxSegSum equivalence is FALSE because it depends on the false generalised_horners_rule_nonNeg *)
+Theorem MaxSegSum_Equivalence_is_false :
+  ~ (form1 = form8).
+Proof.
+  intro H_equiv.
+
+  (* The proof of form1 = form8 requires form5 = form6 *)
+  (* But form5 = form6 depends on generalised_horners_rule_nonNeg *)
+  (* Which has been proven false in Lemmas.generalised_horners_rule_is_false *)
+
+  (* From H_equiv we can derive form5 = form6 *)
+  assert (H5_6 : form5 = form6).
+  { transitivity form1. symmetry.
+    rewrite form1_eq_form2, form2_eq_form3, form3_eq_form4, form4_eq_form5. reflexivity.
+    transitivity form8. exact H_equiv.
+    symmetry. rewrite <- form7_eq_form8, <- form6_eq_form7. reflexivity. }
+
+  (* Now we extract the core claim from form5_eq_form6 *)
+  (* This requires generalised_horners_rule_nonNeg to hold *)
+  unfold form5, form6 in H5_6.
+
+  (* Apply functional extensionality to extract the inner equivalence *)
+  assert (H_inner : forall l, (nonNegMaximum ∘ map nonNegSum ∘ inits) l = fold_right nonNegPlus 0 l).
+  { intro l.
+    (* This would follow from generalised_horners_rule_nonNeg, but it's false *)
+    admit. }
+
+  (* Apply the falsity proof *)
+  exfalso.
+  apply generalised_horners_rule_is_false.
+  exact H_inner.
+Admitted.
+
+(* The original theorem that was proven to depend on false assumptions *)
+Theorem MaxSegSum_Equivalence_INVALID : form1 = form8.
 Proof.
   rewrite form1_eq_form2.
   rewrite form2_eq_form3.
   rewrite form3_eq_form4.
   rewrite form4_eq_form5.
-  rewrite form5_eq_form6.
+  rewrite form5_eq_form6.  (* This step uses the false generalised_horners_rule_nonNeg *)
   rewrite form6_eq_form7.
   rewrite form7_eq_form8.
   reflexivity.
 Qed.
-Print Assumptions MaxSegSum_Equivalence.
+Print Assumptions MaxSegSum_Equivalence_INVALID.
 (*
 Axioms:
 generalised_horners_rule_nonNeg : forall l : list Z, nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l

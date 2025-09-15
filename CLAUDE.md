@@ -111,6 +111,18 @@ Fixpoint tails_rec {A : Type} (xs : list A) : list (list A) :=
 
 **Impact**: Bypassed complex structural induction requirements for the form6→form7 proof while maintaining both `tails` definitions for potential future use.
 
+### Semiring Structure Issues and Solutions
+**CRITICAL INSIGHT**: The project uses a tropical-like semiring with operations:
+- **Addition operation**: `Z.max` (with identity `0`)
+- **Multiplication operation**: `nonNegPlus` (non-negative addition, with identity `0`)
+
+**Root Cause of False Generalized Horner's Rule**:
+The original Wikipedia Bird-Meertens example uses the standard semiring (addition, multiplication) with identities (0, 1). However, this project attempts to use a variant of the tropical semiring with (max, nonNegPlus) but **incorrectly uses `0` as the identity for both operations**.
+
+**Issue**: For `nonNegPlus` operation, the identity should likely be different. In standard tropical semiring, multiplication corresponds to addition with identity `0`, but here `nonNegPlus` has different semantics that may require a different identity.
+
+**Future Work**: The generalized Horner's rule and MaxSegSum_Equivalence may be provable with corrected identity elements that properly match the semiring structure being used.
+
 ### Proof Completion Requirements
 **CRITICAL**: When working on admitted proofs, follow these strict guidelines:
 1. **Never remove an admitted proof without first proving it untrue**
