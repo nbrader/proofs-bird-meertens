@@ -423,3 +423,18 @@ End HornerViaMonoids.
 Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
 Proof.
 Admitted.
+
+Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails = nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
+Proof.
+  intros.
+  rewrite tails_rec_equiv_ext.
+  pose proof generalised_horners_rule as H.
+  fold nonNegMaximum in H.
+  replace (fun x y : Z => x <#> y) with nonNegPlus in H by reflexivity.
+  fold nonNegSum in H.
+  replace (fold_right nonNegPlus 0) with nonNegSum in *.
+  - admit. (* I could use "rewrite H." but I'm not sure I actually need it for this... *)
+  - unfold nonNegSum. apply functional_extensionality. intros. rewrite <- fold_left_right_equiv. reflexivity.
+    + intros. admit. (* apply nonNegPlus_assoc. *)
+    + intros. admit. (* apply nonNegPlus_comm. *)
+Admitted.

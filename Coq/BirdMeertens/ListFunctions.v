@@ -238,6 +238,13 @@ Proof.
       reflexivity.
 Qed.
 
+Lemma tails_rec_equiv_ext : forall {A : Type} , @tails A = tails_rec.
+Proof.
+  intros A.
+  apply functional_extensionality.
+  apply tails_rec_equiv.
+Qed.
+
 (* With tails_rec_equiv, tails_cons becomes trivial *)
 Lemma tails_cons : forall {A : Type} (x : A) (xs : list A),
   tails (x :: xs) = (x :: xs) :: tails xs.

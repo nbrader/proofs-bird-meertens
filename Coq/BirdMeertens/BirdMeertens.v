@@ -68,8 +68,8 @@ Proof.
   unfold compose.
   rewrite tails_rec_equiv.
   simpl.
-  (* proof requires horners_rule *)
-Admitted.
+  apply generalised_horners_rule'.
+Qed.
 
 Theorem form6_eq_form7 : form6 = form7.
 Proof.
