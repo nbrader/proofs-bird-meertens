@@ -489,26 +489,17 @@ Admitted.
 
 (* Helper lemma: fold_right Z.max 0 gives a value that's <= any upper bound *)
 Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
+  ub >= 0 ->
   (forall y, In y xs -> y <= ub) -> fold_right (fun x y : Z => x <|> y) 0 xs <= ub.
 Proof.
-  intros xs ub H_ub.
+  intros xs ub Hub_nonneg H_ub.
   induction xs as [| x xs' IH].
-
-  - (* Base case: xs = [] *)
-    simpl.
-    (* Need to show: 0 <= ub *)
-    (* This should be true for any upper bound, but we may need the hypothesis to be non-empty *)
-    (* For now, admit this base case *)
-    admit.
-
-  - (* Inductive case: xs = x :: xs' *)
-    simpl.
+  - simpl. lia.
+  - simpl.
     apply Z.max_lub.
     + apply H_ub. left. reflexivity.
-    + apply IH.
-      intros y H_y_in.
-      apply H_ub. right. exact H_y_in.
-Admitted.
+    + apply IH. intros y Hy. apply H_ub. right. assumption.
+Qed.
 
 (* Helper lemma: fold_right Z.max 0 returns the maximum element when it's in the list *)
 Lemma fold_right_max_returns_max : forall (xs : list Z) (m : Z),
