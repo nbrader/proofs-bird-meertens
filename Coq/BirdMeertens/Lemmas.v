@@ -453,13 +453,6 @@ Lemma generalised_horners_rule'_applied : forall xs : list Z,
   nonNegMaximum (map (fun x : list Z => nonNegMaximum (map nonNegSum (inits x))) (tails_rec xs)) =
   nonNegMaximum (map (fold_right nonNegPlus 0) (tails_rec xs)).
 Proof.
-  intro xs.
-  f_equal.
-  apply map_ext.
-  intro ys.
-  (* Here we need to prove: nonNegMaximum (map nonNegSum (inits ys)) = fold_right nonNegPlus 0 ys *)
-  (* This is the core equivalence that needs to be established *)
-  admit.
 Admitted.
 
 Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails = nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
