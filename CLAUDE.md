@@ -19,11 +19,12 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 - May require submodule initialization after cloning: run "Submodule Update"
 
 ### Python Analysis Tools
-- `python Python/references.py` - Generates dependency graph in TGF format
-- `python Python/summarize_dependencies.py` - Analyzes Coq dependencies
-- `python check_pure_proofs.py` - Analyzes proof completeness (TODO: relocate to Python/ folder)
-- `python completed_proofs_report.py` - Reports on completed proofs (TODO: relocate to Python/ folder) 
-- `python theorem_catalog.py` - Catalogs theorem definitions (TODO: relocate to Python/ folder)
+**NOTE**: Use `python3` for all Python commands (not `python`)
+- `python3 Python/references.py` - Generates dependency graph in TGF format
+- `python3 Python/summarize_dependencies.py` - Analyzes Coq dependencies
+- `python3 check_pure_proofs.py` - Analyzes proof completeness (TODO: relocate to Python/ folder)
+- `python3 completed_proofs_report.py` - Reports on completed proofs (TODO: relocate to Python/ folder)
+- `python3 theorem_catalog.py` - Catalogs theorem definitions (TODO: relocate to Python/ folder)
 - Various shell and batch scripts for automation (TODO: organize into appropriate directories)
 
 ## Code Architecture
@@ -158,6 +159,14 @@ Where:
    - `generalised_horners_rule'` (line 448) - simplified to use the first lemma via rewrite
 2. **Achieve complete MaxSegSum equivalence proof** by finishing these updated lemmas
 3. **Leverage the fold_right consistency** to develop cleaner proof strategies
+
+### Proof Development Strategy
+**CRITICAL**: When working on complex proofs, use computational verification at each step:
+1. **Write fresh Python scripts** to test each intermediate goal before attempting Coq proof
+2. **Never trust existing Python scripts** - they may not test what you currently intend to prove
+3. **Test each subgoal independently** with targeted computational verification
+4. **Incrementally build proofs** only after Python verification confirms the goal is viable
+5. **Create new verification scripts** for each proof attempt to ensure accuracy
 
 ### Proof Completion Requirements
 **CRITICAL**: When working on admitted proofs, follow these strict guidelines:
