@@ -459,13 +459,139 @@ Qed.
 (* This approach was incorrect - the distributivity property doesn't hold in general *)
 (* Let me try a different approach for the main proof *)
 
+(* Helper lemma: inits xs contains xs as its last element *)
+Lemma inits_contains_original : forall {A : Type} (xs : list A),
+  In xs (inits xs).
+Proof.
+  intros A xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl. unfold inits. simpl.
+    left. reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    rewrite inits_cons.
+    simpl.
+    right.
+    rewrite in_map_iff.
+    exists xs'.
+    split.
+    + reflexivity.
+    + exact IH.
+Qed.
+
+(* Helper lemma: removing elements from a list can only decrease nonNegSum *)
+Lemma nonNegSum_prefix_le : forall (xs ys : list Z),
+  (exists zs, xs ++ zs = ys) -> nonNegSum xs <= nonNegSum ys.
+Proof.
+  (* This is intuitively true because nonNegPlus can only add non-negative contributions *)
+  (* The formal proof requires careful analysis of fold_right over append *)
+Admitted.
+
+(* Helper lemma: fold_right Z.max 0 gives a value that's <= any upper bound *)
+Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
+  (forall y, In y xs -> y <= ub) -> fold_right (fun x y : Z => x <|> y) 0 xs <= ub.
+Proof.
+  intros xs ub H_ub.
+  induction xs as [| x xs' IH].
+
+  - (* Base case: xs = [] *)
+    simpl.
+    (* Need to show: 0 <= ub *)
+    (* This should be true for any upper bound, but we may need the hypothesis to be non-empty *)
+    (* For now, admit this base case *)
+    admit.
+
+  - (* Inductive case: xs = x :: xs' *)
+    simpl.
+    apply Z.max_lub.
+    + apply H_ub. left. reflexivity.
+    + apply IH.
+      intros y H_y_in.
+      apply H_ub. right. exact H_y_in.
+Admitted.
+
+(* Helper lemma: fold_right Z.max 0 returns the maximum element when it's in the list *)
+Lemma fold_right_max_returns_max : forall (xs : list Z) (m : Z),
+  In m xs -> (forall y, In y xs -> y <= m) -> fold_right (fun x y : Z => x <|> y) 0 xs = m.
+Proof.
+  intros xs m H_m_in H_m_max.
+  induction xs as [| x xs' IH].
+
+  - (* Base case: xs = [] *)
+    (* This case is impossible since m is in the empty list *)
+    exfalso. exact H_m_in.
+
+  - (* Inductive case: xs = x :: xs' *)
+    simpl fold_right.
+
+    (* We have two cases: either m = x or m is in xs' *)
+    destruct (Z.eq_dec m x) as [H_eq | H_neq].
+
+    + (* Case: m = x *)
+      rewrite H_eq.
+      (* Since x is the maximum, fold_right on xs' gives something <= x *)
+      (* So Z.max x (fold_right ...) = x *)
+      (* This requires showing x >= fold_right max of xs' *)
+      admit.
+
+    + (* Case: m ≠ x, so m must be in xs' *)
+      (* Since m is the maximum and m ≠ x, we have m > x *)
+      (* So Z.max x m = m via induction hypothesis *)
+      admit.
+Admitted.
+
 (* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
 Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
   nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
 Proof.
-  (* This is a fundamental property of the tropical semiring that we've verified computationally *)
-  (* For now, we admit this as it requires a more sophisticated proof technique *)
+  intros xs.
+  (* Key insight: xs is in (inits xs), and all other elements are prefixes of xs *)
+  (* Since nonNegSum can only decrease when removing elements, xs achieves the maximum *)
+  assert (H_in: In xs (inits xs)).
+  { apply inits_contains_original. }
+
+  assert (H_max: forall ys, In ys (inits xs) -> nonNegSum ys <= nonNegSum xs).
+  { intros ys H_ys_in.
+    (* Every element in inits xs is a prefix of xs *)
+    assert (H_prefix: exists zs, ys ++ zs = xs).
+    { (* This follows from the definition of inits *)
+      admit.
+    }
+    apply nonNegSum_prefix_le.
+    exact H_prefix.
+  }
+
+  (* Now show that xs achieves the maximum *)
+  unfold nonNegMaximum.
+  (* Since xs is in the list and achieves the maximum value, fold_right Z.max gives nonNegSum xs *)
+
+  (* Key insight: we need to show fold_right Z.max 0 (map nonNegSum (inits xs)) = nonNegSum xs *)
+  (* This follows from the fact that nonNegSum xs is the maximum element in the mapped list *)
+
+  assert (H_is_max: forall y, In y (map nonNegSum (inits xs)) -> y <= nonNegSum xs).
+  { intros y H_y_in.
+    rewrite in_map_iff in H_y_in.
+    destruct H_y_in as [ys [H_eq H_ys_in]].
+    rewrite <- H_eq.
+    apply H_max.
+    exact H_ys_in.
+  }
+
+  assert (H_xs_mapped: In (nonNegSum xs) (map nonNegSum (inits xs))).
+  { rewrite in_map_iff.
+    exists xs.
+    split.
+    - reflexivity.
+    - exact H_in.
+  }
+
+  (* Apply a lemma that fold_right Z.max returns the maximum when that element is in the list *)
+  symmetry.
+  apply fold_right_max_returns_max.
+  - exact H_xs_mapped.
+  - exact H_is_max.
 Admitted.
+
 
 Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
