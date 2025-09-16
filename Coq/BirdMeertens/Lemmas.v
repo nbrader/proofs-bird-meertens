@@ -13,6 +13,7 @@ Require Import Coq.ZArith.Int.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Init.Datatypes.
 Require Import Coq.ZArith.ZArith.
+Require Import Coq.ZArith.Zmax.
 Require Import Coq.micromega.Lia.
 Require Import Coq.Structures.Orders.
 Require Import Coq.Structures.OrdersTac.
@@ -560,33 +561,42 @@ Proof.
 Qed.
 
 (* Helper lemma: fold_right Z.max 0 returns the maximum element when it's in the list *)
-Lemma fold_right_max_returns_max : forall (xs : list Z) (m : Z),
-  In m xs -> (forall y, In y xs -> y <= m) -> fold_right (fun x y : Z => x <|> y) 0 xs = m.
+Lemma fold_right_max_returns_max :
+  forall (xs : list Z) (m : Z),
+    m >= 0 ->
+    (forall y, In y xs -> y <= m) ->
+    In m xs ->
+    fold_right (fun x y => x <|> y) 0 xs = m.
 Proof.
-  intros xs m H_m_in H_m_max.
-  induction xs as [| x xs' IH].
-
-  - (* Base case: xs = [] *)
-    (* This case is impossible since m is in the empty list *)
-    exfalso. exact H_m_in.
-
-  - (* Inductive case: xs = x :: xs' *)
-    simpl fold_right.
-
-    (* We have two cases: either m = x or m is in xs' *)
-    destruct (Z.eq_dec m x) as [H_eq | H_neq].
-
-    + (* Case: m = x *)
-      rewrite H_eq.
-      (* Since x is the maximum, fold_right on xs' gives something <= x *)
-      (* So Z.max x (fold_right ...) = x *)
-      (* This requires showing x >= fold_right max of xs' *)
-      admit.
-
-    + (* Case: m ≠ x, so m must be in xs' *)
-      (* Since m is the maximum and m ≠ x, we have m > x *)
-      (* So Z.max x m = m via induction hypothesis *)
-      admit.
+  intros xs m Hm_nonneg H_ub H_in.
+  induction xs as [|x xs' IH].
+  - simpl in H_in. contradiction.
+  - simpl in *.
+    destruct H_in as [H_eq | H_in'].
+    + subst.
+      specialize (H_ub (fold_right (fun x y : Z => x <|> y) 0 xs')).
+      pose proof Z.max_l.
+      apply H.
+      apply H_ub. clear H_ub.
+      right.
+      assert (In (fold_right (fun x y : Z => x <|> y) 0 xs') xs') by admit.
+      (* I've taken this proof as far as I think I can without modifying the lemma
+      I've reduced it to something which is almost true: That the maximum of a list is in the list.
+      Unfortunately this is not quite true because we start at 0 rather than negative infinity...
+      
+      It looks like this is where using the true identity of the max monoid with negative infinity
+      would help, because then the maximum of a list is always in the list.
+      *)
+      apply H0.
+    + rewrite IH.
+      * pose proof Z.max_r.
+        apply H.
+        specialize (H_ub x).
+        apply H_ub. clear H_ub.
+        left. reflexivity.
+      * intros. apply H_ub. clear H_ub.
+        right.
+        apply H.
 Admitted.
 
 (* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
@@ -637,10 +647,9 @@ Proof.
   (* Apply a lemma that fold_right Z.max returns the maximum when that element is in the list *)
   symmetry.
   apply fold_right_max_returns_max.
-  - exact H_xs_mapped.
+  - admit.
   - exact H_is_max.
 Admitted.
-
 
 Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
