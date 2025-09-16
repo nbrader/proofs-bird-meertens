@@ -483,9 +483,67 @@ Qed.
 Lemma nonNegSum_prefix_le : forall (xs ys : list Z),
   (exists zs, xs ++ zs = ys) -> nonNegSum xs <= nonNegSum ys.
 Proof.
-  (* This is intuitively true because nonNegPlus can only add non-negative contributions *)
-  (* The formal proof requires careful analysis of fold_right over append *)
-Admitted.
+  (* First, we prove two helper lemmas inside this proof. *)
+
+  (* Helper 1: nonNegSum always produces a non-negative result. *)
+  assert (nonNegSum_nonneg : forall l : list Z, 0 <= nonNegSum l).
+  {
+    intros l.
+    induction l as [|h t IH]; simpl.
+    - (* Base case: nonNegSum [] = 0. *)
+      reflexivity.
+    - (* Inductive step: nonNegSum (h :: t) = h <#> nonNegSum t. *)
+      unfold nonNegPlus.
+      (* We perform case analysis on the condition of the 'if' statement. *)
+      destruct (Z.leb 0 (h + nonNegSum t)) eqn:H_leb.
+      + (* Case 1: The condition is true, so h + nonNegSum t >= 0. *)
+        (* The 'if' evaluates to the 'then' branch. *)
+        (* The goal becomes 0 <= h + nonNegSum t, which is true by our assumption for this case. *)
+        apply Z.leb_le in H_leb.
+        exact H_leb.
+      + (* Case 2: The condition is false. *)
+        (* The 'if' evaluates to the 'else' branch, which is 0. *)
+        (* The goal becomes 0 <= 0, which is trivially true. *)
+        reflexivity.
+  }
+
+  (* Helper 2: The nonNegPlus operation is monotonic in its second argument. *)
+  assert (nonNegPlus_monotonic_right : forall x a b, a <= b -> nonNegPlus x a <= nonNegPlus x b).
+  {
+    intros x a b H_le.
+    unfold nonNegPlus.
+    destruct (Z.leb 0 (x + a)) eqn:Ha, (Z.leb 0 (x + b)) eqn:Hb.
+    - (* Case 1: x+a >= 0 and x+b >= 0. *)
+      lia.
+    - (* Case 2: x+a >= 0 and x+b < 0. This case is impossible. *)
+      exfalso. lia.
+    - (* Case 3: x+a < 0 and x+b >= 0. *)
+      apply Z.leb_le in Hb; lia.
+    - (* Case 4: x+a < 0 and x+b < 0. *)
+      reflexivity.
+  }
+
+  (* Main proof by induction on the prefix list xs. *)
+  intros xs.
+  induction xs as [|x xs' IH].
+  - (* Base case: xs = []. *)
+    intros ys H.
+    simpl. (* nonNegSum [] is 0. *)
+    apply nonNegSum_nonneg.
+  - (* Inductive step: xs = x :: xs'. *)
+    intros ys H_exists.
+    destruct H_exists as [zs H_eq].
+    destruct ys as [|y ys'].
+    + (* Impossible for x :: l to equal []. *)
+      discriminate H_eq.
+    + (* ys = y :: ys'. *)
+      inversion H_eq; subst.
+      simpl.
+      apply nonNegPlus_monotonic_right.
+      apply IH.
+      exists zs.
+      reflexivity.
+Qed.
 
 (* Helper lemma: fold_right Z.max 0 gives a value that's <= any upper bound *)
 Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
