@@ -63,6 +63,7 @@ Qed.
 Theorem form5_eq_form6 : form5 = form6.
 Proof.
   unfold form5, form6.
+  rewrite tails_rec_equiv_ext.
   apply generalised_horners_rule'.
 Qed.
 

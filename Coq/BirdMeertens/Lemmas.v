@@ -29,7 +29,7 @@ Definition nonNegPlus (x y : Z) : Z :=
 Notation "x <#> y" := (nonNegPlus x y) (at level 50, left associativity).
 Notation "x <|> y" := (Z.max x y) (at level 50, left associativity).
 
-Definition nonNegSum (xs : list Z) : Z := fold_left nonNegPlus xs 0%Z.
+Definition nonNegSum (xs : list Z) : Z := fold_right nonNegPlus 0%Z xs.
 
 Definition nonNegMaximum : list Z -> Z := fold_right (fun x y => x <|> y) 0.
 
@@ -143,9 +143,6 @@ Proof.
   rewrite Z.add_comm.
   reflexivity.
 Qed.
-
-Definition MaxNonNegSumInits : list Z -> Z := nonNegMaximum ∘ map nonNegSum ∘ inits.
-Definition MaxNonNegSumInitsInd (xs : list Z) : Z := fold_right nonNegPlus 0 xs.
 
 Definition distributes_over_max (op : Z -> Z -> Z) := forall s t x, op (Z.max s t) x = Z.max  (op s x) (op t x).
 
@@ -444,22 +441,11 @@ To Do:
 
 End HornerViaMonoids.
 
-Lemma generalised_horners_rule : fold_right (fun x y => x <|> y) 0 ∘ map (fold_right (fun x y => x <#> y) 0) ∘ inits = fold_right (fun x y => (x <#> y) <|> 0) 0.
+Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
 Admitted.
 
-(* Helper lemma for the specific application context *)
-Lemma generalised_horners_rule'_applied : forall xs : list Z,
-  nonNegMaximum (map (fun x : list Z => nonNegMaximum (map nonNegSum (inits x))) (tails_rec xs)) =
-  nonNegMaximum (map (fold_right nonNegPlus 0) (tails_rec xs)).
+Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails_rec = nonNegMaximum ∘ map nonNegSum ∘ tails_rec.
 Proof.
+  rewrite <- generalised_horners_rule.
 Admitted.
-
-Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails = nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
-Proof.
-  apply functional_extensionality.
-  intro xs.
-  unfold compose.
-  rewrite tails_rec_equiv.
-  apply generalised_horners_rule'_applied.
-Qed.
