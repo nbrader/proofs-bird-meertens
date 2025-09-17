@@ -699,57 +699,107 @@ Proof.
      The proof is by induction but requires careful handling of Z.max cases. *)
 Admitted.
 
+(* Helper lemma: nonNegPlus is always non-negative *)
+Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
+Proof.
+  intros x y.
+  unfold nonNegPlus.
+  pose proof (Zle_bool_total 0 (x+y)).
+  destruct H.
+  - rewrite e.
+    apply Zge_is_le_bool in e.
+    apply e.
+  - apply Zge_is_le_bool in e.
+    admit.
+Admitted.
+
+(* Helper lemma: nonNegSum is always non-negative *)
+Lemma nonNegSum_nonneg : forall xs : list Z, nonNegSum xs >= 0.
+Proof.
+  intros xs.
+  unfold nonNegSum.
+  induction xs as [|x xs' IH].
+  - simpl. lia.
+  - simpl. apply nonNegPlus_nonneg'.
+Qed.
+
+(* Helper lemma: elements of inits are prefixes *)
+Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
+  In ys (inits xs) -> exists zs, ys ++ zs = xs.
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH]; intros ys H_in.
+  - simpl in H_in. destruct H_in as [H_eq | H_contra].
+    + subst. exists []. reflexivity.
+    + contradiction.
+  - simpl in H_in. destruct H_in as [H_eq | H_in'].
+    + subst. exists (x :: xs'). reflexivity.
+    + (* ys comes from map (cons x) (inits xs') *)
+      apply in_map_iff in H_in'.
+      destruct H_in' as [ys' [H_eq H_inits]].
+      subst ys.
+      specialize (IH ys' H_inits) as [zs H_concat].
+      exists zs. simpl. now f_equal.
+Qed.
+
 (* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
 Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
   nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
 Proof.
   intros xs.
-  (* Key insight: xs is in (inits xs), and all other elements are prefixes of xs *)
-  (* Since nonNegSum can only decrease when removing elements, xs achieves the maximum *)
+  (* xs is one of its inits *)
   assert (H_in: In xs (inits xs)).
   { apply inits_contains_original. }
 
+  (* Every element of inits xs is a prefix of xs, hence its nonNegSum <= nonNegSum xs *)
   assert (H_max: forall ys, In ys (inits xs) -> nonNegSum ys <= nonNegSum xs).
-  { intros ys H_ys_in.
-    (* Every element in inits xs is a prefix of xs *)
-    assert (H_prefix: exists zs, ys ++ zs = xs).
-    { (* This follows from the definition of inits *)
-      admit.
-    }
+  {
+    intros ys H_ys_in.
+    (* inits_are_prefixes gives ys ++ zs = xs *)
+    destruct (inits_are_prefixes Z xs ys H_ys_in) as [zs H_app].
     apply nonNegSum_prefix_le.
-    exact H_prefix.
+    exists zs; exact H_app.
   }
 
-  (* Now show that xs achieves the maximum *)
-  unfold nonNegMaximum.
-  (* Since xs is in the list and achieves the maximum value, fold_right Z.max gives nonNegSum xs *)
-
-  (* Key insight: we need to show fold_right Z.max 0 (map nonNegSum (inits xs)) = nonNegSum xs *)
-  (* This follows from the fact that nonNegSum xs is the maximum element in the mapped list *)
-
+  (* map the above fact to the mapped list *)
   assert (H_is_max: forall y, In y (map nonNegSum (inits xs)) -> y <= nonNegSum xs).
-  { intros y H_y_in.
+  {
+    intros y H_y_in.
     rewrite in_map_iff in H_y_in.
     destruct H_y_in as [ys [H_eq H_ys_in]].
     rewrite <- H_eq.
-    apply H_max.
-    exact H_ys_in.
+    apply H_max; exact H_ys_in.
   }
 
+  (* nonNegSum xs is indeed an element of the mapped list *)
   assert (H_xs_mapped: In (nonNegSum xs) (map nonNegSum (inits xs))).
-  { rewrite in_map_iff.
-    exists xs.
-    split.
-    - reflexivity.
-    - exact H_in.
+  {
+    rewrite in_map_iff.
+    exists xs; split; [reflexivity | exact H_in].
   }
 
-  (* Apply a lemma that fold_right Z.max returns the maximum when that element is in the list *)
+  (* show nonNegSum xs >= 0 by induction on xs *)
+  assert (Hm_nonneg: 0 <= nonNegSum xs).
+  {
+    induction xs as [|x xs' IH].
+    - simpl; lia.
+    - simpl.
+      unfold nonNegPlus.
+      destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
+      + apply Z.leb_le in Heq; exact Heq.
+      + simpl; lia.
+  }
+
+  (* Now apply fold_right_max_returns_max on the mapped list *)
+  unfold nonNegMaximum.
   symmetry.
-  apply fold_right_max_returns_max.
-  - admit.
+  apply fold_right_max_returns_max with (m := nonNegSum xs).
+  - apply Z.ge_le_iff.
+    exact Hm_nonneg.
   - exact H_is_max.
-Admitted.
+  - exact H_xs_mapped.
+Qed.
+
 
 Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
