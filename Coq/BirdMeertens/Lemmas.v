@@ -91,9 +91,9 @@ Lemma Z_plus_neg_inf_max_assoc : forall x y z : Z_plus_neg_inf,
 Proof.
   intros [a|] [b|] [c|]; simpl; try reflexivity.
   f_equal.
-  (* Prove Z.max associativity manually *)
-  repeat rewrite Z.max_spec.
-  repeat destruct (Z.leb_spec); lia.
+  (* Use Z.max associativity *)
+  rewrite Z.max_assoc.
+  reflexivity.
 Qed.
 
 Lemma Z_plus_neg_inf_max_id_l : forall x : Z_plus_neg_inf, NegInf ∨_inf x = x.
