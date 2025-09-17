@@ -110,9 +110,9 @@ Qed.
 Lemma fold_right_max_inf_in : forall (xs : list Z),
   xs <> [] -> Z_plus_neg_inf_In (fold_right_max_inf xs) xs.
 Proof.
-  intros xs H_nonempty.
-  (* This is provable but complex - the key insight is that
-     fold_right_max_inf always returns one of the values from the list *)
+  (* This proof requires showing that fold_right on non-empty mapped lists never returns NegInf,
+     which is true but complex to prove. The key insight is that fold_right_max_inf
+     always returns one of the values from the list. *)
 Admitted.
 
 (* Define nonNegPlus using Qle_bool to convert the proposition to a boolean *)
@@ -693,10 +693,9 @@ Lemma fold_right_max_inf_returns_max :
     In m xs ->
     fold_right_max_inf xs = Z_val m.
 Proof.
-  intros xs m H_ub H_in.
-  (* This is the key property: with negative infinity as identity,
-     fold_right_max_inf always returns an element from the list.
-     The proof is by induction but requires careful handling of Z.max cases. *)
+  (* This proof is complex as it requires careful reasoning about the max operation
+     with upper bounds and membership. The key insight is that if m is both an upper bound
+     and in the list, then fold_right_max_inf must return Z_val m. *)
 Admitted.
 
 (* Helper lemma: nonNegPlus is always non-negative *)
@@ -704,14 +703,13 @@ Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
 Proof.
   intros x y.
   unfold nonNegPlus.
-  pose proof (Zle_bool_total 0 (x+y)).
-  destruct H.
-  - rewrite e.
-    apply Zge_is_le_bool in e.
-    apply e.
-  - apply Zge_is_le_bool in e.
-    admit.
-Admitted.
+  case_eq (Z.leb 0 (x + y)); intros H.
+  - (* Case: 0 <= x + y, so nonNegPlus returns x + y *)
+    apply Z.leb_le in H.
+    lia.
+  - (* Case: 0 > x + y, so nonNegPlus returns 0 *)
+    lia.
+Qed.
 
 Search Z.le.
 
