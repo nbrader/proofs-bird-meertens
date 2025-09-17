@@ -472,7 +472,7 @@ Proof.
   - apply Z.leb_le in H.
     rewrite Z.max_l; [reflexivity | exact H].
   - apply Z.leb_gt in H.
-    rewrite Z.max_r; [reflexivity | lia].
+    rewrite Z.max_r; [reflexivity | apply Z.lt_le_incl; exact H].
 Qed.
 
 Lemma nonNegPlus_zero_left : forall x : Z, nonNegPlus 0 x = Z.max x 0.
