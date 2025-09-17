@@ -177,3 +177,17 @@ Where:
 3. **Do not simply delete or comment out admitted proofs** - this is incorrect methodology
 4. Always verify the admitted count decreases through legitimate proof completion
 5. **Never declare a theorem "established" or "proven" if it uses `Admitted`** - this is false and misleading
+
+### Z_plus_neg_inf Infrastructure (Added Sept 2025)
+**TODO - Future Work**: The `Z_plus_neg_inf` type and associated lemmas (lines 26-96 in Lemmas.v) provide a mathematically sound foundation for max operations without non-negativity constraints:
+
+- **Core Innovation**: Extends integers with `NegInf` as proper identity for max monoid
+- **Key Benefits**:
+  - `fold_right_max_inf` always returns an element from the list (when non-empty)
+  - No artificial non-negativity constraints needed
+  - Works correctly with all-negative lists
+- **Key Lemmas to Complete**:
+  - `fold_right_max_inf_in`: Proves result membership (currently admitted)
+  - `fold_right_max_inf_returns_max`: General max lemma without non-negativity (currently admitted)
+
+**Recommendation**: These lemmas should be prioritized for completion as they provide the proper mathematical foundation for max-related proofs throughout the codebase. The current `fold_right_max_returns_max` lemma (line 645) has fundamental issues that this infrastructure resolves.
