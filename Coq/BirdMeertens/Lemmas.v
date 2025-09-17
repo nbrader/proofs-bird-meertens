@@ -649,11 +649,19 @@ Proof.
     unfold nonNegPlus.
     destruct (Z.leb 0 (x + a)) eqn:Ha, (Z.leb 0 (x + b)) eqn:Hb.
     - (* Case 1: x+a >= 0 and x+b >= 0. *)
-      lia.
+      apply Z.add_le_mono_l.
+      exact H_le.
     - (* Case 2: x+a >= 0 and x+b < 0. This case is impossible. *)
-      exfalso. lia.
+      exfalso.
+      apply Z.leb_le in Ha.
+      apply Z.leb_gt in Hb.
+      assert (H_xa_le_xb: x + a <= x + b) by (apply Z.add_le_mono_l; exact H_le).
+      assert (H_xb_ge_0: 0 <= x + b) by (apply Z.le_trans with (m := x + a); [exact Ha | exact H_xa_le_xb]).
+      apply Z.lt_irrefl with (x := 0).
+      apply Z.le_lt_trans with (m := x + b); [exact H_xb_ge_0 | exact Hb].
     - (* Case 3: x+a < 0 and x+b >= 0. *)
-      apply Z.leb_le in Hb; lia.
+      apply Z.leb_le in Hb.
+      exact Hb.
     - (* Case 4: x+a < 0 and x+b < 0. *)
       reflexivity.
   }
