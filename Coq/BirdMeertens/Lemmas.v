@@ -869,12 +869,12 @@ Proof.
   assert (Hm_nonneg: 0 <= nonNegSum xs).
   {
     induction xs as [|x xs' IH].
-    - simpl; lia.
+    - simpl. apply Z.le_refl.
     - simpl.
       unfold nonNegPlus.
       destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
       + apply Z.leb_le in Heq; exact Heq.
-      + simpl; lia.
+      + simpl. apply Z.le_refl.
   }
 
   (* Now apply fold_right_max_returns_max on the mapped list *)
