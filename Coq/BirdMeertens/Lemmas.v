@@ -332,7 +332,12 @@ Proof.
     (* Since s+x < 0 and t+x >= 0, we have Z.max (s+x) (t+x) = t+x *)
     (* And 0 <|> t+x = Z.max 0 (t+x) = t+x since t+x >= 0 *)
     rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-    assert (H_tx_ge_sx: t + x >= s + x). { lia. }
+    assert (H_tx_ge_sx: t + x >= s + x). {
+      apply Z.ge_le_iff.
+      apply Z.le_trans with (m := 0).
+      - apply Z.lt_le_incl. exact Hs.
+      - exact Ht.
+    }
     rewrite Z.max_r.
     + rewrite Z.max_r; [reflexivity | exact Ht].
     + apply Z.ge_le. exact H_tx_ge_sx.
