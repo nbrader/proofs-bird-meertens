@@ -716,14 +716,15 @@ Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
 Proof.
   intros x y.
   unfold nonNegPlus.
-  pose proof (Zle_bool_total 0 (x+y)).
-  destruct H.
-  - rewrite e.
-    apply Zge_is_le_bool in e.
-    apply e.
-  - apply Zge_is_le_bool in e.
-    admit.
-Admitted.
+  destruct (Z.leb 0 (x + y)) eqn:H.
+  - (* Case: 0 <= x + y, so nonNegPlus returns x + y *)
+    apply Z.leb_le in H.
+    apply Z.le_ge.
+    exact H.
+  - (* Case: 0 > x + y, so nonNegPlus returns 0 *)
+    apply Z.le_ge.
+    apply Z.le_refl.
+Qed.
 
 Search Z.le.
 
