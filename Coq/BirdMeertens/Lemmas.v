@@ -14,12 +14,6 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.Init.Datatypes.
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.ZArith.Zmax.
-Require Import Coq.micromega.Lia.
-Require Import Coq.Structures.Orders.
-Require Import Coq.Structures.OrdersTac.
-Require Import Coq.Numbers.NatInt.NZAxioms.
-Require Import Coq.Init.Nat.
-Require Import Coq.Structures.GenericMinMax.
 
 Open Scope Z_scope.
 
