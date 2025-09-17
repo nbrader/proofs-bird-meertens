@@ -556,7 +556,7 @@ Proof.
     rewrite Z.max_l; [reflexivity | exact H].
   - (* Case: x + y < 0 *)
     apply Z.leb_gt in H.
-    rewrite Z.max_r; [reflexivity | lia].
+    rewrite Z.max_r; [reflexivity | apply Z.le_refl].
 Qed.
 
 (* This approach was incorrect - the distributivity property doesn't hold in general *)
