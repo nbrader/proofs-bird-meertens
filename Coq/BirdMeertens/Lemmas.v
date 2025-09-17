@@ -663,7 +663,7 @@ Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
 Proof.
   intros xs ub Hub_nonneg H_ub.
   induction xs as [| x xs' IH].
-  - simpl. lia.
+  - simpl. apply Z.ge_le_iff. assumption.
   - simpl.
     apply Z.max_lub.
     + apply H_ub. left. reflexivity.
