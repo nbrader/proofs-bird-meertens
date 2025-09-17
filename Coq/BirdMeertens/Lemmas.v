@@ -783,12 +783,14 @@ Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
 Proof.
   intros x y.
   unfold nonNegPlus.
-  case_eq (Z.leb 0 (x + y)); intros H.
+  destruct (Z.leb 0 (x + y)) eqn:H.
   - (* Case: 0 <= x + y, so nonNegPlus returns x + y *)
     apply Z.leb_le in H.
-    lia.
+    apply Z.le_ge.
+    exact H.
   - (* Case: 0 > x + y, so nonNegPlus returns 0 *)
-    lia.
+    apply Z.le_ge.
+    apply Z.le_refl.
 Qed.
 
 Search Z.le.
