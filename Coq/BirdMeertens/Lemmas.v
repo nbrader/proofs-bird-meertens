@@ -461,7 +461,7 @@ Proof.
   intros x y Hx Hy.
   unfold nonNegPlus.
   assert (H: Z.leb 0 (x + y) = true).
-  { apply Z.leb_le. lia. }
+  { apply Z.leb_le. apply Z.add_nonneg_nonneg; [apply Z.ge_le_iff; exact Hx | apply Z.ge_le_iff; exact Hy]. }
   rewrite H.
   reflexivity.
 Qed.
