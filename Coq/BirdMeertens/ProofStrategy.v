@@ -121,7 +121,12 @@ Proof.
     (* Since s+x >= 0 > t+x, Z.leb (s+x) (t+x) = false, so we get s+x *)
     simpl.
     rewrite Z.leb_le in Hs. rewrite Z.leb_gt in Ht.
-    assert (H_ge: s + x >= t + x). { lia. }
+    assert (H_ge: s + x >= t + x). {
+      apply Z.ge_le_iff.
+      apply Z.le_trans with (m := 0).
+      - apply Z.lt_le_incl. exact Ht.
+      - exact Hs.
+    }
     assert (H_leb_false: Z.leb (s + x) (t + x) = false).
     { apply Z.leb_gt. apply Z.lt_le_trans with (m := 0). exact Ht. exact Hs. }
     rewrite H_leb_false.
@@ -138,7 +143,12 @@ Proof.
     (* Since t+x >= 0, this gives t+x *)
     simpl. 
     rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-    assert (H_ge: t + x >= s + x). { lia. }
+    assert (H_ge: t + x >= s + x). {
+      apply Z.ge_le_iff.
+      apply Z.le_trans with (m := 0).
+      - apply Z.lt_le_incl. exact Hs.
+      - exact Ht.
+    }
     rewrite Z.max_r; [reflexivity | apply Z.ge_le; exact H_ge].
   
   (* Case 4: both s+x < 0 and t+x < 0 *)
