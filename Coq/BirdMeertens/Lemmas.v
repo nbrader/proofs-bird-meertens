@@ -791,6 +791,118 @@ Proof.
         exact H_in'.
 Qed.
 
+(* Helper lemma: fold_right_max_inf returns the maximum element *)
+Lemma fold_right_max_inf_is_maximal :
+  forall (xs : list Z) (w y : Z),
+    xs <> [] ->
+    fold_right_max_inf xs = Z_val w ->
+    In y xs ->
+    y <= w.
+Proof.
+  intro xs.
+  induction xs as [|x xs' IH].
+  - intros w y H_contra. contradiction H_contra; reflexivity.
+
+  - intros w y H_nonempty H_fold H_in.
+    destruct xs' as [|z xs''].
+
+    + (* xs = [x] *)
+      simpl in H_in. destruct H_in as [H_eq | H_contra].
+      * subst. unfold fold_right_max_inf in H_fold. simpl in H_fold.
+        inversion H_fold. apply Z.le_refl.
+      * contradiction.
+
+    + (* xs = x :: z :: xs'' *)
+      unfold fold_right_max_inf in H_fold. simpl in H_fold.
+
+      (* The fold gives Z_val x ∨_inf fold_right_max_inf (z :: xs'') *)
+      (* Let's call fold_right_max_inf (z :: xs'') = Z_val w' for some w' *)
+      assert (H_tail_nonempty: z :: xs'' <> []) by discriminate.
+      assert (H_tail_exists: exists w', fold_right_max_inf (z :: xs'') = Z_val w').
+      { apply fold_right_max_inf_never_neginf. exact H_tail_nonempty. }
+
+      destruct H_tail_exists as [w' Hw'].
+      unfold fold_right_max_inf in Hw'. simpl in Hw'.
+      rewrite Hw' in H_fold.
+      simpl in H_fold.
+      inversion H_fold. subst.
+
+      (* So w = Z.max x w' *)
+      (* Case analysis on where y is *)
+      destruct H_in as [H_y_eq_x | H_y_in_tail].
+
+      * (* y = x *)
+        subst. apply Z.le_max_l.
+
+      * (* y in tail z :: xs'' *)
+        assert (H_y_le_w': y <= w').
+        { apply IH.
+          - exact H_tail_nonempty.
+          - exact Hw'.
+          - exact H_y_in_tail. }
+        apply Z.le_trans with w'. exact H_y_le_w'. apply Z.le_max_r.
+Qed.
+
+(* Direct proof using the key insight that the maximum is unique *)
+Lemma fold_right_max_inf_gives_max :
+  forall (xs : list Z) (m : Z),
+    xs <> [] ->
+    In m xs ->
+    (forall y, In y xs -> y <= m) ->
+    fold_right_max_inf xs = Z_val m.
+Proof.
+  intro xs.
+  induction xs as [|x xs' IH].
+  - intros m H_contra. contradiction H_contra; reflexivity.
+
+  - intros m H_nonempty H_in H_max.
+    destruct xs' as [|y xs''].
+
+    + (* Base case: xs = [x] *)
+      simpl in H_in. destruct H_in as [H_eq | H_contra].
+      * subst. unfold fold_right_max_inf. simpl. reflexivity.
+      * contradiction.
+
+    + (* Inductive case: xs = x :: y :: xs'' *)
+      (* Key insight: fold_right_max_inf (x :: y :: xs'') computes the max of all elements *)
+      (* Since m is the unique maximum (by conditions), the fold must return Z_val m *)
+
+      (* We know fold_right_max_inf returns some element from the list *)
+      assert (H_result_in: Z_plus_neg_inf_In (fold_right_max_inf (x :: y :: xs'')) (x :: y :: xs'')).
+      { apply fold_right_max_inf_in. discriminate. }
+
+      assert (H_result_exists: exists w, fold_right_max_inf (x :: y :: xs'') = Z_val w).
+      { apply fold_right_max_inf_never_neginf. discriminate. }
+
+      destruct H_result_exists as [w Hw].
+
+      (* From H_result_in and Hw, we get In w (x :: y :: xs'') *)
+      assert (H_w_in: In w (x :: y :: xs'')).
+      { unfold Z_plus_neg_inf_In in H_result_in. rewrite Hw in H_result_in. exact H_result_in. }
+
+      (* Since m is the maximum and w is in the list, w <= m *)
+      assert (H_w_le_m: w <= m).
+      { apply H_max. exact H_w_in. }
+
+      (* Since the fold computes the maximum and m is in the list, we must have w >= m *)
+      (* This follows from the fact that fold_right_max_inf computes the actual maximum *)
+      assert (H_m_le_w: m <= w).
+      {
+        (* fold_right_max_inf returns the maximum element *)
+        (* So w must be >= all elements including m *)
+        apply (fold_right_max_inf_is_maximal (x :: y :: xs'') w).
+        - discriminate.
+        - exact Hw.
+        - exact H_in.
+      }
+
+      (* From w <= m and m <= w, we get w = m *)
+      assert (H_w_eq_m: w = m).
+      { apply Z.le_antisymm. exact H_w_le_m. exact H_m_le_w. }
+
+      rewrite Hw. rewrite H_w_eq_m. reflexivity.
+Qed.
+
 (* Helper lemma: if m is maximum element, then fold_right_max_inf returns m *)
 Lemma fold_right_max_inf_with_max :
   forall (xs : list Z) (m : Z),
@@ -799,67 +911,9 @@ Lemma fold_right_max_inf_with_max :
     (forall y, In y xs -> y <= m) ->
     fold_right_max_inf xs = Z_val m.
 Proof.
-  intros xs m H_nonempty H_in H_max.
-
-  (* The approach: use induction on xs, similar to fold_right_max_returns_max *)
-  (* Key insight: fold_right_max_inf xs computes the same maximum as
-     fold_right Z.max 0 xs when all elements are non-negative,
-     and generalizes to handle negative elements correctly *)
-
-  (* Since we know m is the maximum and m ∈ xs, the fold_right_max_inf
-     must return Z_val m by the definition of maximum *)
-
-  induction xs as [|x xs' IH].
-  - (* Base case: xs = [] *)
-    contradiction H_nonempty; reflexivity.
-
-  - (* Inductive case: xs = x :: xs' *)
-    unfold fold_right_max_inf. simpl.
-
-    (* Case analysis on whether xs' is empty *)
-    destruct xs' as [|y xs''].
-
-    + (* Subcase: xs = [x], so m = x *)
-      simpl in H_in. destruct H_in as [H_eq | H_contra].
-      * subst. simpl. reflexivity.
-      * contradiction.
-
-    + (* Subcase: xs = x :: y :: xs'' *)
-      simpl.
-
-      (* The computation is: Z_val x ∨_inf fold_right_max_inf (y :: xs'') *)
-      (* This is: Z_val x ∨_inf Z_val (max of (y :: xs'')) *)
-      (* = Z_val (max(x, max of (y :: xs''))) *)
-
-      (* Case analysis: is m = x, or is m in the tail? *)
-      destruct H_in as [H_eq | H_in_tail].
-
-      * (* Case: m = x *)
-        subst.
-        (* Goal: Z_val m ∨_inf fold_right_max_inf (y :: xs'') = Z_val m *)
-
-        (* Since m is max of whole list, m >= everything in tail *)
-        assert (H_m_max_tail: forall z, In z (y :: xs'') -> z <= m).
-        { intros z Hz. apply H_max. right. exact Hz. }
-
-        (* By our first lemma, fold_right_max_inf (y :: xs'') returns something in (y :: xs'') *)
-        (* But this is getting complex - let's admit for now since it's computationally verified *)
-        admit.
-
-      * (* Case: m is in tail y :: xs'' *)
-        (* Since m is max of whole list, m must also be max of tail *)
-        assert (H_m_max_tail: forall z, In z (y :: xs'') -> z <= m).
-        { intros z Hz. apply H_max. right. exact Hz. }
-
-        (* Also, x <= m since m is global max *)
-        assert (H_x_le_m: x <= m).
-        { apply H_max. left. reflexivity. }
-
-        (* The computation gives Z_val x ∨_inf Z_val m = Z_val (max x m) = Z_val m *)
-        (* This is getting complex - let's admit for now since it's computationally verified *)
-        admit.
-
-Admitted.
+  (* This is now just a direct application of our helper lemma *)
+  exact fold_right_max_inf_gives_max.
+Qed.
 
 (* General version: fold_right max with proper negative infinity identity *)
 Lemma fold_right_max_inf_returns_max :
