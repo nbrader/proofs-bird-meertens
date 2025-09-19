@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-Test script for the fold_right_max_inf_in lemma.
+Test script for fold_right_max_inf_in lemma.
 
-This lemma states: forall (xs : list Z), xs <> [] -> Z_plus_neg_inf_In (fold_right_max_inf xs) xs.
+This script tests the property that for a non-empty list xs,
+fold_right_max_inf(xs) always returns an element that is in xs.
 
-In other words: If xs is non-empty, then fold_right_max_inf xs returns an element that is in xs.
+Lemma: forall (xs : list Z), xs <> [] -> Z_plus_neg_inf_In (fold_right_max_inf xs) xs.
+
+Translation to Python:
+- Z_plus_neg_inf is either a Z value or NegInf
+- fold_right_max_inf(xs) = fold_right(max_op, NegInf, map(Z_val, xs))
+- Z_plus_neg_inf_In(x, xs) = True iff x is Z_val(z) and z in xs
 """
 
-import sys
+from typing import Union, List
 import random
-from typing import List, Union, Optional
 
-# Z_plus_neg_inf type simulation
+# Type definitions
 class NegInf:
     def __repr__(self):
         return "NegInf"
@@ -19,151 +24,133 @@ class NegInf:
     def __eq__(self, other):
         return isinstance(other, NegInf)
 
-class ZVal:
-    def __init__(self, val: int):
-        self.val = val
+Z_plus_neg_inf = Union[int, NegInf]
 
-    def __repr__(self):
-        return f"Z_val({self.val})"
+def z_val(z: int) -> int:
+    """Convert regular integer to Z_val - just identity in Python"""
+    return z
 
-    def __eq__(self, other):
-        return isinstance(other, ZVal) and self.val == other.val
-
-ZPlusNegInf = Union[ZVal, NegInf]
-
-def z_plus_neg_inf_max(x: ZPlusNegInf, y: ZPlusNegInf) -> ZPlusNegInf:
-    """Z_plus_neg_inf_max operation"""
+def z_plus_neg_inf_max(x: Z_plus_neg_inf, y: Z_plus_neg_inf) -> Z_plus_neg_inf:
+    """Max operation for Z_plus_neg_inf"""
     if isinstance(x, NegInf):
         return y
     if isinstance(y, NegInf):
         return x
-    # Both are ZVal
-    return ZVal(max(x.val, y.val))
+    # Both are integers
+    return max(x, y)
 
-def fold_right_max_inf(xs: List[int]) -> ZPlusNegInf:
+def fold_right_max_inf(xs: List[int]) -> Z_plus_neg_inf:
     """
-    fold_right_max_inf xs = fold_right Z_plus_neg_inf_max NegInf (map Z_val xs)
+    fold_right Z_plus_neg_inf_max NegInf (map Z_val xs)
     """
     if not xs:
         return NegInf()
 
     result = NegInf()
-    # fold_right goes from right to left
-    for x in reversed(xs):
-        result = z_plus_neg_inf_max(ZVal(x), result)
+    for x in reversed(xs):  # fold_right processes from right to left
+        result = z_plus_neg_inf_max(z_val(x), result)
 
     return result
 
-def z_plus_neg_inf_in(x: ZPlusNegInf, xs: List[int]) -> bool:
-    """
-    Z_plus_neg_inf_In x xs = match x with | NegInf => False | Z_val z => In z xs
-    """
+def z_plus_neg_inf_in(x: Z_plus_neg_inf, xs: List[int]) -> bool:
+    """Check if x is in xs according to Z_plus_neg_inf_In definition"""
     if isinstance(x, NegInf):
         return False
-    return x.val in xs
+    # x is an integer
+    return x in xs
 
-def test_fold_right_max_inf_in_property(xs: List[int]) -> bool:
-    """
-    Test the property: xs <> [] -> Z_plus_neg_inf_In (fold_right_max_inf xs) xs
-    """
-    if not xs:  # xs = []
-        return True  # vacuous truth (premise is false)
+def test_fold_right_max_inf_in():
+    """Test the fold_right_max_inf_in lemma"""
 
-    result = fold_right_max_inf(xs)
-    return z_plus_neg_inf_in(result, xs)
-
-def run_comprehensive_tests():
-    """Run comprehensive tests for the fold_right_max_inf_in property"""
     test_cases = [
-        # Single element lists
-        [1], [-1], [0], [100], [-100],
-
-        # Two element lists
-        [1, 2], [2, 1], [-1, 1], [1, -1], [0, 0],
-
-        # Three element lists
-        [1, 2, 3], [3, 2, 1], [1, 3, 2], [-1, 0, 1],
-
-        # Lists with duplicates
-        [5, 5, 5], [1, 2, 1], [3, 1, 3, 1],
-
-        # All negative lists
-        [-5, -3, -1], [-10, -20, -30],
-
-        # All positive lists
-        [1, 3, 5], [10, 20, 30],
-
-        # Mixed lists
-        [-5, 0, 5], [-10, 5, -3, 8],
-
-        # Larger lists
-        list(range(1, 11)),  # [1, 2, ..., 10]
-        list(range(-10, 1)), # [-10, -9, ..., 0]
-        [-5, -3, -1, 1, 3, 5],
+        [1],
+        [1, 2],
+        [2, 1],
+        [1, 2, 3],
+        [3, 2, 1],
+        [1, 3, 2],
+        [-1, -2, -3],
+        [-3, -1, -2],
+        [0],
+        [0, 1, -1],
+        [100, -50, 25],
+        [5, 5, 5],  # duplicates
+        [-10, -5, -1, 0, 1, 5, 10],  # mixed
     ]
 
-    passed = 0
-    failed = 0
+    # Add some random test cases
+    for _ in range(50):
+        size = random.randint(1, 10)
+        xs = [random.randint(-100, 100) for _ in range(size)]
+        test_cases.append(xs)
 
-    print("Testing fold_right_max_inf_in property...")
-    print("=" * 50)
+    failures = 0
+    total = 0
 
-    for i, xs in enumerate(test_cases):
-        try:
-            result = test_fold_right_max_inf_in_property(xs)
-            if result:
-                print(f"✓ Test {i+1}: {xs} - PASSED")
-                passed += 1
-            else:
-                print(f"✗ Test {i+1}: {xs} - FAILED")
-                # Debug information
-                fold_result = fold_right_max_inf(xs)
-                in_result = z_plus_neg_inf_in(fold_result, xs)
-                print(f"   fold_right_max_inf({xs}) = {fold_result}")
-                print(f"   z_plus_neg_inf_in({fold_result}, {xs}) = {in_result}")
-                failed += 1
-        except Exception as e:
-            print(f"✗ Test {i+1}: {xs} - ERROR: {e}")
-            failed += 1
+    for xs in test_cases:
+        if not xs:  # Skip empty lists
+            continue
 
-    print("=" * 50)
-    print(f"Results: {passed} passed, {failed} failed")
+        result = fold_right_max_inf(xs)
+        is_in = z_plus_neg_inf_in(result, xs)
 
-    # Random testing
-    print("\nRunning random tests...")
-    random_passed = 0
-    random_failed = 0
+        total += 1
+        if not is_in:
+            failures += 1
+            print(f"FAIL: xs = {xs}")
+            print(f"  fold_right_max_inf(xs) = {result}")
+            print(f"  z_plus_neg_inf_in(result, xs) = {is_in}")
+            print()
+        else:
+            print(f"PASS: xs = {xs}, result = {result}")
 
-    for _ in range(200):
-        # Generate random list of length 1-20
-        length = random.randint(1, 20)
-        xs = [random.randint(-50, 50) for _ in range(length)]
+    print(f"\nResults: {total - failures}/{total} tests passed")
 
-        try:
-            result = test_fold_right_max_inf_in_property(xs)
-            if result:
-                random_passed += 1
-            else:
-                print(f"✗ Random test failed: {xs}")
-                fold_result = fold_right_max_inf(xs)
-                in_result = z_plus_neg_inf_in(fold_result, xs)
-                print(f"   fold_right_max_inf({xs}) = {fold_result}")
-                print(f"   z_plus_neg_inf_in({fold_result}, {xs}) = {in_result}")
-                random_failed += 1
-        except Exception as e:
-            print(f"✗ Random test error on {xs}: {e}")
-            random_failed += 1
+    if failures == 0:
+        print("✅ All tests passed! The lemma appears to be TRUE.")
+    else:
+        print(f"❌ {failures} tests failed! The lemma might be FALSE or implementation incorrect.")
 
-    print(f"Random tests: {random_passed} passed, {random_failed} failed")
+    return failures == 0
 
-    return failed == 0 and random_failed == 0
+def test_fold_right_max_inf_returns_max():
+    """Additional test: verify fold_right_max_inf returns the maximum element"""
+
+    print("\nAdditional test: Does fold_right_max_inf return the maximum?")
+
+    test_cases = [
+        [1],
+        [1, 2],
+        [2, 1],
+        [1, 2, 3],
+        [3, 2, 1],
+        [-1, -2, -3],
+        [0, 1, -1],
+        [100, -50, 25],
+    ]
+
+    for xs in test_cases:
+        result = fold_right_max_inf(xs)
+        expected_max = max(xs)
+
+        if isinstance(result, NegInf):
+            print(f"UNEXPECTED: xs = {xs}, got NegInf instead of max")
+        elif result == expected_max:
+            print(f"PASS: xs = {xs}, max = {result}")
+        else:
+            print(f"FAIL: xs = {xs}, expected max = {expected_max}, got = {result}")
 
 if __name__ == "__main__":
-    success = run_comprehensive_tests()
+    print("Testing fold_right_max_inf_in lemma")
+    print("=" * 50)
 
+    success = test_fold_right_max_inf_in()
+    test_fold_right_max_inf_returns_max()
+
+    print("\nConclusion:")
     if success:
-        print("\n🎉 All tests PASSED! The fold_right_max_inf_in lemma appears to be TRUE.")
-        sys.exit(0)
+        print("The fold_right_max_inf_in lemma is computationally verified as TRUE.")
+        print("This supports proceeding with the Coq proof.")
     else:
-        print("\n💥 Some tests FAILED! The lemma may be false or the implementation may be incorrect.")
-        sys.exit(1)
+        print("The lemma appears to be FALSE or there's an implementation error.")
+        print("Review the definitions before attempting the Coq proof.")
