@@ -23,6 +23,16 @@ Definition form6 : list Z -> Z := nonNegMaximum ∘ map (fold_right nonNegPlus 0
 Definition form7 : list Z -> Z := nonNegMaximum ∘ scan_right nonNegPlus 0.
 Definition form8 : list Z -> Z := fst ∘ fold_right maxSoFarAndPreviousSum (0, 0).
 
+(* Dual Forms of MaxSegSum (swap tails↔inits, fold_right↔fold_left, scan_right↔scan_left) *)
+Definition form1_dual : list Z -> Z := nonNegMaximum ∘ map nonNegSum_dual ∘ segs_dual.
+Definition form2_dual : list Z -> Z := nonNegMaximum ∘ map nonNegSum_dual ∘ concat ∘ map tails ∘ inits_rec.
+Definition form3_dual : list Z -> Z := nonNegMaximum ∘ concat ∘ map (map nonNegSum_dual) ∘ map tails ∘ inits_rec.
+Definition form4_dual : list Z -> Z := nonNegMaximum ∘ map nonNegMaximum ∘ map (map nonNegSum_dual) ∘ map tails ∘ inits_rec.
+Definition form5_dual : list Z -> Z := nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec.
+Definition form6_dual : list Z -> Z := nonNegMaximum ∘ map (fun prefix => fold_left (fun acc x => nonNegPlus acc x) prefix 0) ∘ inits_rec.
+Definition form7_dual : list Z -> Z := fun xs => nonNegMaximum (scan_left (fun acc x => nonNegPlus acc x) xs 0).
+Definition form8_dual : list Z -> Z := fun xs => fst (fold_left maxSoFarAndPreviousSum_dual xs (0, 0)).
+
 Theorem form1_eq_form2 : form1 = form2.
 Proof.
   reflexivity.
@@ -151,5 +161,21 @@ Axioms:
 generalised_horners_rule_nonNeg : forall l : list Z, nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l
 functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
 *)
+
+(* Computational tests to verify dual forms work correctly *)
+Example test_dual_empty : form1_dual [] = 0.
+Proof. reflexivity. Qed.
+
+Example test_dual_singleton : form1_dual [5%Z] = 5.
+Proof. reflexivity. Qed.
+
+Example test_dual_vs_original_empty : form1 [] = form1_dual [].
+Proof. reflexivity. Qed.
+
+Example test_dual_vs_original_singleton : form1 [5%Z] = form1_dual [5%Z].
+Proof. reflexivity. Qed.
+
+Example test_dual_vs_original_pair : form1 [1%Z; 2%Z] = form1_dual [1%Z; 2%Z].
+Proof. reflexivity. Qed.
 
 

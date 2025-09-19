@@ -222,6 +222,13 @@ end.
 
 Notation "x <.> y" := (maxSoFarAndPreviousSum x y) (at level 50, left associativity).
 
+(* Dual helper functions (swap fold_right↔fold_left) *)
+Definition nonNegSum_dual (xs : list Z) : Z := fold_left (fun acc x => nonNegPlus acc x) xs 0%Z.
+
+Definition maxSoFarAndPreviousSum_dual : (Z * Z) -> Z -> (Z * Z) := fun uv x => match uv with
+  | (u, v) => let w := (v <#> x) in (u <|> w, w)
+end.
+
 (* Refs:
  - form4_eq_form5 -> (* Refs: NONE *)
 *)

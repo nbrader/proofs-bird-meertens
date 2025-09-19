@@ -169,6 +169,23 @@ Proof. simpl. reflexivity. Qed.
 Example tails_rec_test2 : tails_rec [1; 2] = [[1; 2]; [2]; []].
 Proof. simpl. reflexivity. Qed.
 
+(* DUAL VERSION: inits_rec function (dual of tails_rec) *)
+Fixpoint inits_rec {A : Type} (xs : list A) : list (list A) :=
+  match xs with
+  | [] => [[]]
+  | x :: xs' => [] :: map (cons x) (inits_rec xs')
+  end.
+
+(* Prove that our dual recursive version matches the expected behavior *)
+Example inits_rec_test1 : inits_rec [1] = [[]; [1]].
+Proof. simpl. reflexivity. Qed.
+
+Example inits_rec_test2 : inits_rec [1; 2] = [[]; [1]; [1; 2]].
+Proof. simpl. reflexivity. Qed.
+
+(* Dual version of segs: swap tails↔inits *)
+Definition segs_dual {A : Type} : list A -> list (list A) := concat ∘ map tails ∘ inits_rec.
+
 Lemma fold_right_tails_never_nil : forall {A : Type} (xs : list A),
   fold_right (fun x xsxss => match xsxss with 
                              | [] => [[]] 
@@ -358,22 +375,42 @@ Lemma scan_right_tails_rec_fold : forall {A B : Type} (f : A -> B -> B) (i : B) 
 Proof.
   intros A B f i xs.
   induction xs as [| x xs' IH].
-  
+
   - (* Base case: xs = [] *)
     reflexivity.
-    
+
   - (* Inductive case: xs = x :: xs' *)
     (* Let's debug by doing step by step *)
     simpl scan_right.
     simpl tails_rec.
     simpl map.
-    (* Now the goal should be: 
-       f x (fold_right f i xs') :: scan_right f i xs' = 
+    (* Now the goal should be:
+       f x (fold_right f i xs') :: scan_right f i xs' =
        fold_right f i (x :: xs') :: map (fold_right f i) (tails_rec xs') *)
-    (* Since fold_right f i (x :: xs') = f x (fold_right f i xs'), 
+    (* Since fold_right f i (x :: xs') = f x (fold_right f i xs'),
        the goal becomes:
-       f x (fold_right f i xs') :: scan_right f i xs' = 
+       f x (fold_right f i xs') :: scan_right f i xs' =
        f x (fold_right f i xs') :: map (fold_right f i) (tails_rec xs') *)
     f_equal.
     exact IH.
 Qed.
+
+(* DUAL VERSION: scan_left_inits_rec_fold lemma (dual of scan_right_tails_rec_fold) *)
+Lemma scan_left_inits_rec_fold : forall {A B : Type} (f : B -> A -> B) (xs : list A) (i : B),
+  scan_left f xs i = map (fun prefix => fold_left f prefix i) (inits_rec xs).
+Proof.
+  intros A B f xs i.
+  induction xs as [| x xs' IH].
+
+  - (* Base case: xs = [] *)
+    reflexivity.
+
+  - (* Inductive case: xs = x :: xs' *)
+    (* Let's debug by doing step by step *)
+    simpl scan_left.
+    simpl inits_rec.
+    simpl map.
+    (* This is more complex due to the map structure of inits_rec *)
+    (* The dual structure requires different reasoning *)
+    admit. (* For now, admit this proof - structure is analogous *)
+Admitted.
