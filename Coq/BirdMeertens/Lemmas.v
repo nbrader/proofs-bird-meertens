@@ -293,16 +293,22 @@ Proof.
     + apply Z.le_max_r.
 Qed.
 
-Lemma fold_max_nonneg_dual : forall (l : list Z),
-  (0 <= fold_left Z.max l 0)%Z.
+Lemma fold_left_max_nonneg_gen :
+  forall l acc, (0 <= acc)%Z ->
+    (0 <= fold_left Z.max l acc)%Z.
 Proof.
-  induction l as [|x xs IH].
-  - simpl. reflexivity.
-  - simpl.
-    apply Z.le_trans with (m := fold_left Z.max xs 0).
-    + exact IH.
-    + admit.
-Admitted.
+  induction l as [|x xs IH]; intros acc Hacc.
+  - simpl. exact Hacc.
+  - simpl. apply IH.
+    (* show the new accumulator is ≥ 0 *)
+    apply Z.le_trans with (m := acc); [exact Hacc | apply Z.le_max_l].
+Qed.
+
+Lemma fold_max_nonneg_dual :
+  forall l, (0 <= fold_left Z.max l 0)%Z.
+Proof.
+  intro l. apply fold_left_max_nonneg_gen. exact (Z.le_refl 0).
+Qed.
 
 Lemma fold_max_app : forall (l1 l2 : list Z),
   fold_right Z.max 0 (l1 ++ l2) = Z.max (fold_right Z.max 0 l1) (fold_right Z.max 0 l2).
