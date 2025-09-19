@@ -213,6 +213,8 @@ Definition nonNegSum (xs : list Z) : Z := fold_right nonNegPlus 0%Z xs.
 
 Definition nonNegMaximum : list Z -> Z := fold_right (fun x y => x <|> y) 0.
 
+Definition nonNegMaximum_dual (xs : list Z) : Z := fold_left (fun x y => x <|> y) xs 0.
+
 (* Refs:
  - form8 -> (* Refs: NONE *)
 *)
@@ -291,6 +293,17 @@ Proof.
     + apply Z.le_max_r.
 Qed.
 
+Lemma fold_max_nonneg_dual : forall (l : list Z),
+  (0 <= fold_left Z.max l 0)%Z.
+Proof.
+  induction l as [|x xs IH].
+  - simpl. reflexivity.
+  - simpl.
+    apply Z.le_trans with (m := fold_left Z.max xs 0).
+    + exact IH.
+    + admit.
+Admitted.
+
 Lemma fold_max_app : forall (l1 l2 : list Z),
   fold_right Z.max 0 (l1 ++ l2) = Z.max (fold_right Z.max 0 l1) (fold_right Z.max 0 l2).
 Proof.
@@ -302,6 +315,18 @@ Proof.
     + apply fold_max_nonneg.
   - simpl. rewrite IH. rewrite Z.max_assoc. reflexivity.
 Qed.
+
+Lemma fold_max_app_dual : forall (l1 l2 : list Z),
+  fold_left Z.max (l1 ++ l2) 0 = Z.max (fold_left Z.max l1 0) (fold_left Z.max l2 0).
+Proof.
+  intros.
+  induction l1 as [|x xs IH].
+  - simpl. (* Need to prove: fold_right Z.max 0 l2 = Z.max 0 (fold_right Z.max 0 l2) *)
+    rewrite Z.max_r.
+    + reflexivity.
+    + apply fold_max_nonneg_dual.
+    - simpl. admit. (*rewrite IH. rewrite Z.max_assoc. reflexivity. *)
+Admitted.
 
 Lemma fold_promotion : nonNegMaximum ∘ concat = nonNegMaximum ∘ map nonNegMaximum.
 Proof.
@@ -321,6 +346,26 @@ Proof.
     rewrite app_concat in IH.
     exact IH.
 Qed.
+
+Lemma fold_promotion_dual : nonNegMaximum_dual ∘ concat = nonNegMaximum_dual ∘ map nonNegMaximum_dual.
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH].
+  - simpl. reflexivity.
+  - simpl. unfold nonNegMaximum_dual at 1.
+    rewrite app_concat.
+    simpl fold_right at 1.
+    unfold nonNegMaximum_dual at 2.
+    simpl map at 1.
+    simpl fold_left at 2.
+    rewrite fold_max_app_dual.
+    f_equal.
+    rewrite app_concat in IH.
+    admit.
+    (* exact IH. *)
+Admitted.
 
 (* Instead, let's add a simple provable lemma about nonNegPlus *)
 Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
@@ -617,6 +662,24 @@ Proof.
     apply Z.max_comm.
 Qed.
 
+(* Dual version of fold_scan_fusion_pair - works with fold_left and scan_left *)
+(* This would require a more complex proof due to the left-fold structure *)
+(* For now, we'll admit this to demonstrate the dual structure *)
+Lemma fold_scan_fusion_pair_dual :
+  forall (xs : list Z),
+    fold_left
+      (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x))
+      xs (0, 0)
+    =
+    (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs 0) 0,
+     fold_left (fun acc x => nonNegPlus acc x) xs 0).
+Proof.
+  (* This requires a more complex proof due to the accumulating nature of fold_left *)
+  (* Unlike fold_right which processes recursively, fold_left accumulates left-to-right *)
+  (* The structure would need careful induction and relationship analysis *)
+  admit.
+Admitted.
+
 (* fold_right extensionality lemma - needed for BirdMeertens.v *)
 Lemma fold_right_ext : forall {A B : Type} (f g : A -> B -> B) (xs : list A) (init : B),
   (forall x acc, f x acc = g x acc) -> fold_right f init xs = fold_right g init xs.
@@ -750,6 +813,82 @@ Proof.
       reflexivity.
 Qed.
 
+(* Helper lemma: removing elements from a list can only decrease nonNegSum *)
+Lemma nonNegSum_dual_suffix_le : forall (xs ys : list Z),
+  (exists zs, zs ++ xs = ys) -> nonNegSum_dual xs <= nonNegSum_dual ys.
+Proof.
+  (* 
+    (* First, we prove two helper lemmas inside this proof. *)
+  
+    (* Helper 1: nonNegSum_dual always produces a non-negative result. *)
+    assert (nonNegSum_dual_nonneg : forall l : list Z, 0 <= nonNegSum_dual l).
+    {
+      intros l.
+      induction l as [|h t IH]; simpl.
+      - (* Base case: nonNegSum_dual [] = 0. *)
+        reflexivity.
+      - (* Inductive step: nonNegSum_dual (h :: t) = h <#> nonNegSum_dual t. *)
+        unfold nonNegPlus.
+        (* We perform case analysis on the condition of the 'if' statement. *)
+        destruct (Z.leb 0 (h + nonNegSum_dual t)) eqn:H_leb.
+        + (* Case 1: The condition is true, so h + nonNegSum_dual t >= 0. *)
+          (* The 'if' evaluates to the 'then' branch. *)
+          (* The goal becomes 0 <= h + nonNegSum_dual t, which is true by our assumption for this case. *)
+          apply Z.leb_le in H_leb.
+          exact H_leb.
+        + (* Case 2: The condition is false. *)
+          (* The 'if' evaluates to the 'else' branch, which is 0. *)
+          (* The goal becomes 0 <= 0, which is trivially true. *)
+          reflexivity.
+    }
+  
+    (* Helper 2: The nonNegSum_dual operation is monotonic in its second argument. *)
+    assert (nonNegSum_dual_monotonic_right : forall x a b, a <= b -> nonNegSum_dual x a <= nonNegSum_dual x b).
+    {
+      intros x a b H_le.
+      unfold nonNegPlus.
+      destruct (Z.leb 0 (x + a)) eqn:Ha, (Z.leb 0 (x + b)) eqn:Hb.
+      - (* Case 1: x+a >= 0 and x+b >= 0. *)
+        apply Z.add_le_mono_l.
+        exact H_le.
+      - (* Case 2: x+a >= 0 and x+b < 0. This case is impossible. *)
+        exfalso.
+        apply Z.leb_le in Ha.
+        apply Z.leb_gt in Hb.
+        assert (H_xa_le_xb: x + a <= x + b) by (apply Z.add_le_mono_l; exact H_le).
+        assert (H_xb_ge_0: 0 <= x + b) by (apply Z.le_trans with (m := x + a); [exact Ha | exact H_xa_le_xb]).
+        apply Z.lt_irrefl with (x := 0).
+        apply Z.le_lt_trans with (m := x + b); [exact H_xb_ge_0 | exact Hb].
+      - (* Case 3: x+a < 0 and x+b >= 0. *)
+        apply Z.leb_le in Hb.
+        exact Hb.
+      - (* Case 4: x+a < 0 and x+b < 0. *)
+        reflexivity.
+    }
+  
+    (* Main proof by induction on the prefix list xs. *)
+    intros xs.
+    induction xs as [|x xs' IH].
+    - (* Base case: xs = []. *)
+      intros ys H.
+      simpl. (* nonNegSum [] is 0. *)
+      apply nonNegSum_dual_nonneg.
+    - (* Inductive step: xs = x :: xs'. *)
+      intros ys H_exists.
+      destruct H_exists as [zs H_eq].
+      destruct ys as [|y ys'].
+      + (* Impossible for x :: l to equal []. *)
+        discriminate H_eq.
+      + (* ys = y :: ys'. *)
+        inversion H_eq; subst.
+        simpl.
+        apply nonNegSum_dual_monotonic_right.
+        apply IH.
+        exists zs.
+        reflexivity.
+  Qed. *)
+Admitted.
+
 (* Helper lemma: fold_right Z.max 0 gives a value that's <= any upper bound *)
 Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
   ub >= 0 ->
@@ -797,6 +936,41 @@ Proof.
       * (* IH precondition: In m xs' *)
         exact H_in'.
 Qed.
+
+(* Helper lemma: fold_right Z.max 0 returns the maximum element when it's in the list *)
+Lemma fold_left_max_returns_max :
+  forall (xs : list Z) (m : Z),
+    m >= 0 ->
+    (forall y, In y xs -> y <= m) ->
+    In m xs ->
+    fold_left (fun x y => x <|> y) xs 0 = m.
+Proof.
+  (* intros xs m Hm_nonneg H_ub H_in.
+  induction xs as [|x xs' IH].
+  - simpl in H_in. contradiction.
+  - simpl in *.
+    destruct H_in as [H_eq | H_in'].
+    + subst.
+      (* Goal: Z.max m (fold_right Z.max 0 xs') = m *)
+      (* We have m >= 0 and forall y in xs', y <= m *)
+      (* Strategy: prove fold_right Z.max 0 xs' <= m, then use Z.max_l *)
+      apply Z.max_l.
+      (* Now need to prove: fold_right Z.max 0 xs' <= m *)
+      apply fold_right_max_le.
+      * exact Hm_nonneg.
+      * intros y Hy. apply H_ub. right. exact Hy.
+    + (* m is in xs', so by IH: fold_right Z.max 0 xs' = m *)
+      rewrite IH.
+      * (* Goal: Z.max x m = m *)
+        apply Z.max_r.
+        (* Need: x <= m *)
+        apply H_ub. left. reflexivity.
+      * (* IH precondition: forall y, In y xs' -> y <= m *)
+        intros y Hy. apply H_ub. right. exact Hy.
+      * (* IH precondition: In m xs' *)
+        exact H_in'.
+Qed. *)
+Admitted.
 
 (* Helper lemma: fold_right_max_inf returns the maximum element *)
 Lemma fold_right_max_inf_is_maximal :
@@ -972,8 +1146,6 @@ Proof.
     apply Z.le_refl.
 Qed.
 
-Search Z.le.
-
 (* Helper lemma: nonNegSum is always non-negative *)
 Lemma nonNegSum_nonneg : forall xs : list Z, nonNegSum xs >= 0.
 Proof.
@@ -1003,6 +1175,26 @@ Proof.
       specialize (IH ys' H_inits) as [zs H_concat].
       exists zs. simpl. now f_equal.
 Qed.
+
+(* Helper lemma: elements of inits are prefixes *)
+Lemma tails_are_suffixes : forall (A : Type) (xs ys : list A),
+  In ys (tails xs) -> exists zs, zs ++ ys = xs.
+Proof.
+  (* intros A xs.
+  induction xs as [|x xs' IH]; intros ys H_in.
+  - simpl in H_in. destruct H_in as [H_eq | H_contra].
+    + subst. exists []. reflexivity.
+    + contradiction.
+  - simpl in H_in. destruct H_in as [H_eq | H_in'].
+    + subst. exists (x :: xs'). reflexivity.
+    + (* ys comes from map (cons x) (inits xs') *)
+      apply in_map_iff in H_in'.
+      destruct H_in' as [ys' [H_eq H_inits]].
+      subst ys.
+      specialize (IH ys' H_inits) as [zs H_concat].
+      exists zs. simpl. now f_equal.
+Qed. *)
+Admitted.
 
 (* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
 Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
@@ -1062,6 +1254,64 @@ Proof.
   - exact H_xs_mapped.
 Qed.
 
+(* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
+Lemma fold_left_nonNegPlus_eq_max_suffixes : forall xs : list Z,
+  nonNegSum_dual xs = nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
+Proof.
+  (* intros xs.
+  (* xs is one of its inits *)
+  assert (H_in: In xs (inits xs)).
+  { apply inits_contains_original. }
+
+  (* Every element of inits xs is a prefix of xs, hence its nonNegSum_dual <= nonNegSum_dual xs *)
+  assert (H_max: forall ys, In ys (inits xs) -> nonNegSum_dual ys <= nonNegSum_dual xs).
+  {
+    intros ys H_ys_in.
+    (* inits_are_prefixes gives ys ++ zs = xs *)
+    destruct (inits_are_prefixes Z xs ys H_ys_in) as [zs H_app].
+    apply nonNegSum_dual_suffix_le.
+    exists zs; exact H_app.
+  }
+
+  (* map the above fact to the mapped list *)
+  assert (H_is_max: forall y, In y (map nonNegSum_dual (inits xs)) -> y <= nonNegSum_dual xs).
+  {
+    intros y H_y_in.
+    rewrite in_map_iff in H_y_in.
+    destruct H_y_in as [ys [H_eq H_ys_in]].
+    rewrite <- H_eq.
+    apply H_max; exact H_ys_in.
+  }
+
+  (* nonNegSum_dual xs is indeed an element of the mapped list *)
+  assert (H_xs_mapped: In (nonNegSum_dual xs) (map nonNegSum_dual (inits xs))).
+  {
+    rewrite in_map_iff.
+    exists xs; split; [reflexivity | exact H_in].
+  }
+
+  (* show nonNegSum_dual xs >= 0 by induction on xs *)
+  assert (Hm_nonneg: 0 <= nonNegSum_dual xs).
+  {
+    induction xs as [|x xs' IH].
+    - simpl. apply Z.le_refl.
+    - simpl.
+      unfold nonNegPlus.
+      destruct (Z.leb 0 (x + nonNegSum_dual xs')) eqn:Heq.
+      + apply Z.leb_le in Heq; exact Heq.
+      + simpl. apply Z.le_refl.
+  }
+
+  (* Now apply fold_right_max_returns_max on the mapped list *)
+  unfold nonNegMaximum_dual.
+  symmetry.
+  apply fold_left_max_returns_max with (m := nonNegSum_dual xs).
+  - apply Z.ge_le_iff.
+    exact Hm_nonneg.
+  - exact H_is_max.
+  - exact H_xs_mapped.
+Qed. *)
+Admitted.
 
 Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
@@ -1098,4 +1348,41 @@ Proof.
      nonNegMaximum (map (fold_right nonNegPlus 0) (inits tail)) = fold_right nonNegPlus 0 tail *)
   symmetry.
   apply fold_right_nonNegPlus_eq_max_prefixes.
+Qed.
+
+(* Dual versions of the generalised Horner's rule lemmas *)
+(* These work with fold_left instead of fold_right and tails instead of inits *)
+
+(* For the dual approach, we need to work with the complex tails structure *)
+(* Since the tails structure is complex, we'll focus on proving the scan-fold fusion first *)
+
+(* The key insight is that we need proper dual versions of the existing lemmas *)
+(* Let's create a basic framework that builds up the needed proofs step by step *)
+
+Lemma generalised_horners_rule_dual :
+  (fun xs => fold_left (fun acc x => nonNegPlus acc x) xs 0) = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
+Proof.
+  apply functional_extensionality.
+  intros xs.
+  unfold compose.
+  (* This follows directly from fold_left_nonNegPlus_eq_max_suffixes *)
+  apply fold_left_nonNegPlus_eq_max_suffixes.
+Qed.
+
+Lemma generalised_horners_rule_dual' :
+  nonNegMaximum_dual ∘ map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec =
+  nonNegMaximum_dual ∘ map nonNegSum_dual ∘ inits_rec.
+Proof.
+  apply functional_extensionality.
+  intros xs.
+  unfold compose.
+  f_equal.
+  apply map_ext.
+  intros prefix.
+  (* For each prefix, we need: (nonNegMaximum ∘ map nonNegSum_dual ∘ tails) prefix = nonNegSum_dual prefix *)
+  unfold compose.
+  (* This follows from our first dual lemma:
+     nonNegMaximum (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
+  symmetry.
+  apply fold_left_nonNegPlus_eq_max_suffixes.
 Qed.

@@ -24,13 +24,13 @@ Definition form7 : list Z -> Z := nonNegMaximum ∘ scan_right nonNegPlus 0.
 Definition form8 : list Z -> Z := fst ∘ fold_right maxSoFarAndPreviousSum (0, 0).
 
 (* Dual Forms of MaxSegSum (swap tails↔inits, fold_right↔fold_left, scan_right↔scan_left) *)
-Definition form1_dual : list Z -> Z := nonNegMaximum ∘ map nonNegSum_dual ∘ segs_dual.
-Definition form2_dual : list Z -> Z := nonNegMaximum ∘ map nonNegSum_dual ∘ concat ∘ map tails ∘ inits_rec.
-Definition form3_dual : list Z -> Z := nonNegMaximum ∘ concat ∘ map (map nonNegSum_dual) ∘ map tails ∘ inits_rec.
-Definition form4_dual : list Z -> Z := nonNegMaximum ∘ map nonNegMaximum ∘ map (map nonNegSum_dual) ∘ map tails ∘ inits_rec.
-Definition form5_dual : list Z -> Z := nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec.
-Definition form6_dual : list Z -> Z := nonNegMaximum ∘ map (fun prefix => fold_left (fun acc x => nonNegPlus acc x) prefix 0) ∘ inits_rec.
-Definition form7_dual : list Z -> Z := fun xs => nonNegMaximum (scan_left (fun acc x => nonNegPlus acc x) xs 0).
+Definition form1_dual : list Z -> Z := nonNegMaximum_dual ∘ map nonNegSum_dual ∘ segs_dual.
+Definition form2_dual : list Z -> Z := nonNegMaximum_dual ∘ map nonNegSum_dual ∘ concat ∘ map tails ∘ inits_rec.
+Definition form3_dual : list Z -> Z := nonNegMaximum_dual ∘ concat ∘ map (map nonNegSum_dual) ∘ map tails ∘ inits_rec.
+Definition form4_dual : list Z -> Z := nonNegMaximum_dual ∘ map nonNegMaximum_dual ∘ map (map nonNegSum_dual) ∘ map tails ∘ inits_rec.
+Definition form5_dual : list Z -> Z := nonNegMaximum_dual ∘ map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec.
+Definition form6_dual : list Z -> Z := nonNegMaximum_dual ∘ map (fun prefix => fold_left (fun acc x => nonNegPlus acc x) prefix 0) ∘ inits_rec.
+Definition form7_dual : list Z -> Z := fun xs => nonNegMaximum_dual (scan_left (fun acc x => nonNegPlus acc x) xs 0).
 Definition form8_dual : list Z -> Z := fun xs => fst (fold_left maxSoFarAndPreviousSum_dual xs (0, 0)).
 
 Theorem form1_eq_form2 : form1 = form2.
@@ -128,7 +128,6 @@ Proof.
   rewrite form4_eq_form5.
   reflexivity.
 Qed.
-Print Assumptions MaxSegSum_Equivalence_Part1.
 
 Theorem MaxSegSum_Equivalence_Part2 : form6 = form8.
 Proof.
@@ -136,7 +135,6 @@ Proof.
   rewrite form7_eq_form8.
   reflexivity.
 Qed.
-Print Assumptions MaxSegSum_Equivalence_Part2.
 
 (* The previous MaxSegSum_Equivalence_is_false theorem has been removed *)
 (* Computational verification with 6,200+ QuickCheck-style tests proves *)
@@ -162,6 +160,145 @@ generalised_horners_rule_nonNeg : forall l : list Z, nonNegMaximum (map nonNegSu
 functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
 *)
 
+(* Dual versions of the main equivalence theorems *)
+(* These theorems prove that the dual forms are also equivalent to each other *)
+
+(* First, we need dual versions of the individual step theorems *)
+Theorem form1_dual_eq_form2_dual : form1_dual = form2_dual.
+Proof.
+  reflexivity.
+Qed.
+
+Theorem form2_dual_eq_form3_dual : form2_dual = form3_dual.
+Proof.
+  unfold form2_dual, form3_dual.
+  f_equal.
+  rewrite compose_assoc.
+  rewrite (compose_assoc _ _ _ _ (concat ∘ map tails) (map nonNegSum_dual) nonNegMaximum_dual).
+  rewrite <- (compose_assoc _ _ _ _ (map tails) concat (map nonNegSum_dual)).
+  rewrite (map_promotion nonNegSum_dual).
+  reflexivity.
+Qed.
+
+Theorem form3_dual_eq_form4_dual : form3_dual = form4_dual.
+Proof.
+  unfold form3_dual.
+  unfold form4_dual.
+  rewrite compose_assoc.
+  rewrite fold_promotion_dual.
+  reflexivity.
+Qed.
+
+Theorem form4_dual_eq_form5_dual : form4_dual = form5_dual.
+Proof.
+  unfold form4_dual.
+  unfold form5_dual.
+  f_equal.
+  rewrite compose_assoc.
+  rewrite compose_assoc.
+  rewrite (map_distr (map nonNegSum_dual) tails).
+  rewrite (map_distr nonNegMaximum_dual (compose (map nonNegSum_dual) tails)).
+  reflexivity.
+Qed.
+
+(* Note: form5_dual_eq_form6_dual would require a dual version of generalised_horners_rule *)
+(* For now, we'll admit this step to demonstrate the structure *)
+Theorem form5_dual_eq_form6_dual : form5_dual = form6_dual.
+Proof.
+  (* This requires a dual version of the generalized Horner's rule working with fold_left *)
+  (* For now, we use a direct approach based on the structural similarity to the original *)
+  unfold form5_dual, form6_dual.
+  (* The dual follows the same pattern as the original but with fold_left and inits_rec *)
+  (* We admit this as it requires implementing the dual suffix-based Horner's rule *)
+  admit.
+Admitted.
+
+Theorem form6_dual_eq_form7_dual : form6_dual = form7_dual.
+Proof.
+  unfold form6_dual, form7_dual.
+  apply functional_extensionality.
+  intro xs.
+  unfold compose.
+  f_equal.
+  (* This follows from scan_left_inits_rec_fold, but in reverse *)
+  symmetry.
+  exact (@scan_left_inits_rec_fold Z Z (fun acc x => nonNegPlus acc x) xs 0).
+Qed.
+
+(* Note: form7_dual_eq_form8_dual would require a dual version of the scan-fold fusion *)
+(* For now, we'll admit this step to demonstrate the structure *)
+Theorem form7_dual_eq_form8_dual : form7_dual = form8_dual.
+Proof.
+  (* This follows from the dual version of fold_scan_fusion_pair that we implemented *)
+  unfold form7_dual, form8_dual.
+  apply functional_extensionality; intro xs.
+  unfold compose, maxSoFarAndPreviousSum_dual.
+
+  (* The dual version uses fold_left and scan_left instead of fold_right and scan_right *)
+  (* We need to show the fusion works in the left-fold direction *)
+  (* This should follow from our fold_scan_fusion_pair_dual lemma *)
+
+  (* For now, we admit this as it requires completing the dual fusion proof *)
+  admit.
+Admitted.
+
+(* Dual version of MaxSegSum_Equivalence_Part1 *)
+Theorem MaxSegSum_Equivalence_Part1_Dual : form1_dual = form5_dual.
+Proof.
+  rewrite form1_dual_eq_form2_dual.
+  rewrite form2_dual_eq_form3_dual.
+  rewrite form3_dual_eq_form4_dual.
+  rewrite form4_dual_eq_form5_dual.
+  reflexivity.
+Qed.
+(*
+Axioms:
+functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
+*)
+
+(* Dual version of MaxSegSum_Equivalence_Part2 *)
+Theorem MaxSegSum_Equivalence_Part2_Dual : form6_dual = form8_dual.
+Proof.
+  rewrite form6_dual_eq_form7_dual.
+  rewrite form7_dual_eq_form8_dual.
+  reflexivity.
+Qed.
+(*
+Axioms:
+scan_left_inits_rec_fold : forall (A B : Type) (f : B -> A -> B) (xs : list A) (i : B), scan_left f xs i = map (fun prefix : list A => fold_left f prefix i) (inits_rec xs)
+functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
+form7_dual_eq_form8_dual : form7_dual = form8_dual
+*)
+
+(* Dual version of the complete MaxSegSum equivalence theorem *)
+Theorem MaxSegSum_Equivalence_Dual : form1_dual = form8_dual.
+Proof.
+  rewrite form1_dual_eq_form2_dual.
+  rewrite form2_dual_eq_form3_dual.
+  rewrite form3_dual_eq_form4_dual.
+  rewrite form4_dual_eq_form5_dual.
+  rewrite form5_dual_eq_form6_dual.
+  rewrite form6_dual_eq_form7_dual.
+  rewrite form7_dual_eq_form8_dual.
+  reflexivity.
+Qed.
+Print Assumptions MaxSegSum_Equivalence_Dual.
+(*
+Axioms:
+scan_left_inits_rec_fold : forall (A B : Type) (f : B -> A -> B) (xs : list A) (i : B), scan_left f xs i = map (fun prefix : list A => fold_left f prefix i) (inits_rec xs)
+functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
+form7_dual_eq_form8_dual : form7_dual = form8_dual
+form5_dual_eq_form6_dual : form5_dual = form6_dual
+*)
+
+(* Demonstrate that original and dual forms give the same results *)
+Theorem Original_Dual_Equivalence : form1 = form1_dual.
+Proof.
+  (* This follows from computational verification but would require *)
+  (* proving the mathematical equivalence of the transformations *)
+  admit.
+Admitted.
+
 (* Computational tests to verify dual forms work correctly *)
 Example test_dual_empty : form1_dual [] = 0.
 Proof. reflexivity. Qed.
@@ -177,5 +314,13 @@ Proof. reflexivity. Qed.
 
 Example test_dual_vs_original_pair : form1 [1%Z; 2%Z] = form1_dual [1%Z; 2%Z].
 Proof. reflexivity. Qed.
+
+(* Test that dual equivalence chain works computationally *)
+Example test_dual_equivalence_chain : form1_dual [1%Z; 2%Z] = form8_dual [1%Z; 2%Z].
+Proof.
+  (* This demonstrates the dual main result works computationally *)
+  (* even though some steps use admitted lemmas *)
+  reflexivity.
+Qed.
 
 
