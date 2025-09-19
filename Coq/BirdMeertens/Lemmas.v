@@ -341,11 +341,20 @@ Lemma fold_max_app_dual : forall l1 l2,
   fold_left Z.max (l1 ++ l2) 0 =
   Z.max (fold_left Z.max l1 0) (fold_left Z.max l2 0).
 Proof.
-  (* This lemma is computationally verified to be true (see verify_fold_max_app.py).
-     The proof requires complex structural induction on fold_left with max properties.
-     For now, we admit this to fix compilation and focus on other proofs. *)
-  admit.
-Admitted.
+  (* Prove using direct duality with fold_left_right_equiv *)
+  intros l1 l2.
+  change Z.max with (fun x y => x <|> y).
+  (* Use fold_left_right_equiv to convert to fold_right *)
+  rewrite fold_left_right_equiv.
+  + repeat (rewrite fold_left_right_equiv).
+    * apply fold_max_app.
+    * intros x y z. apply Z.max_assoc.
+    * intros x y. apply Z.max_comm.
+    * intros x y z. apply Z.max_assoc.
+    * intros x y. apply Z.max_comm.
+  + intros x y z. apply Z.max_assoc.
+  + intros x y. apply Z.max_comm.
+Qed.
 
   
 
@@ -1044,6 +1053,16 @@ Proof.
   intros xs m H_in H_ub Hm_nonneg.
   symmetry.
   apply max_fold_duality_zero.
+Qed.
+
+(* Specialized version: fold_max_app_dual for init=0 follows from fold_max_app and duality *)
+Corollary fold_left_max_app_zero : forall (l1 l2 : list Z),
+  fold_left (fun x y => x <|> y) (l1 ++ l2) 0 =
+  (fold_left (fun x y => x <|> y) l1 0) <|> (fold_left (fun x y => x <|> y) l2 0).
+Proof.
+  intros l1 l2.
+  repeat rewrite max_fold_duality_zero.
+  apply fold_max_app.
 Qed.
 
 (* ========== END DUALITY THEOREMS ========== *)
