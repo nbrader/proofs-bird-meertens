@@ -958,7 +958,139 @@ Proof.
         exact H_in'.
 Qed.
 
-(* Helper lemma: fold_right Z.max 0 returns the maximum element when it's in the list *)
+(* ========== DUALITY THEOREMS FOR REUSING PROOFS ========== *)
+
+(* Import the fold_left_right_equiv theorem from CoqUtilLib *)
+From Coq Require Import Arith.
+
+(* Key duality theorem: for max operations, fold_left and fold_right are equivalent *)
+Theorem max_fold_duality : forall (xs : list Z) (init : Z),
+  fold_left (fun x y => x <|> y) xs init = fold_right (fun x y => x <|> y) init xs.
+Proof.
+  intros xs init.
+  apply fold_left_right_equiv.
+  - (* Associativity of Z.max *)
+    intros x y z.
+    apply Z.max_assoc.
+  - (* Commutativity of Z.max *)
+    intros x y.
+    apply Z.max_comm.
+Qed.
+
+(* Specialized version for our common pattern with init = 0 *)
+Corollary max_fold_duality_zero : forall (xs : list Z),
+  fold_left (fun x y => x <|> y) xs 0 = fold_right (fun x y => x <|> y) 0 xs.
+Proof.
+  intro xs.
+  apply max_fold_duality.
+Qed.
+
+(* For fold_left_max_le, we need a more general version since fold_right_max_le assumes init=0 *)
+Lemma fold_right_max_le_general : forall (xs : list Z) (init ub : Z),
+  init <= ub ->
+  (forall y, In y xs -> y <= ub) ->
+  fold_right (fun x y : Z => x <|> y) init xs <= ub.
+Proof.
+  intros xs init ub Hinit H_ub.
+  induction xs as [| x xs' IH].
+  - simpl. exact Hinit.
+  - simpl.
+    apply Z.max_lub.
+    + apply H_ub. left. reflexivity.
+    + apply IH. intros y Hy. apply H_ub. right. assumption.
+Qed.
+
+(* Now fold_left_max_le follows directly from the general version *)
+Corollary fold_left_max_le_direct : forall (xs : list Z) (acc ub : Z),
+  acc <= ub ->
+  (forall y, In y xs -> y <= ub) ->
+  fold_left (fun x y => x <|> y) xs acc <= ub.
+Proof.
+  intros xs acc ub Hacc H_ub.
+  rewrite max_fold_duality.
+  apply fold_right_max_le_general; assumption.
+Qed.
+
+(* Corollary: fold_left_max_returns_max can be proven directly from fold_right_max_returns_max *)
+Corollary fold_left_max_returns_max_direct :
+  forall (xs : list Z) (m : Z),
+    m >= 0 ->
+    (forall y, In y xs -> y <= m) ->
+    In m xs ->
+    fold_left (fun x y => x <|> y) xs 0 = m.
+Proof.
+  intros xs m Hm_nonneg H_ub H_in.
+  rewrite max_fold_duality_zero.
+  apply fold_right_max_returns_max; assumption.
+Qed.
+
+(* General theorem: any property proven for fold_right max also holds for fold_left max *)
+Theorem fold_max_property_transfer : forall (P : list Z -> Z -> Prop) (xs : list Z) (init : Z),
+  P xs (fold_right (fun x y => x <|> y) init xs) ->
+  P xs (fold_left (fun x y => x <|> y) xs init).
+Proof.
+  intros P xs init H.
+  rewrite max_fold_duality.
+  exact H.
+Qed.
+
+(* General duality transfer theorem for max operations with membership *)
+Theorem max_membership_duality : forall (xs : list Z) (m : Z),
+  In m xs ->
+  (forall y, In y xs -> y <= m) ->
+  m >= 0 ->
+  fold_right (fun x y => x <|> y) 0 xs = fold_left (fun x y => x <|> y) xs 0.
+Proof.
+  intros xs m H_in H_ub Hm_nonneg.
+  symmetry.
+  apply max_fold_duality_zero.
+Qed.
+
+(* ========== END DUALITY THEOREMS ========== *)
+
+(* Helper lemma: fold_left gives a value that's <= any upper bound *)
+(* NOTE: This proof is now trivial using our duality theorem! *)
+Lemma fold_left_max_le : forall (xs : list Z) (acc ub : Z),
+  acc <= ub ->
+  (forall y, In y xs -> y <= ub) -> fold_left (fun x y => x <|> y) xs acc <= ub.
+Proof.
+  (* This follows directly from the duality theorem and fold_right_max_le_general *)
+  apply fold_left_max_le_direct.
+Qed.
+
+(* Helper lemma for fold_left that maintains maximum when all elements are <= max *)
+Lemma fold_left_max_preserves : forall (xs : list Z) (m : Z),
+  m >= 0 ->
+  (forall y, In y xs -> y <= m) ->
+  fold_left (fun x y => x <|> y) xs m = m.
+Proof.
+  intros xs m Hm_nonneg H_ub.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl.
+    assert (H_eq: m <|> x = m).
+    { apply Z.max_l. apply H_ub. left. reflexivity. }
+    rewrite H_eq.
+    apply IH.
+    + intros y Hy. apply H_ub. right. assumption.
+Qed.
+
+
+(* Monotonicity lemma for fold_left max *)
+Lemma fold_left_max_monotonic : forall (xs : list Z) (acc1 acc2 : Z),
+  acc1 <= acc2 -> fold_left (fun x y => x <|> y) xs acc1 <= fold_left (fun x y => x <|> y) xs acc2.
+Proof.
+  intros xs acc1 acc2 H_le.
+  revert acc1 acc2 H_le.
+  induction xs as [|x xs' IH].
+  - intros acc1 acc2 H_le. simpl. exact H_le.
+  - intros acc1 acc2 H_le. simpl.
+    apply IH.
+    apply Z.max_le_compat_r. exact H_le.
+Qed.
+
+(* Helper lemma: fold_left Z.max 0 returns the maximum element when it's in the list *)
+(* NOTE: This proof is now trivial using our duality theorem! *)
 Lemma fold_left_max_returns_max :
   forall (xs : list Z) (m : Z),
     m >= 0 ->
@@ -966,32 +1098,9 @@ Lemma fold_left_max_returns_max :
     In m xs ->
     fold_left (fun x y => x <|> y) xs 0 = m.
 Proof.
-  (* intros xs m Hm_nonneg H_ub H_in.
-  induction xs as [|x xs' IH].
-  - simpl in H_in. contradiction.
-  - simpl in *.
-    destruct H_in as [H_eq | H_in'].
-    + subst.
-      (* Goal: Z.max m (fold_right Z.max 0 xs') = m *)
-      (* We have m >= 0 and forall y in xs', y <= m *)
-      (* Strategy: prove fold_right Z.max 0 xs' <= m, then use Z.max_l *)
-      apply Z.max_l.
-      (* Now need to prove: fold_right Z.max 0 xs' <= m *)
-      apply fold_right_max_le.
-      * exact Hm_nonneg.
-      * intros y Hy. apply H_ub. right. exact Hy.
-    + (* m is in xs', so by IH: fold_right Z.max 0 xs' = m *)
-      rewrite IH.
-      * (* Goal: Z.max x m = m *)
-        apply Z.max_r.
-        (* Need: x <= m *)
-        apply H_ub. left. reflexivity.
-      * (* IH precondition: forall y, In y xs' -> y <= m *)
-        intros y Hy. apply H_ub. right. exact Hy.
-      * (* IH precondition: In m xs' *)
-        exact H_in'.
-Qed. *)
-Admitted.
+  (* This follows directly from the duality theorem and fold_right_max_returns_max *)
+  apply fold_left_max_returns_max_direct.
+Qed.
 
 (* Helper lemma: fold_right_max_inf returns the maximum element *)
 Lemma fold_right_max_inf_is_maximal :
