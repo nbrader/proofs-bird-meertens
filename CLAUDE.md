@@ -14,9 +14,6 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 2. **Apply dual conversion theorems** like `fold_left_rev_right`, `fold_left_right_rev`, `scan_left_right_rev` to convert between left and right operations
 3. **Handle argument order differences** - the dual operations often have reversed argument order (e.g., `(x <#> v)` vs `(v <#> x)`)
 4. **Create missing conversion theorems** if needed for specific operations like Z.max, nonNegPlus, etc.
-5. **Never use circular reasoning** - don't prove a theorem by applying itself recursively
-
-This approach leverages existing proven theorems and systematic conversion rather than attempting complex inductive proofs from scratch.
 
 ## Essential Commands
 
