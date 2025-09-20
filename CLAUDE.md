@@ -154,19 +154,6 @@ Where:
 
 **Key Insight**: The lemma definitions have been strategically updated to use `fold_right` consistently throughout the codebase, making them both mathematically correct and likely provable with simpler proof strategies.
 
-**Computational Verification Results (Updated)**:
-- ✅ **1,040+ tests** confirm both updated admitted lemmas are TRUE
-- ✅ **6,200+ QuickCheck-style tests** still confirm `form1 = form8` equivalence
-- ✅ **All 8 forms remain equivalent** with the updated definitions
-- ✅ **The Bird-Meertens formalism is mathematically correct** with the improvements
-
-**Next Steps**:
-1. **Complete the two updated admitted lemmas in Lemmas.v** (both are computationally verified as true):
-   - `generalised_horners_rule` (line 444) - new definition should be provable directly
-   - `generalised_horners_rule'` (line 448) - simplified to use the first lemma via rewrite
-2. **Achieve complete MaxSegSum equivalence proof** by finishing these updated lemmas
-3. **Leverage the fold_right consistency** to develop cleaner proof strategies
-
 ### Proof Development Strategy
 **CRITICAL**: When working on complex proofs, use computational verification at each step:
 1. **Write fresh Python scripts** to test each intermediate goal before attempting Coq proof
