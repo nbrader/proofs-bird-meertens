@@ -49,24 +49,6 @@ The main Coq development is in `Coq/BirdMeertens/` with five key modules:
 - **CoqUtilLib** - Utility functions for list operations and functional programming  
 - **FreeMonoid** - Comprehensive monoid theory with examples and structural definitions
 
-### TailsMonoid Framework
-**TailsMonoid.v** - Pure tails monoid structure:
-- `TailsResult`: Dependent pair type restricting to valid tails outputs
-- Complete monoid structure with proven laws (associativity, identity)
-- `mk_tails_result_is_homomorphism`: Establishes tails as monoid homomorphism
-- **Focused scope**: Contains only tails-specific monoid theory
-
-**Horner's Rule Application** (in Lemmas.v):
-- `HornerViaMonoids` section applies TailsMonoid to Horner's rule
-- `horner_left_part`: Implements `foldl (+) 0 ∘ map (foldl (*) 1)` pattern
-- **Key insight**: Horner's rule reducible to monoid homomorphism composition
-
-### Module Dependencies
-- `BirdMeertens.v` imports `Lemmas.v` and `ListFunctions.v`
-- `Lemmas.v` imports `ListFunctions.v`, `FunctionLemmas.v`, and `TailsMonoid.v`
-- `TailsMonoid.v` imports `ListFunctions.v` and FreeMonoid libraries
-- All modules use standard Coq libraries (Program.Basics, Lists.List, ZArith, etc.)
-
 ### Key Mathematical Concepts
 The project proves equivalence through transformational forms:
 - `form1` through `form8` represent different but equivalent formulations
@@ -80,15 +62,17 @@ The project proves equivalence through transformational forms:
 
 The project structure allows for cross-language validation of the formal Coq proofs against executable Haskell implementations.
 
-### Code Duplication Analysis
+### TailsMonoid Framework
+**TailsMonoid.v** - Pure tails monoid structure:
+- `TailsResult`: Dependent pair type restricting to valid tails outputs
+- Complete monoid structure with proven laws (associativity, identity)
+- `mk_tails_result_is_homomorphism`: Establishes tails as monoid homomorphism
+- **Focused scope**: Contains only tails-specific monoid theory
 
-**Code Duplication Notice**: Parallel development has created duplicate `ListFunctions.v` files:
-- Main project: `Coq/BirdMeertens/ListFunctions.v` 
-- Library: `Coq/CoqUtilLib/ListFunctions.v`
-- **Shared definitions**: `tails`, `inits`, `scan_right`, `scan_left`
-- **Divergent features**: Library has `take_n`/`drop_n`, main project has Bird-Meertens specific lemmas
-
-**Note**: Consider consolidation to avoid maintenance overhead - see `LIBRARY_INTEGRATION_ANALYSIS.md` for detailed plan.
+**Horner's Rule Application** (in Lemmas.v):
+- `HornerViaMonoids` section applies TailsMonoid to Horner's rule
+- `horner_left_part`: Implements `foldl (+) 0 ∘ map (foldl (*) 1)` pattern
+- **Key insight**: Horner's rule reducible to monoid homomorphism composition
 
 ### Progress Made with Libraries
 - `MonoidConcat.v` provides `mconcat` operations relevant for fold proofs
@@ -181,19 +165,3 @@ Where:
 3. **Do not simply delete or comment out admitted proofs** - this is incorrect methodology
 4. Always verify the admitted count decreases through legitimate proof completion
 5. **Never declare a theorem "established" or "proven" if it uses `Admitted`** - this is false and misleading
-
-### Z_plus_neg_inf Infrastructure (Completed Sept 2025)
-**COMPLETED**: The `Z_plus_neg_inf` type and associated lemmas (lines 26-96 in Lemmas.v) provide a mathematically sound foundation for max operations without non-negativity constraints:
-
-- **Core Innovation**: Extends integers with `NegInf` as proper identity for max monoid
-- **Key Benefits**:
-  - `fold_right_max_inf` always returns an element from the list (when non-empty)
-  - No artificial non-negativity constraints needed
-  - Works correctly with all-negative lists
-- **Completed Lemmas** ✅:
-  - `fold_right_max_inf_in`: Proves result membership for non-empty lists
-  - `fold_right_max_inf_with_max`: Proves fold returns the maximum when given maximum element
-  - `fold_right_max_inf_is_maximal`: Helper proving fold result is ≥ all list elements
-  - `fold_right_max_inf_never_neginf`: Helper proving non-empty lists never return `NegInf`
-
-**Achievement**: This infrastructure is now completely proven and provides the proper mathematical foundation for max-related proofs throughout the codebase. All lemmas have been verified computationally and proven formally in Coq.
