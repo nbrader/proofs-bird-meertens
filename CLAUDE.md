@@ -6,6 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Coq formalization project that translates a theorem from the Bird-Meertens Formalism Wikipedia article about the correctness of Kadane's algorithm for the Maximum subarray problem.
 
+## Key Proof Strategy: Dual Conversion Approach
+
+**IMPORTANT**: When proving dual theorems (theorems that convert between fold_left/scan_left and fold_right/scan_right), use the **dual conversion approach**:
+
+1. **Start with the original theorem** that uses fold_right/scan_right operations
+2. **Apply dual conversion theorems** like `fold_left_rev_right`, `fold_left_right_rev`, `scan_left_right_rev` to convert between left and right operations
+3. **Handle argument order differences** - the dual operations often have reversed argument order (e.g., `(x <#> v)` vs `(v <#> x)`)
+4. **Create missing conversion theorems** if needed for specific operations like Z.max, nonNegPlus, etc.
+5. **Never use circular reasoning** - don't prove a theorem by applying itself recursively
+
+This approach leverages existing proven theorems and systematic conversion rather than attempting complex inductive proofs from scratch.
+
 ## Essential Commands
 
 ### Building the Project
@@ -167,6 +179,16 @@ Where:
 3. **Test each subgoal independently** with targeted computational verification
 4. **Incrementally build proofs** only after Python verification confirms the goal is viable
 5. **Create new verification scripts** for each proof attempt to ensure accuracy
+
+### Interactive Proof Debugging
+**IMPORTANT**: When working on complex Coq proofs and unsure of goal structure:
+1. **Ask the user to show intermediate goals** - The user has GUI access to VSCode with VsCoq extension that shows goals at every tactic step
+2. **Be specific about which step** - Ask to see the goal "after applying tactic X but before tactic Y"
+3. **Don't guess goal structure** - If unsure what the goal looks like after `simpl`, `rewrite`, etc., ask rather than assume
+4. **Verify rewrite targets match** - Many proof failures occur because rewrite patterns don't match the actual goal structure
+5. **Use this for debugging failed tactics** - When tactics fail with "no subterm matching" errors, ask to see the actual goal
+
+**Example**: "Could you show me what the goal looks like after `simpl fold_left` but before the `rewrite` step? I want to make sure I understand the exact structure."
 
 ### Proof Completion Requirements
 **CRITICAL**: When working on admitted proofs, follow these strict guidelines:
