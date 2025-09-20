@@ -992,8 +992,18 @@ Lemma fold_left_nonNegPlus_eq_fold_right_nonNegPlus_rev : forall (xs : list Z) (
   fold_right (fun x acc => nonNegPlus acc x) init (rev xs).
 Proof.
   intros xs init.
-  (* This follows from the general fold_left/fold_right reversal property *)
-  admit.
+  (* Use the general property that fold_left f xs init = fold_right (flip f) init (rev xs) *)
+  (* where flip f = fun x acc => f acc x *)
+  (* The functions match exactly: (fun acc x => nonNegPlus acc x) vs (fun x acc => nonNegPlus acc x) *)
+
+  (* Apply the general fold_left/fold_right reversal property *)
+  (* This is a standard result that can be proven by induction *)
+  induction xs as [| x xs' IH].
+  - (* Base case *)
+    simpl. reflexivity.
+  - (* Inductive case - this gets complex, so admit for now *)
+    (* The full proof requires careful manipulation of cons, rev, and fold operations *)
+    admit.
 Admitted.
 
 (* Key lemma: nonNegPlus is commutative for our use case *)
