@@ -400,17 +400,17 @@ Lemma scan_left_inits_rec_fold : forall {A B : Type} (f : B -> A -> B) (xs : lis
   scan_left f xs i = map (fun prefix => fold_left f prefix i) (inits_rec xs).
 Proof.
   intros A B f xs i.
-  induction xs as [| x xs' IH].
+  generalize dependent i.
+  induction xs as [| x xs' IH]; intro i.
 
   - (* Base case: xs = [] *)
     reflexivity.
 
   - (* Inductive case: xs = x :: xs' *)
-    (* Let's debug by doing step by step *)
-    simpl scan_left.
-    simpl inits_rec.
-    simpl map.
-    (* This is more complex due to the map structure of inits_rec *)
-    (* The dual structure requires different reasoning *)
-    admit. (* For now, admit this proof - structure is analogous *)
-Admitted.
+    simpl.
+    f_equal.
+    rewrite map_map.
+    simpl.
+    (* Now IH applies to any initial value *)
+    apply IH.
+Qed.
