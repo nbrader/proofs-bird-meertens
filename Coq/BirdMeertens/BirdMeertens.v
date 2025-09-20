@@ -205,13 +205,32 @@ Qed.
 (* For now, we'll admit this step to demonstrate the structure *)
 Theorem form5_dual_eq_form6_dual : form5_dual = form6_dual.
 Proof.
-  (* This requires a dual version of the generalized Horner's rule working with fold_left *)
-  (* For now, we use a direct approach based on the structural similarity to the original *)
   unfold form5_dual, form6_dual.
-  (* The dual follows the same pattern as the original but with fold_left and inits_rec *)
-  (* We admit this as it requires implementing the dual suffix-based Horner's rule *)
-  admit.
-Admitted.
+  apply functional_extensionality; intro xs.
+  unfold compose.
+
+  (* We need to prove:
+     nonNegMaximum_dual (map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) (inits_rec xs)) =
+     nonNegMaximum_dual (map (fun prefix => fold_left (fun acc x => nonNegPlus acc x) prefix 0) (inits_rec xs)) *)
+
+  f_equal.
+
+  (* Now we need to prove the maps are equal *)
+  apply map_ext; intro prefix.
+  unfold compose.
+
+  (* For each prefix, we need to prove:
+     nonNegMaximum_dual (map nonNegSum_dual (tails prefix)) =
+     fold_left (fun acc x => nonNegPlus acc x) prefix 0 *)
+
+  (* Note that fold_left (fun acc x => nonNegPlus acc x) prefix 0 = nonNegSum_dual prefix *)
+  (* So we need: nonNegMaximum_dual (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
+
+  (* Apply fold_left_nonNegPlus_eq_max_suffixes in reverse *)
+  rewrite <- fold_left_nonNegPlus_eq_max_suffixes.
+  unfold nonNegSum_dual.
+  reflexivity.
+Qed.
 
 Theorem form6_dual_eq_form7_dual : form6_dual = form7_dual.
 Proof.
