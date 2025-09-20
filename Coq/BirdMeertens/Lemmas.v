@@ -737,9 +737,19 @@ Proof.
       assert (H_u_new_ge_v_new: u_new >= v_new).
         { subst u_new. lia. }
 
-      rewrite (IH u_new v_new H_v_new_nonneg H_u_new_ge_v_new).
-      simpl fold_left at 1.
-      admit.
+      rewrite (IH u_new v_new H_v_new_nonneg H_u_new_ge_v_new). clear IH.
+      simpl.
+      subst v_new.
+      subst u_new.
+      repeat (rewrite fold_left_right_equiv).
+      + f_equal.
+        admit.
+      + intros a b c. apply Z.max_assoc.
+      + intros a b. apply Z.max_comm.
+      + intros a b c. admit.
+      + intros a b. admit.
+      + intros a b c. apply Z.max_assoc.
+      + intros a b. apply Z.max_comm.
   }
   (* Specialize with (0,0) *)
   specialize (H_general xs 0 0).
