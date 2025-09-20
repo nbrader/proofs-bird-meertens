@@ -31,6 +31,5 @@ FreeMonoid/TypeCategory.v
 BirdMeertens/BirdMeertens.v
 BirdMeertens/ListFunctions.v
 BirdMeertens/Lemmas.v
-BirdMeertens/FunctionLemmas.v
 BirdMeertens/TailsMonoid.v
 BirdMeertens/Extra.v
