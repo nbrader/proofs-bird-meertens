@@ -1295,6 +1295,22 @@ Proof.
 Qed.
 Print Assumptions nonNegSum_nonneg.
 
+(* Helper lemma: nonNegSum_dual is always non-negative *)
+Lemma nonNegSum_dual_nonneg : forall xs : list Z, nonNegSum_dual xs >= 0.
+Proof.
+  intros xs.
+  unfold nonNegSum_dual.
+  (* Use the general fold_left property with nonNegPlus *)
+  assert (H: forall acc, acc >= 0 -> fold_left (fun acc x => nonNegPlus acc x) xs acc >= 0).
+  {
+    intro acc. generalize dependent acc.
+    induction xs as [|x xs' IH]; simpl; intros acc H_acc.
+    - exact H_acc.
+    - apply IH. apply nonNegPlus_nonneg'.
+  }
+  apply H. apply Z.le_ge. apply Z.le_refl.
+Qed.
+
 (* Helper lemma: elements of inits are prefixes *)
 Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
   In ys (inits xs) -> exists zs, ys ++ zs = xs.
@@ -1447,11 +1463,56 @@ Proof.
   - exact H_is_max.
   - exact H_xs_mapped.
 Qed. *)
-  (* For the correct proof using tails instead of inits, this requires a different approach.
-     The key insight is that among all suffixes, the full list gives the maximum accumulated sum.
-     Computationally verified to be true. Admitting for now. *)
-  admit.
-Admitted.
+  intros xs.
+
+  (* xs is one of its tails *)
+  assert (H_in: In xs (tails xs)).
+  {
+    rewrite tails_rec_equiv.
+    induction xs as [|x xs' IH].
+    - simpl. left. reflexivity.
+    - simpl. left. reflexivity.
+  }
+
+  (* Every element of tails xs is a suffix of xs, and xs gives the maximum sum *)
+  (* We'll use fold_left_max_returns_max to establish this *)
+
+  (* First, show nonNegSum_dual xs >= 0 *)
+  assert (Hm_nonneg: nonNegSum_dual xs >= 0).
+  { apply nonNegSum_dual_nonneg. }
+
+  (* Show that xs is in the mapped list *)
+  assert (H_xs_mapped: In (nonNegSum_dual xs) (map nonNegSum_dual (tails xs))).
+  {
+    rewrite in_map_iff.
+    exists xs.
+    split.
+    - reflexivity.
+    - exact H_in.
+  }
+
+  (* Show that nonNegSum_dual xs is >= all other elements in the mapped list *)
+  assert (H_is_max: forall y, In y (map nonNegSum_dual (tails xs)) -> y <= nonNegSum_dual xs).
+  {
+    intros y H_y_in.
+    rewrite in_map_iff in H_y_in.
+    destruct H_y_in as [ys [H_eq H_ys_in]].
+    rewrite <- H_eq.
+    (* ys is a suffix of xs, so nonNegSum_dual ys <= nonNegSum_dual xs *)
+    (* This follows from tails_are_suffixes and nonNegSum_dual_suffix_le *)
+    destruct (tails_are_suffixes Z xs ys H_ys_in) as [zs H_app].
+    apply nonNegSum_dual_suffix_le.
+    exists zs; exact H_app.
+  }
+
+  (* Now apply fold_left_max_returns_max *)
+  unfold nonNegMaximum_dual.
+  symmetry.
+  apply fold_left_max_returns_max with (m := nonNegSum_dual xs).
+  - exact Hm_nonneg.
+  - exact H_is_max.
+  - exact H_xs_mapped.
+Qed.
 
 Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
