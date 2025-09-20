@@ -1325,25 +1325,23 @@ Proof.
       exists zs. simpl. now f_equal.
 Qed.
 
-(* Helper lemma: elements of inits are prefixes *)
+(* Helper lemma: elements of tails are suffixes *)
 Lemma tails_are_suffixes : forall (A : Type) (xs ys : list A),
   In ys (tails xs) -> exists zs, zs ++ ys = xs.
 Proof.
-  (* intros A xs.
+  intros A xs ys H_in.
+  (* Use the tails_rec_equiv to work with the simpler recursive definition *)
+  rewrite tails_rec_equiv in H_in.
+  generalize dependent ys.
   induction xs as [|x xs' IH]; intros ys H_in.
   - simpl in H_in. destruct H_in as [H_eq | H_contra].
     + subst. exists []. reflexivity.
     + contradiction.
   - simpl in H_in. destruct H_in as [H_eq | H_in'].
-    + subst. exists (x :: xs'). reflexivity.
-    + (* ys comes from map (cons x) (inits xs') *)
-      apply in_map_iff in H_in'.
-      destruct H_in' as [ys' [H_eq H_inits]].
-      subst ys.
-      specialize (IH ys' H_inits) as [zs H_concat].
-      exists zs. simpl. now f_equal.
-Qed. *)
-Admitted.
+    + subst. exists []. reflexivity.
+    + specialize (IH ys H_in') as [zs H_eq].
+      exists (x :: zs). simpl. f_equal. exact H_eq.
+Qed.
 
 (* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
 Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
