@@ -94,7 +94,6 @@ Proof.
   exact (@scan_right_tails_rec_fold Z Z nonNegPlus 0 xs).
 Qed.
 
-
 (* form7 = form8 *)
 Theorem form7_eq_form8 : form7 = form8.
 Proof.
@@ -120,22 +119,6 @@ Proof.
   now rewrite Hpair.
 Qed.
 
-Theorem MaxSegSum_Equivalence_Part1 : form1 = form5.
-Proof.
-  rewrite form1_eq_form2.
-  rewrite form2_eq_form3.
-  rewrite form3_eq_form4.
-  rewrite form4_eq_form5.
-  reflexivity.
-Qed.
-
-Theorem MaxSegSum_Equivalence_Part2 : form6 = form8.
-Proof.
-  rewrite form6_eq_form7.
-  rewrite form7_eq_form8.
-  reflexivity.
-Qed.
-
 (* The previous MaxSegSum_Equivalence_is_false theorem has been removed *)
 (* Computational verification with 6,200+ QuickCheck-style tests proves *)
 (* that form1 = form8 IS TRUE. The Bird-Meertens formalism is mathematically correct. *)
@@ -154,6 +137,7 @@ Proof.
   reflexivity.
 Qed.
 Print Assumptions MaxSegSum_Equivalence.
+
 (*
 Axioms:
 generalised_horners_rule_nonNeg : forall l : list Z, nonNegMaximum (map nonNegSum (inits l)) = fold_right nonNegPlus 0 l
@@ -280,34 +264,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* Dual version of MaxSegSum_Equivalence_Part1 *)
-Theorem MaxSegSum_Equivalence_Part1_Dual : form1_dual = form5_dual.
-Proof.
-  rewrite form1_dual_eq_form2_dual.
-  rewrite form2_dual_eq_form3_dual.
-  rewrite form3_dual_eq_form4_dual.
-  rewrite form4_dual_eq_form5_dual.
-  reflexivity.
-Qed.
-(*
-Axioms:
-functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
-*)
-
-(* Dual version of MaxSegSum_Equivalence_Part2 *)
-Theorem MaxSegSum_Equivalence_Part2_Dual : form6_dual = form8_dual.
-Proof.
-  rewrite form6_dual_eq_form7_dual.
-  rewrite form7_dual_eq_form8_dual.
-  reflexivity.
-Qed.
-(*
-Axioms:
-scan_left_inits_rec_fold : forall (A B : Type) (f : B -> A -> B) (xs : list A) (i : B), scan_left f xs i = map (fun prefix : list A => fold_left f prefix i) (inits_rec xs)
-functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
-form7_dual_eq_form8_dual : form7_dual = form8_dual
-*)
-
 (* Dual version of the complete MaxSegSum equivalence theorem *)
 Theorem MaxSegSum_Equivalence_Dual : form1_dual = form8_dual.
 Proof.
@@ -360,5 +316,3 @@ Proof.
   (* even though some steps use admitted lemmas *)
   reflexivity.
 Qed.
-
-
