@@ -33,4 +33,4 @@ BirdMeertens/ListFunctions.v
 BirdMeertens/Lemmas.v
 BirdMeertens/FunctionLemmas.v
 BirdMeertens/TailsMonoid.v
-BirdMeertens/ProofStrategy.v
+BirdMeertens/Extra.v
