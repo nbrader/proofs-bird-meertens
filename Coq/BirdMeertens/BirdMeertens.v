@@ -229,11 +229,37 @@ Qed.
 (* For now, we'll admit this step to demonstrate the structure *)
 Theorem form7_dual_eq_form8_dual : form7_dual = form8_dual.
 Proof.
-  (* Computationally verified to be true. The proof would follow the same
-     structure as form7_eq_form8 but for fold_left operations.
-     For now, admitting to proceed with other proofs. *)
-  admit.
-Admitted.
+  unfold form7_dual, form8_dual.
+  apply functional_extensionality; intro xs.
+  unfold compose, nonNegMaximum_dual.
+
+  (* The goal is:
+     fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs 0) 0 =
+     fst (fold_left maxSoFarAndPreviousSum_dual xs (0, 0)) *)
+
+  (* Apply fold_scan_fusion_pair_dual *)
+  pose proof fold_scan_fusion_pair_dual xs as H.
+
+  (* We need to show that the goal follows from H by proving the functions are equal *)
+  assert (H_func_eq: forall uv x,
+    maxSoFarAndPreviousSum_dual uv x =
+    (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x)) uv x).
+  {
+    intros [u v] x.
+    unfold maxSoFarAndPreviousSum_dual.
+    simpl.
+    reflexivity.
+  }
+
+  (* From H, we have: fold_left (complex_function) xs (0, 0) = (LHS, RHS) *)
+  (* We want to show: LHS = fst(fold_left maxSoFarAndPreviousSum_dual xs (0, 0)) *)
+
+  (* Rewrite H in the opposite direction to get what we want *)
+  symmetry.
+  rewrite <- (fold_left_ext _ maxSoFarAndPreviousSum_dual xs (0, 0) (fun uv x => eq_sym (H_func_eq uv x))).
+  rewrite H.
+  reflexivity.
+Qed.
 
 (* Dual version of MaxSegSum_Equivalence_Part1 *)
 Theorem MaxSegSum_Equivalence_Part1_Dual : form1_dual = form5_dual.
