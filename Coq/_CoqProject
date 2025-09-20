@@ -29,7 +29,6 @@ FreeMonoid/StructMonoid.v
 FreeMonoid/StructSemigroup.v
 FreeMonoid/TypeCategory.v
 BirdMeertens/BirdMeertens.v
-BirdMeertens/ListFunctions.v
 BirdMeertens/Lemmas.v
 BirdMeertens/TailsMonoid.v
 BirdMeertens/Extra.v

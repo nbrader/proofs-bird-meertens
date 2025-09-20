@@ -41,11 +41,9 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 ### Coq Structure
 The main Coq development is in `Coq/BirdMeertens/` with five key modules:
 
-1. **ListFunctions.v** - Core list manipulation functions (`tails`, `inits`, `segs`, `scan_right`, etc.)
-2. **Lemmas.v** - Mathematical definitions and operations (`nonNegPlus`, `nonNegSum`, `nonNegMaximum`) 
-3. **FunctionLemmas.v** - Supporting lemmas for functions
-4. **BirdMeertens.v** - Main theorem proving Kadane's algorithm correctness through 8 equivalent forms
-5. **Extra.v** - A place to put results that aren't necessary for the main theorems.
+1. **BirdMeertens.v** - Main theorem proving Kadane's algorithm correctness through 8 equivalent forms
+2. **Lemmas.v** - Mathematical definitions and operations (`nonNegPlus`, `nonNegSum`, `nonNegMaximum`)
+3. **Extra.v** - A place to put results that aren't necessary for the main theorems.
 
 **Additional Libraries:**
 - **CoqUtilLib** - Utility functions for list operations and functional programming  
