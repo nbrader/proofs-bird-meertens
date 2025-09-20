@@ -941,15 +941,50 @@ Admitted.
 
 (* Dual conversion theorems for fold operations *)
 
+(* Helper lemma: fold_right Z.max distributes over max in initial value *)
+Lemma fold_right_max_init_distrib : forall (xs : list Z) (a b : Z),
+  fold_right Z.max (Z.max a b) xs = Z.max a (fold_right Z.max b xs).
+Proof.
+  intros xs a b.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl. reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl fold_right.
+    rewrite IH.
+    (* Goal: Z.max x (Z.max a (fold_right Z.max b xs')) = Z.max a (Z.max x (fold_right Z.max b xs')) *)
+    (* This follows from associativity and commutativity of Z.max *)
+    rewrite Z.max_assoc.
+    rewrite (Z.max_comm x a).
+    rewrite <- Z.max_assoc.
+    reflexivity.
+Qed.
+
 (* For associative and commutative operations like Z.max, fold_left and fold_right are equivalent *)
 Lemma fold_left_max_eq_fold_right_max : forall (xs : list Z) (init : Z),
   fold_left Z.max xs init = fold_right Z.max init xs.
 Proof.
-  intros xs init.
-  (* This requires Z.max associativity and commutativity properties *)
-  (* For now, admit this - it's a standard property for associative commutative operations *)
-  admit.
-Admitted.
+  intros xs.
+  induction xs as [| x xs' IH]; intro init.
+  - (* Base case: xs = [] *)
+    simpl. reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl fold_left. simpl fold_right.
+    (* Goal: fold_left Z.max xs' (init <|> x) = x <|> fold_right Z.max init xs' *)
+
+    (* Apply IH with the new initial value (init <|> x) *)
+    rewrite (IH (init <|> x)).
+
+    (* Now we have: fold_right Z.max (init <|> x) xs' = x <|> fold_right Z.max init xs' *)
+    (* Apply the helper lemma: fold_right Z.max (Z.max init x) xs' = Z.max init (fold_right Z.max x xs') *)
+    (* But we need it with x and init swapped, so first use commutativity *)
+    assert (H_comm: init <|> x = x <|> init). { apply Z.max_comm. }
+    rewrite H_comm.
+    (* Now apply the helper lemma with a = x, b = init *)
+    rewrite <- (fold_right_max_init_distrib xs' x init).
+    (* Now we have the goal: Z.max x (fold_right Z.max init xs') = x <|> fold_right Z.max init xs' *)
+    reflexivity.
+Qed.
 
 (* For nonNegPlus (which is not associative), we need reversal *)
 Lemma fold_left_nonNegPlus_eq_fold_right_nonNegPlus_rev : forall (xs : list Z) (init : Z),
