@@ -697,6 +697,9 @@ Proof.
   exact (@scan_left_inits_rec_fold Z Z (fun acc x => nonNegPlus acc x) xs 0).
 Qed.
 
+Lemma Z_max_l' : forall a b, a >= b -> a <|> b = a.
+Proof. intros; unfold Z.max; apply Z.max_l; lia. Qed.
+
 (* Dual version of fold_scan_fusion_pair - works with fold_left and scan_left *)
 (* This would require a more complex proof due to the left-fold structure *)
 (* For now, we'll admit this to demonstrate the dual structure *)
@@ -709,66 +712,39 @@ Lemma fold_scan_fusion_pair_dual :
     (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs 0) 0,
      fold_left (fun acc x => nonNegPlus acc x) xs 0).
 Proof.
-  intro xs.
-
-  (* Computational verification shows this works for u_acc >= v_acc >= 0 *)
-  (* Let me prove the generalized version *)
-
+  intros xs.
+  (* Generalized form with arbitrary accumulators *)
   assert (H_general: forall ys u_acc v_acc,
     v_acc >= 0 -> u_acc >= v_acc ->
-    fold_left (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x))
-              ys (u_acc, v_acc)
+    fold_left
+      (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x))
+      ys (u_acc, v_acc)
     =
     (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) ys v_acc) u_acc,
      fold_left (fun acc x => nonNegPlus acc x) ys v_acc)).
   {
     induction ys as [|y ys' IH]; intros u_acc v_acc H_v_nonneg H_u_ge_v.
     - (* Base case: ys = [] *)
-      simpl scan_left. simpl fold_left.
-      f_equal.
-      (* Goal: u_acc = u_acc <|> v_acc *)
-      rewrite Z.max_l; [reflexivity | apply Z.ge_le; exact H_u_ge_v].
-
+      simpl. f_equal.
+      symmetry.
+      apply Z_max_l'. lia.
     - (* Inductive case: ys = y :: ys' *)
-      simpl fold_left at 1.
-      simpl scan_left at 1.
-
-      (* After one step:
-         LHS: fold_left ... ys' (Z.max u_acc (nonNegPlus v_acc y), nonNegPlus v_acc y)
-         RHS: (fold_left Z.max (v_acc :: scan_left ... ys' (nonNegPlus v_acc y)) u_acc, ...)
-      *)
-
-      (* Simplify RHS first component *)
-      simpl fold_left at 1.
-
-      (* Apply IH with new accumulator values *)
+      simpl fold_left at 1. simpl scan_left at 1.
       set (v_new := nonNegPlus v_acc y).
-      set (u_new := u_acc <|> v_new).
+      set (u_new := Z.max u_acc v_new).
 
-      (* The key insight: I need to show that u_new >= v_new >= 0 *)
-      assert (H_v_new_nonneg: v_new >= 0).
-      { unfold v_new. apply nonNegPlus_nonneg'. }
-
+      assert (H_v_new_nonneg: v_new >= 0) by (apply nonNegPlus_nonneg').
       assert (H_u_new_ge_v_new: u_new >= v_new).
-      { unfold u_new. apply Z.ge_le_iff. apply Z.le_max_r. }
+        { subst u_new. lia. }
 
       rewrite (IH u_new v_new H_v_new_nonneg H_u_new_ge_v_new).
-
-      (* Now I need to show the accumulated values align *)
-      f_equal.
-
-      (* This step requires complex fold_left monotonicity reasoning *)
-      (* The computational verification shows this should work *)
-      (* For now, admit this step to focus on completing other proofs *)
+      simpl fold_left at 1.
       admit.
   }
-
-  (* Apply the general result with u_acc = 0, v_acc = 0 *)
-  apply (H_general xs 0 0).
-  - (* v_acc >= 0: 0 >= 0 *)
-    admit. (* Z.le_refl should work here but there's a comparison unification issue *)
-  - (* u_acc >= v_acc: 0 >= 0 *)
-    admit. (* Z.le_refl should work here but there's a comparison unification issue *)
+  (* Specialize with (0,0) *)
+  specialize (H_general xs 0 0).
+  replace 0 with (Z.of_nat 0) by reflexivity.
+  apply H_general; lia.
 Admitted.
 
 (* fold_right extensionality lemma - needed for BirdMeertens.v *)
