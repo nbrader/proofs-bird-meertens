@@ -1,56 +1,64 @@
 #!/usr/bin/env python3
 
 """
-Verify the fold_promotion_dual conjecture:
+Verify fold_promotion_dual conjecture:
 nonNegMaximum_dual ∘ concat = nonNegMaximum_dual ∘ map nonNegMaximum_dual
+
+Where:
+- nonNegMaximum_dual = fold_left max 0
+- concat = flatten list of lists
 """
 
 def nonNegMaximum_dual(xs):
-    """fold_left Z.max xs 0"""
+    """fold_left max xs 0"""
     result = 0
     for x in xs:
         result = max(result, x)
     return result
 
-def concat(xss):
-    """Concatenate list of lists"""
+def concat_lists(xss):
+    """Concatenate a list of lists"""
     result = []
     for xs in xss:
         result.extend(xs)
     return result
 
 def test_fold_promotion_dual():
-    """Test the equivalence on various examples"""
+    """Test the fold promotion dual property"""
 
+    # Test cases: list of lists
     test_cases = [
-        [],
-        [[]],
-        [[1]],
-        [[1, 2]],
-        [[], [3]],
-        [[1], [2]],
-        [[1, 2], [3, 4]],
-        [[1, 2, 3], [4, 5], [6]],
-        [[0, -1], [2, -3], [4]],
-        [[-5, -2], [-1, -4]],
-        [[1], [], [2], []],
+        [],  # empty list
+        [[]],  # list with one empty list
+        [[1]],  # list with one single-element list
+        [[1, 2]],  # list with one multi-element list
+        [[], [1]],  # empty list followed by non-empty
+        [[1], []],  # non-empty followed by empty
+        [[1, 2], [3, 4]],  # two non-empty lists
+        [[1], [2], [3]],  # three single-element lists
+        [[-1, 2], [3, -4], [5]],  # mixed positive/negative
+        [[0], [0, 0], []],  # lists with zeros
+        [[-5, -3], [-1], [-2, -4]],  # all negative
+        [[10, -5], [3, 8], [1, 9, -2]],  # longer lists
     ]
 
     all_passed = True
 
-    for xss in test_cases:
+    for i, xss in enumerate(test_cases):
         # Left side: nonNegMaximum_dual(concat(xss))
-        left_side = nonNegMaximum_dual(concat(xss))
+        concat_result = concat_lists(xss)
+        left_side = nonNegMaximum_dual(concat_result)
 
-        # Right side: nonNegMaximum_dual(map(nonNegMaximum_dual, xss))
-        mapped = [nonNegMaximum_dual(xs) for xs in xss]
-        right_side = nonNegMaximum_dual(mapped)
+        # Right side: nonNegMaximum_dual(map nonNegMaximum_dual xss)
+        mapped_maxs = [nonNegMaximum_dual(xs) for xs in xss]
+        right_side = nonNegMaximum_dual(mapped_maxs)
 
-        print(f"Testing xss={xss}")
-        print(f"  concat: {concat(xss)}")
-        print(f"  left_side (max of concat): {left_side}")
-        print(f"  mapped: {mapped}")
-        print(f"  right_side (max of mapped): {right_side}")
+        print(f"Test {i+1}: xss = {xss}")
+        print(f"  concat(xss) = {concat_result}")
+        print(f"  nonNegMaximum_dual(concat(xss)) = {left_side}")
+        print(f"  map nonNegMaximum_dual xss = {mapped_maxs}")
+        print(f"  nonNegMaximum_dual(mapped) = {right_side}")
+        print(f"  Equal? {left_side == right_side}")
 
         if left_side == right_side:
             print("  ✓ PASS")

@@ -377,14 +377,6 @@ Proof.
     exact IH.
 Qed.
 
-Lemma fold_promotion_dual : nonNegMaximum_dual ∘ (concat (A:=Z)) = nonNegMaximum_dual ∘ map nonNegMaximum_dual.
-Proof.
-  (* This has been computationally verified to be true.
-     The proof requires careful application of duality theorems
-     and the proven fold_promotion lemma. For now, admitting
-     to proceed with other proofs. *)
-  admit.
-Admitted.
 
 (* Instead, let's add a simple provable lemma about nonNegPlus *)
 Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
@@ -1139,6 +1131,35 @@ Proof.
 Qed.
 
 (* ========== END DUALITY THEOREMS ========== *)
+
+(* Now we can prove fold_promotion_dual using the duality theorems *)
+Lemma fold_promotion_dual : nonNegMaximum_dual ∘ (concat (A:=Z)) = nonNegMaximum_dual ∘ map nonNegMaximum_dual.
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros x.
+  unfold nonNegMaximum_dual.
+  (* Convert both sides to fold_right using duality *)
+  rewrite max_fold_duality_zero.
+  rewrite max_fold_duality_zero.
+  (* Convert the map function to use fold_right instead of fold_left *)
+  assert (H_map_eq: map (fun xs => fold_left (fun x y : Z => x <|> y) xs 0) x =
+                    map (fun xs => fold_right (fun x y : Z => x <|> y) 0 xs) x).
+  {
+    induction x as [|xs xss IH].
+    - simpl. reflexivity.
+    - simpl. f_equal.
+      + rewrite max_fold_duality_zero. reflexivity.
+      + exact IH.
+  }
+  rewrite H_map_eq.
+  (* Now we can apply the original fold_promotion *)
+  unfold nonNegMaximum.
+  assert (H_promotion := fold_promotion).
+  unfold compose in H_promotion.
+  unfold nonNegMaximum in H_promotion.
+  apply (equal_f H_promotion x).
+Qed.
 
 (* Helper lemma: fold_left gives a value that's <= any upper bound *)
 (* NOTE: This proof is now trivial using our duality theorem! *)
