@@ -746,8 +746,8 @@ Proof.
         admit.
       + intros a b c. apply Z.max_assoc.
       + intros a b. apply Z.max_comm.
-      + intros a b c. admit.
-      + intros a b. admit.
+      + intros a b c. admit. (* I think this might be false... *)
+      + intros a b. apply nonNegPlus_comm.
       + intros a b c. apply Z.max_assoc.
       + intros a b. apply Z.max_comm.
   }
