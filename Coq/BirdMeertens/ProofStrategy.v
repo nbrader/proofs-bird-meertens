@@ -6,15 +6,6 @@ Require Import BirdMeertens.Lemmas.
 Require Import Coq.micromega.Lia.
 Open Scope Z_scope.
 
-(* The key distributivity property we need *)
-Lemma max_add_distributes : forall s t x,
-  Z.max s t + x = Z.max (s + x) (t + x).
-Proof.
-  intros. 
-  rewrite Z.add_max_distr_r.
-  reflexivity.
-Qed.
-
 (* Boolean consistency lemma - simpler version *)
 Lemma leb_max_simple : forall s t x,
   Z.leb 0 (Z.max (s + x) (t + x)) = true -> 
