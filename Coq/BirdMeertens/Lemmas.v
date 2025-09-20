@@ -832,12 +832,96 @@ Proof.
       reflexivity.
 Qed.
 
+(* Helper lemma: nonNegPlus is always non-negative *)
+Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
+Proof.
+  intros x y.
+  unfold nonNegPlus.
+  destruct (Z.leb 0 (x + y)) eqn:H.
+  - (* Case: 0 <= x + y, so nonNegPlus returns x + y *)
+    apply Z.leb_le in H.
+    apply Z.le_ge.
+    exact H.
+  - (* Case: 0 > x + y, so nonNegPlus returns 0 *)
+    apply Z.le_ge.
+    apply Z.le_refl.
+Qed.
+
+(* Helper lemma: nonNegSum_dual is always non-negative *)
+Lemma nonNegSum_dual_nonneg : forall xs : list Z, nonNegSum_dual xs >= 0.
+Proof.
+  intros xs.
+  unfold nonNegSum_dual.
+  (* Use the general fold_left property with nonNegPlus *)
+  assert (H: forall acc, acc >= 0 -> fold_left (fun acc x => nonNegPlus acc x) xs acc >= 0).
+  {
+    intro acc. generalize dependent acc.
+    induction xs as [|x xs' IH]; simpl; intros acc H_acc.
+    - exact H_acc.
+    - apply IH. apply nonNegPlus_nonneg'.
+  }
+  apply H. apply Z.le_ge. apply Z.le_refl.
+Qed.
+
+(* Helper lemma: fold_left is monotonic in initial value for nonNegPlus *)
+Lemma fold_left_monotonic_nonNegPlus : forall (xs : list Z) (a b : Z),
+  a <= b -> fold_left (fun acc x => nonNegPlus acc x) xs a <= fold_left (fun acc x => nonNegPlus acc x) xs b.
+Proof.
+  intros xs a b H_le.
+  generalize dependent a. generalize dependent b.
+  induction xs as [|x xs' IH]; simpl; intros b a H_le.
+  - exact H_le.
+  - apply IH.
+    (* We need: nonNegPlus a x <= nonNegPlus b x *)
+    unfold nonNegPlus.
+    destruct (Z.leb 0 (a + x)) eqn:Ha, (Z.leb 0 (b + x)) eqn:Hb.
+    + (* Both a+x >= 0 and b+x >= 0 *)
+      apply Z.add_le_mono_r. exact H_le.
+    + (* a+x >= 0 but b+x < 0 - impossible since a <= b *)
+      exfalso.
+      apply Z.leb_le in Ha. apply Z.leb_gt in Hb.
+      assert (H_contra: a + x <= b + x) by (apply Z.add_le_mono_r; exact H_le).
+      (* We have: 0 <= a + x (from Ha) and a + x <= b + x (from H_contra) *)
+      (* So by transitivity: 0 <= b + x *)
+      assert (H_ge_lt: 0 <= b + x) by (apply Z.le_trans with (m := a + x); [exact Ha | exact H_contra]).
+      (* But we also have b + x < 0 (from Hb), which is a contradiction *)
+      apply Z.lt_irrefl with (x := 0).
+      apply Z.le_lt_trans with (m := b + x); [exact H_ge_lt | exact Hb].
+    + (* a+x < 0 but b+x >= 0 *)
+      apply Z.leb_le in Hb. exact Hb.
+    + (* Both a+x < 0 and b+x < 0 *)
+      apply Z.le_refl.
+Qed.
+
 (* Helper lemma: removing elements from a list can only decrease nonNegSum *)
 Lemma nonNegSum_dual_suffix_le : forall (xs ys : list Z),
   (exists zs, zs ++ xs = ys) -> nonNegSum_dual xs <= nonNegSum_dual ys.
 Proof.
+  intros xs ys H_suffix.
+  destruct H_suffix as [zs H_eq].
+
+  (* We need to prove: nonNegSum_dual xs <= nonNegSum_dual ys *)
+  (* Since zs ++ xs = ys, we substitute ys with zs ++ xs *)
+  rewrite <- H_eq.
+
+  (* The key insight: nonNegSum_dual (zs ++ xs) starts with processing zs first,
+     then continues with xs from whatever accumulated value results from zs.
+     Since nonNegPlus is monotonic in its first argument when the second is non-negative,
+     and we know all intermediate values are non-negative, this can only help. *)
+
+  unfold nonNegSum_dual.
+  rewrite fold_left_app.
+
+  (* Now we have: fold_left (fun acc x => nonNegPlus acc x) xs 0 <=
+                  fold_left (fun acc x => nonNegPlus acc x) xs (fold_left (fun acc x => nonNegPlus acc x) zs 0) *)
+
+  (* Use monotonicity: if a <= b, then fold_left f xs a <= fold_left f xs b *)
+  apply fold_left_monotonic_nonNegPlus.
+
+  (* We need: 0 <= fold_left (fun acc x => nonNegPlus acc x) zs 0 *)
+  apply Z.ge_le_iff.
+  apply nonNegSum_dual_nonneg.
   (*
-    (* First, we prove two helper lemmas inside this proof. *)
   
     (* Helper 1: nonNegSum_dual always produces a non-negative result. *)
     assert (nonNegSum_dual_nonneg : forall l : list Z, 0 <= nonNegSum_dual l).
@@ -876,8 +960,8 @@ Proof.
         apply Z.leb_gt in Hb.
         assert (H_xa_le_xb: x + a <= x + b) by (apply Z.add_le_mono_l; exact H_le).
         assert (H_xb_ge_0: 0 <= x + b) by (apply Z.le_trans with (m := x + a); [exact Ha | exact H_xa_le_xb]).
-        apply Z.lt_irrefl with (x := 0).
-        apply Z.le_lt_trans with (m := x + b); [exact H_xb_ge_0 | exact Hb].
+        apply Z.lt_irrefl with (x := x + b).
+        apply Z.le_lt_trans with (m := 0); [exact H_xb_ge_0 | exact Hb].
       - (* Case 3: x+a < 0 and x+b >= 0. *)
         apply Z.leb_le in Hb.
         exact Hb.
@@ -906,7 +990,7 @@ Proof.
         exists zs.
         reflexivity.
   Qed. *)
-Admitted.
+Qed.
 
 (* Helper lemma: fold_right Z.max 0 gives a value that's <= any upper bound *)
 Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
@@ -1269,21 +1353,6 @@ Proof.
   - exact H_is_max.
 Qed.
 
-(* Helper lemma: nonNegPlus is always non-negative *)
-Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
-Proof.
-  intros x y.
-  unfold nonNegPlus.
-  destruct (Z.leb 0 (x + y)) eqn:H.
-  - (* Case: 0 <= x + y, so nonNegPlus returns x + y *)
-    apply Z.leb_le in H.
-    apply Z.le_ge.
-    exact H.
-  - (* Case: 0 > x + y, so nonNegPlus returns 0 *)
-    apply Z.le_ge.
-    apply Z.le_refl.
-Qed.
-
 (* Helper lemma: nonNegSum is always non-negative *)
 Lemma nonNegSum_nonneg : forall xs : list Z, nonNegSum xs >= 0.
 Proof.
@@ -1294,22 +1363,6 @@ Proof.
   - simpl. apply nonNegPlus_nonneg'.
 Qed.
 Print Assumptions nonNegSum_nonneg.
-
-(* Helper lemma: nonNegSum_dual is always non-negative *)
-Lemma nonNegSum_dual_nonneg : forall xs : list Z, nonNegSum_dual xs >= 0.
-Proof.
-  intros xs.
-  unfold nonNegSum_dual.
-  (* Use the general fold_left property with nonNegPlus *)
-  assert (H: forall acc, acc >= 0 -> fold_left (fun acc x => nonNegPlus acc x) xs acc >= 0).
-  {
-    intro acc. generalize dependent acc.
-    induction xs as [|x xs' IH]; simpl; intros acc H_acc.
-    - exact H_acc.
-    - apply IH. apply nonNegPlus_nonneg'.
-  }
-  apply H. apply Z.le_ge. apply Z.le_refl.
-Qed.
 
 (* Helper lemma: elements of inits are prefixes *)
 Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
