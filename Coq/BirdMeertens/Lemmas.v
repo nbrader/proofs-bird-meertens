@@ -798,10 +798,20 @@ Proof.
   induction sl as [| s sl' IH]; intros a b.
   - simpl. reflexivity.
   - simpl.
-    (* Goal after simpl: fold_left Z.max sl' (a <|> b) <|> s = ... *)
-    rewrite IH.
-    (* Now goal should be: (fold_left Z.max sl' a <|> fold_left Z.max sl' b) <|> s = ... *)
-    apply max_distrib_max.
+    (* After simpl, the goal is:
+       fold_left Z.max sl' (Z.max (Z.max a b) s) =
+       Z.max (fold_left Z.max sl' (Z.max a s)) (fold_left Z.max sl' (Z.max b s))
+    *)
+    (* First, apply max_distrib_max to transform (Z.max a b) in the LHS *)
+    assert (Z.max (Z.max a b) s = Z.max (Z.max a s) (Z.max b s)) as H_distrib.
+    { apply max_distrib_max. }
+    rewrite H_distrib.
+    (* Now the goal is:
+       fold_left Z.max sl' (Z.max (Z.max a s) (Z.max b s)) =
+       Z.max (fold_left Z.max sl' (Z.max a s)) (fold_left Z.max sl' (Z.max b s))
+    *)
+    (* Apply IH to distribute fold_left over Z.max *)
+    apply IH.
 Qed.
 
 (* Dual conversion theorem: scan_left relates to scan_right via reversal *)
