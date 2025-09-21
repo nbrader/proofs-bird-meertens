@@ -1177,7 +1177,7 @@ Proof.
     set (u_next := Z.max u0 v_next).
 
     (* To apply the IH, we must prove the preconditions hold for the new values. *)
-    assert (H_u_next_ge_v_next: u_next >= v_next). { unfold u_next. lia. }
+    assert (H_u_next_ge_v_next: u_next >= v_next). { unfold u_next. apply Z.ge_le_iff. apply Z.le_max_r. }
     assert (H_v_next_nonneg: v_next >= 0). { unfold v_next. apply nonNegPlus_nonneg'. }
 
     (* Apply the induction hypothesis to the LHS. *)
@@ -1241,7 +1241,7 @@ Proof.
       apply fold_left_Z_max_monotonic.
 
       (* The final subgoal is to prove the accumulator inequality. *)
-      lia. (* Solves u0 <|> v_next >= v_next, which is always true. *)
+      apply Z.ge_le_iff. apply Z.le_max_r. (* Solves u0 <|> v_next >= v_next, which is always true. *)
     
     (* The new goal is to prove this inequality:
        fold_left Z.max sl_next u0 >= fold_left Z.max sl_next v_next
@@ -1353,8 +1353,8 @@ Proof.
   intro xs.
   (* This is a special case of fold_scan_fusion_pair_general with u0 = 0, v0 = 0 *)
   apply fold_scan_fusion_pair_general.
-  - (* 0 >= 0 *) lia.
-  - (* 0 >= 0 *) lia.
+  - (* 0 >= 0 *) apply Z.ge_le_iff. apply Z.le_refl.
+  - (* 0 >= 0 *) apply Z.ge_le_iff. apply Z.le_refl.
 Qed.
 
 (* fold_right extensionality lemma - needed for BirdMeertens.v *)
