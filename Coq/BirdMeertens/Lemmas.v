@@ -793,31 +793,57 @@ Proof.
         lia.
 Qed.
 
+(* Helper lemma: tails_rec on concatenation with singleton *)
+Lemma tails_rec_app_singleton : forall {A : Type} (xs : list A) (x : A),
+  tails_rec (xs ++ [x]) = map (fun ys => ys ++ [x]) (tails_rec xs) ++ [[]].
+Proof.
+  intros A xs x.
+  induction xs as [| y xs' IH].
+
+  - (* Base case: xs = [] *)
+    simpl app.
+    simpl tails_rec.
+    reflexivity.
+
+  - (* Inductive case: xs = y :: xs' *)
+    simpl app.
+    simpl tails_rec.
+    rewrite IH.
+    simpl map.
+    (* Goal: (y :: xs') ++ [x] :: map (fun ys => ys ++ [x]) (tails_rec xs') ++ [[]] =
+              ((y :: xs') ++ [x]) :: map (fun ys => ys ++ [x]) (tails_rec xs') ++ [[]] *)
+    reflexivity.
+
+Qed.
+
 (* Key duality lemma between inits and tails *)
 Lemma inits_tails_duality : forall {A : Type} (xs : list A),
   map (@rev A) (inits_rec xs) = rev (tails_rec (rev xs)).
 Proof.
   intros A xs.
-  induction xs as [| x xs' IH].
 
-  - (* Base case: xs = [] *)
-    simpl inits_rec.
-    simpl tails_rec.
-    simpl rev.
-    simpl map.
-    reflexivity.
+  (* Use the dual conversion approach: convert to fold-based definitions *)
+  (* Convert inits_rec to inits using conversion theorem *)
+  rewrite <- inits_rec_equiv.
 
-  - (* Inductive case: xs = x :: xs' *)
-    simpl inits_rec.
-    simpl map.
-    (* LHS: [] :: map rev (map (cons x) (inits_rec xs')) *)
+  (* Convert tails_rec to tails using conversion theorem *)
+  rewrite <- tails_rec_equiv.
 
-    (* Simplify RHS - note that rev (x :: xs') = rev xs' ++ [x] *)
-    simpl rev at 1.
+  (* Now we have: map rev (inits xs) = rev (tails (rev xs)) *)
 
-    (* This proof is complex and depends on tails_rec_app_singleton which comes later *)
-    (* For now, let me admit this to keep compilation working *)
-    admit.
+  (* Unfold the definitions of inits and tails as fold_right operations *)
+  unfold inits, tails.
+
+  (* The goal now involves fold_right operations where we need to establish duality *)
+  (* This is a complex fold duality that requires careful manipulation *)
+  (* Apply fundamental theorems about rev and map interaction with fold operations *)
+
+  (* Use properties like rev_map_rev and fold duality theorems *)
+  (* The proof involves showing that reversing the result of inits is equivalent *)
+  (* to reversing the computation order in tails *)
+
+  (* This is a deep theorem requiring fold duality principles *)
+  admit.
 
 Admitted.
 
@@ -915,28 +941,6 @@ Proof.
 Qed.
 
 
-(* Helper lemma: tails_rec on concatenation with singleton *)
-Lemma tails_rec_app_singleton : forall {A : Type} (xs : list A) (x : A),
-  tails_rec (xs ++ [x]) = map (fun ys => ys ++ [x]) (tails_rec xs) ++ [[]].
-Proof.
-  intros A xs x.
-  induction xs as [| y xs' IH].
-
-  - (* Base case: xs = [] *)
-    simpl app.
-    simpl tails_rec.
-    reflexivity.
-
-  - (* Inductive case: xs = y :: xs' *)
-    simpl app.
-    simpl tails_rec.
-    rewrite IH.
-    simpl map.
-    (* Goal: (y :: xs') ++ [x] :: map (fun ys => ys ++ [x]) (tails_rec xs') ++ [[]] =
-              ((y :: xs') ++ [x]) :: map (fun ys => ys ++ [x]) (tails_rec xs') ++ [[]] *)
-    reflexivity.
-
-Qed.
 
 (* Specialized version for nonNegPlus *)
 Lemma scan_left_nonNegPlus_right_rev : forall xs init,
@@ -953,8 +957,8 @@ Lemma fold_pair_left_right_rev : forall (A B : Type) (f : A * B -> A -> A * B) (
   fold_right (fun x g => fun p => g (f p x)) (fun p => p) xs init.
 Proof.
   intros A B f xs init.
-  (* This follows directly from fold_left_rev_right *)
-  apply fold_left_rev_right.
+  (* This follows directly from fold_left_as_fold_right *)
+  apply fold_left_as_fold_right.
 Qed.
 
 (* Specialized version for our pair function *)
@@ -1008,17 +1012,42 @@ Lemma fold_scan_fusion_pair_general : forall (xs : list Z) (u0 v0 : Z),
 Proof.
   intros xs u0 v0 H_u_ge_v H_v_nonneg.
 
-  (* Follow the pattern shown in fold_pair_left_right_rev - use fold_left_rev_right *)
-  rewrite fold_left_rev_right.
+  (* The goal is to convert fold_left operations to fold_right and apply the basic fusion lemma *)
 
-  (* Now convert scan_left to scan_right using scan_left_right_rev *)
-  rewrite scan_left_right_rev.
+  (* First, let me try a more direct approach by induction *)
+  induction xs as [| x xs' IH].
 
-  (* Convert the other fold_left using fold_left_rev_right *)
-  rewrite fold_left_rev_right.
+  - (* Base case: xs = [] *)
+    (* Need to check what the actual LHS and RHS are *)
+    (* LHS: fold_left (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x)) [] (u0, v0) = (u0, v0) *)
+    (* RHS: (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) [] v0) u0, fold_left (fun acc x => nonNegPlus acc x) [] v0) *)
+    simpl.
+    (* The issue might be that scan_left [] v0 = [v0], not [] *)
+    (* And fold_left Z.max [v0] u0 = Z.max u0 v0, not u0 *)
+    (* So we need: (u0, v0) = (Z.max u0 v0, v0) *)
+    (* This is only true if u0 >= v0, which is our hypothesis! *)
+    f_equal.
+    (* Goal: u0 = u0 <|> v0, i.e., u0 = Z.max u0 v0 *)
+    (* Since u0 >= v0, we have Z.max u0 v0 = u0 *)
+    symmetry.
+    apply Z.max_l.
+    lia.
 
-  (* Now everything should be in fold_right form and we can apply fold_scan_fusion_pair *)
-  admit.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl fold_left.
+    simpl scan_left.
+    simpl fold_left.
+
+    (* LHS: fold_left (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x)) xs' (Z.max u0 (nonNegPlus v0 x), nonNegPlus v0 x) *)
+    (* RHS: (fold_left Z.max (nonNegPlus v0 x :: scan_left (fun acc x => nonNegPlus acc x) xs' (nonNegPlus v0 x)) u0, fold_left (fun acc x => nonNegPlus acc x) xs' (nonNegPlus v0 x)) *)
+
+    (* The current IH is for the specific u0, v0 values *)
+    (* But I need to apply it to the new accumulated values *)
+    (* Let me try a different approach - work with the structures directly *)
+
+    (* Actually, the current goal is quite complex. Let me admit this for now *)
+    (* and focus on making sure at least one proof goes through completely *)
+    admit.
 
 Admitted.
 
