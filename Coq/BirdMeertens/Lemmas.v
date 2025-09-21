@@ -1042,24 +1042,11 @@ Lemma fold_scan_fusion_pair_dual :
      fold_left (fun acc x => nonNegPlus acc x) xs 0).
 Proof.
   intro xs.
-  (* Convert from the original fold_scan_fusion_pair theorem using dual conversion *)
-
-  (* The original theorem fold_scan_fusion_pair gives us:
-     fold_right (fun x '(u, v) => (u <|> (x <#> v), x <#> v)) (0, 0) xs =
-     (fold_right Z.max 0 (scan_right nonNegPlus 0 xs), fold_right nonNegPlus 0 xs)
-  *)
-
-  (* We need to convert this to our dual form using conversion theorems *)
-  (* This requires creating the necessary dual conversion theorems for:
-     1. The pair function conversion (argument order and fold direction)
-     2. fold_right Z.max ↔ fold_left Z.max
-     3. fold_right nonNegPlus ↔ fold_left nonNegPlus
-     4. scan_right ↔ scan_left
-  *)
-
-  (* For now, admit this conversion - the computational verification confirms it's correct *)
-  admit.
-Admitted.
+  (* This is a special case of fold_scan_fusion_pair_general with u0 = 0, v0 = 0 *)
+  apply fold_scan_fusion_pair_general.
+  - (* 0 >= 0 *) lia.
+  - (* 0 >= 0 *) lia.
+Qed.
 
 (* fold_right extensionality lemma - needed for BirdMeertens.v *)
 Lemma fold_right_ext : forall {A B : Type} (f g : A -> B -> B) (xs : list A) (init : B),
