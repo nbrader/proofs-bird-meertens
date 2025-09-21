@@ -279,10 +279,7 @@ Qed.
 Print Assumptions MaxSegSum_Equivalence_Dual.
 (*
 Axioms:
-scan_left_inits_rec_fold : forall (A B : Type) (f : B -> A -> B) (xs : list A) (i : B), scan_left f xs i = map (fun prefix : list A => fold_left f prefix i) (inits_rec xs)
 functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
-form7_dual_eq_form8_dual : form7_dual = form8_dual
-form5_dual_eq_form6_dual : form5_dual = form6_dual
 *)
 
 (* Demonstrate that original and dual forms give the same results *)
