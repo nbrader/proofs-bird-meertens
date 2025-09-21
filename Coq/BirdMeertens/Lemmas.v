@@ -1127,7 +1127,7 @@ Proof.
   - (* Inductive case: l = x :: l' *)
     simpl fold_left.
     apply IH.
-    lia.
+    apply Z.ge_le_iff. apply Z.max_le_compat_r. apply Z.ge_le; assumption.
 Qed.
 
 Lemma scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A),
