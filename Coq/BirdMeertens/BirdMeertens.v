@@ -294,18 +294,3 @@ Proof.
   rewrite fold_left_right_rev.
   f_equal.
 Qed.
-
-Theorem fold_left_rev_right :
-  forall (A B : Type) (f : A -> B -> A) (l : list B) (z : A),
-    fold_left f l z =
-    fold_right (fun x g => fun a => g (f a x)) (fun a => a) l z.
-Proof.
-  intros A B f l.
-  induction l as [|x xs IH]; intros z.
-  - (* base case *)
-    simpl. reflexivity.
-  - (* inductive case *)
-    simpl.
-    rewrite IH.
-    reflexivity.
-Qed.
