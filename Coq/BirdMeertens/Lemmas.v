@@ -1313,8 +1313,8 @@ Proof.
   unfold nonNegPlus.
   destruct (Z.leb 0 (v + x)) eqn:H1; destruct (Z.leb 0 (x + v)) eqn:H2.
   - apply Z.add_comm.
-  - apply Z.leb_le in H1. apply Z.leb_gt in H2. lia.
-  - apply Z.leb_gt in H1. apply Z.leb_le in H2. lia.
+  - apply Z.leb_le in H1. apply Z.leb_gt in H2. exfalso. apply (Z.lt_irrefl (v + x)). apply Z.lt_le_trans with (m := 0). rewrite Z.add_comm. exact H2. exact H1.
+  - apply Z.leb_gt in H1. apply Z.leb_le in H2. exfalso. apply (Z.lt_irrefl (x + v)). apply Z.lt_le_trans with (m := 0). rewrite <- Z.add_comm. exact H1. exact H2.
   - reflexivity.
 Qed.
 
