@@ -1134,8 +1134,7 @@ Lemma scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A)
   scan_left f xs i = h :: ys -> h = i.
 Proof.
   intros A f xs ys i h H.
-  destruct xs; simpl in H; injection H as H1 _; exact (eq_sym H1).
-  Show Proof.
+  destruct xs; simpl in H; congruence.
 Qed.
 
 (* General helper lemma for fold_scan_fusion_pair_dual *)
