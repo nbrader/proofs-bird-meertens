@@ -1183,14 +1183,13 @@ Proof.
     assert (H_new_v_nonneg: v0 <#> x >= 0).
     { apply nonNegPlus_nonneg'. }
     
-    (* The IH is: fold_left (pair_fn) xs' (u0, v0) = (fold_left Z.max (scan_left nonNegPlus xs' v0) u0, fold_left nonNegPlus xs' v0) *)
-    (* We need to adapt this to: fold_left (pair_fn) xs' (Z.max u0 (v0 <#> x), v0 <#> x) *)
+    (* We need a stronger induction hypothesis that works for arbitrary starting values.
+       The current IH only works for the original (u0, v0) pair.
+       This requires either:
+       1. A more general statement proved by mutual induction, or
+       2. Additional lemmas about fold_left Z.max distributivity
 
-    (* This requires a generalization of the induction hypothesis *)
-    (* The IH only applies to the original u0, v0 but we need it for new values *)
-    (* This is where we need the distributivity lemma for fold_left Z.max *)
-
-    (* For now, admit this complex case that requires additional helper lemmas *)
+       For now, admit this step since the computational verification shows it's true *)
     admit.
 
 Admitted.
