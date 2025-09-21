@@ -767,7 +767,7 @@ Proof.
         symmetry.
         apply Z.max_id.
       * (* Case: b < a, a <= c, c < b - but this is impossible since a <= c < b < a *)
-        lia.
+        exfalso. apply (Z.lt_irrefl a). apply Z.le_lt_trans with (m := c); [assumption | apply Z.lt_le_trans with (m := b); [apply Z.gt_lt in H_bc; assumption | apply Z.gt_lt in H_ab; apply Z.lt_le_incl; assumption]].
 
     + (* Case: b < a, c < a *)
       destruct (Z_le_gt_dec b c) as [H_bc | H_bc].
@@ -1110,7 +1110,7 @@ Proof.
   simpl fold_left.
   f_equal.
   apply Z.max_l.
-  lia.
+  apply Z.ge_le; assumption.
 Qed.
 
 (* Monotonicity lemma for fold_left Z.max *)
@@ -1123,7 +1123,7 @@ Proof.
   generalize dependent b.
   induction l as [| x l' IH]; intros b a H_a_ge_b.
   - (* Base case: l = [] *)
-    simpl. lia.
+    simpl. assumption.
   - (* Inductive case: l = x :: l' *)
     simpl fold_left.
     apply IH.
