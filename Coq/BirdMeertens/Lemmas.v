@@ -816,31 +816,138 @@ Proof.
 
 Qed.
 
-(* Key duality lemma between inits and tails *)
+Theorem fold_left_right_equiv : 
+  forall (A : Type) (f : A -> A -> A) (z : A) (l : list A),
+    (forall x y z, f x (f y z) = f (f x y) z) -> (* Associativity of f *)
+    (forall x y, f x y = f y x) -> (* Commutativity of f *)
+    fold_left f l z = fold_right f z l.
+Proof.
+  intros A f z l H_assoc H_comm.
+  apply fold_symmetric.
+  - apply H_assoc.
+  - apply H_comm.
+Qed.
+
+Theorem fold_left_right_rev :
+  forall (A B : Type) (f : A -> B -> A) (z : A) (l : list B),
+    fold_left f l z =
+    fold_right (fun x acc => f acc x) z (rev l).
+Proof.
+  intros A B f z l.
+  revert z.
+  induction l as [|x xs IH]; intros z.
+  - simpl. reflexivity.
+  - simpl. rewrite IH.
+    (* Now goal:
+       fold_right (fun x0 acc => f acc x0) (f z x) (rev xs)
+         = fold_right (fun x0 acc => f acc x0) z (rev xs ++ [x]) *)
+    rewrite fold_right_app. simpl.
+    reflexivity.
+Qed.
+
+(* More general lemma: fold_left with cons and arbitrary initial accumulator *)
+Lemma fold_left_cons_general : forall (A : Type) (l : list A) (acc : list A),
+  fold_left (fun acc x => x :: acc) l acc =
+  rev l ++ acc.
+Proof.
+  intros A l acc.
+  revert acc.
+  induction l as [|x xs IH]; intros acc.
+  - (* Base case: l = [] *)
+    simpl fold_left.
+    simpl rev.
+    simpl app.
+    reflexivity.
+  - (* Inductive case: l = x :: xs *)
+    simpl fold_left.
+    simpl rev.
+    rewrite IH.
+    (* Goal: (rev xs ++ [x]) ++ acc = rev xs ++ (x :: acc) *)
+    (* Convert x :: acc to [x] ++ acc *)
+    change (x :: acc) with ([x] ++ acc).
+    (* Goal: (rev xs ++ [x]) ++ acc = rev xs ++ [x] ++ acc *)
+    (* This is exactly app_assoc *)
+    apply app_assoc.
+Qed.
+
+Theorem rev_fold_right_left :
+  forall (A : Type) (l : list A),
+    fold_left (fun acc x => x :: acc) l [] =
+    rev (fold_right cons [] l).
+Proof.
+  intros A l.
+  (* Use the general lemma with acc = [] *)
+  rewrite fold_left_cons_general.
+  (* Goal: rev l ++ [] = rev (fold_right cons [] l) *)
+  rewrite app_nil_r.
+  (* Goal: rev l = rev (fold_right cons [] l) *)
+  (* Now I need to show that fold_right cons [] l = l *)
+  assert (H: fold_right cons [] l = l).
+  { induction l as [|x xs IH].
+    - simpl. reflexivity.
+    - simpl. rewrite IH. reflexivity. }
+  rewrite H.
+  reflexivity.
+Qed.
+
+Theorem rev_fold_left_right :
+  forall (A : Type) (l : list A),
+    fold_right cons [] l =
+    rev (fold_left (fun acc x => x :: acc) l []).
+Proof.
+  intros A l.
+  (* Use the general lemma with acc = [] *)
+  rewrite fold_left_cons_general.
+  (* Goal: rev l ++ [] = rev (fold_right cons [] l) *)
+  rewrite app_nil_r.
+  (* Goal: rev l = rev (fold_right cons [] l) *)
+  (* Now I need to show that fold_right cons [] l = l *)
+  assert (H: fold_right cons [] l = l).
+  { induction l as [|x xs IH].
+    - simpl. reflexivity.
+    - simpl. rewrite IH. reflexivity. }
+  rewrite H.
+  rewrite rev_involutive.
+  reflexivity.
+Qed.
+
+Lemma tails_app_singleton : forall {A} (l : list A) (x : A),
+  tails (l ++ [x]) = map (fun t => t ++ [x]) (tails l) ++ [[]].
+Proof.
+  intros A l x.
+  induction l as [| y ys IH].
+  - simpl. reflexivity.
+  - simpl. rewrite IH.
+    admit.
+Admitted.
+
+Lemma map_rev_commute : forall {A B} (f : A -> B) (l : list A),
+  map f (rev l) = rev (map f l).
+Proof.
+  intros A B f l.
+  induction l as [| x xs IH]; simpl.
+  - reflexivity.
+  - rewrite <- IH. rewrite map_app. simpl. reflexivity.
+Qed.
+
+Lemma map_rev_cons : forall {A} (x : A) (L : list (list A)),
+  map (@rev A) (map (cons x) L) = map (fun l => rev l ++ [x]) L.
+Proof.
+  intros A x L. rewrite map_map.
+  apply map_ext. intros l. simpl. reflexivity.
+Qed.
+
 Lemma inits_tails_duality : forall {A : Type} (xs : list A),
   map (@rev A) (inits xs) = rev (tails (rev xs)).
 Proof.
   intros A xs.
-
-  (* Unfold the definitions of inits and tails as fold_right operations *)
-  unfold inits, tails.
-
-  rewrite <- fold_left_right_rev.
-
-  (* Goal 1
-
-  A : Type
-
-  xs : list A
-
-  (1 / 1)
-  map (rev (A:=A)) (fold_right (fun x : A => cons [] ∘ map (cons x)) [[]] xs) = rev (fold_left (fun (acc : list (list A)) (x : A) => match acc with
-  | [] => [[]]
-  | xs0 :: xss => (x :: xs0) :: xs0 :: xss
-  end) xs [[]]) *)
-
-  (* rewrite <- rev_fold_left_right. *)
-
+  induction xs as [| x xs IH].
+  - simpl. reflexivity.
+  - (* inits (x::xs) = [] :: map (cons x) (inits xs) *)
+    simpl in *.
+    unfold inits; simpl fold_right; simpl.
+    rewrite tails_app_singleton.
+    rewrite map_rev_cons.
 Admitted.
 
 (* Key lemma: fold_left Z.max distributes over initial Z.max *)
