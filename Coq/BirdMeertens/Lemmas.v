@@ -821,12 +821,28 @@ Lemma scan_left_right_rev : forall (A B : Type) (f : A -> B -> A) (xs : list B) 
   scan_left f xs init = rev (scan_right (fun x acc => f acc x) init (rev xs)).
 Proof.
   intros A B f xs init.
-  (* This requires a complex proof involving the relationship between scan_left and scan_right *)
-  (* through the duality of fold_left/fold_right and inits/tails operations *)
-  (* The direct inductive approach is complicated by the complex definition of scan_right *)
-  (* which involves fold_right. A complete proof would require multiple helper lemmas *)
-  (* about rev, cons, fold operations, and their interactions *)
-  admit.
+  (* Prove by induction on xs *)
+  induction xs as [| x xs' IH].
+
+  - (* Base case: xs = [] *)
+    simpl scan_left.
+    simpl scan_right.
+    simpl rev.
+    reflexivity.
+
+  - (* Inductive case: xs = x :: xs' *)
+    simpl scan_left.
+    (* Goal: init :: scan_left f xs' (f init x) = rev (scan_right (fun x0 acc => f acc x0) init (rev (x :: xs'))) *)
+
+    simpl rev.
+    (* rev (x :: xs') = rev xs' ++ [x] *)
+    rewrite rev_cons.
+
+    (* Now we need to relate scan_right on (rev xs' ++ [x]) to our goal *)
+    (* This requires understanding how scan_right behaves on concatenated lists *)
+
+    admit.
+
 Admitted.
 
 (* Specialized version for nonNegPlus *)
@@ -870,6 +886,23 @@ Proof.
   lia.
 Qed.
 
+(* Monotonicity lemma for fold_left Z.max *)
+Lemma fold_left_Z_max_monotonic : forall (l : list Z) (a b : Z),
+  a >= b ->
+  fold_left Z.max l a >= fold_left Z.max l b.
+Proof.
+  intros l a b H_a_ge_b.
+  generalize dependent a.
+  generalize dependent b.
+  induction l as [| x l' IH]; intros b a H_a_ge_b.
+  - (* Base case: l = [] *)
+    simpl. lia.
+  - (* Inductive case: l = x :: l' *)
+    simpl fold_left.
+    apply IH.
+    lia.
+Qed.
+
 (* General helper lemma for fold_scan_fusion_pair_dual *)
 Lemma fold_scan_fusion_pair_general : forall (xs : list Z) (u0 v0 : Z),
   u0 >= v0 -> v0 >= 0 ->
@@ -881,86 +914,20 @@ Lemma fold_scan_fusion_pair_general : forall (xs : list Z) (u0 v0 : Z),
    fold_left (fun acc x => nonNegPlus acc x) xs v0).
 Proof.
   intros xs u0 v0 H_u_ge_v H_v_nonneg.
-  generalize dependent u0.
-  generalize dependent v0.
-  induction xs as [| x xs' IH]; intros v0 H_v_nonneg u0 H_u_ge_v.
 
-  - (* Base case: xs = [] *)
-    simpl fold_left.
-    simpl scan_left.
-    simpl fold_left.
-    (* Goal: (u0, v0) = (fold_left Z.max [v0] u0, v0) *)
-    (* fold_left Z.max [v0] u0 = Z.max u0 v0 *)
-    simpl fold_left.
-    (* Goal: (u0, v0) = (Z.max u0 v0, v0) *)
-    f_equal.
-    (* Since u0 >= v0, we have Z.max u0 v0 = u0 *)
-    symmetry.
-    apply Z.max_l.
-    lia.
+  (* Follow the pattern shown in fold_pair_left_right_rev - use fold_left_rev_right *)
+  rewrite fold_left_rev_right.
 
-  - (* Inductive case: xs = x :: xs' *)
-    (* Let me examine the exact goal structure step by step *)
-    (* First, let me see what happens after just the first simpl *)
-    simpl fold_left at 1.
-    (* Goal should now be:
-       fold_left (pair_func) xs' (Z.max u0 (nonNegPlus v0 x), nonNegPlus v0 x) = RHS *)
+  (* Now convert scan_left to scan_right using scan_left_right_rev *)
+  rewrite scan_left_right_rev.
 
-    (* Now let me see the RHS after simpl *)
-    simpl scan_left at 1.
-    simpl fold_left at 1.
-    (* RHS should now be:
-       (fold_left Z.max (v0 :: scan_left (nonNegPlus) xs' (nonNegPlus v0 x)) u0,
-        fold_left (nonNegPlus) xs' (nonNegPlus v0 x)) *)
+  (* Convert the other fold_left using fold_left_rev_right *)
+  rewrite fold_left_rev_right.
 
-    (* The key insight: apply IH first, then handle the fold_left_max_cons_large *)
-    (* Check that the IH preconditions are satisfied *)
-    assert (H_v_nonneg_new: nonNegPlus v0 x >= 0).
-    {
-      apply nonNegPlus_nonneg'.
-    }
+  (* Now everything should be in fold_right form and we can apply fold_scan_fusion_pair *)
+  admit.
 
-    assert (H_u_ge_v_new: Z.max u0 (nonNegPlus v0 x) >= nonNegPlus v0 x).
-    {
-      lia.
-    }
-
-    (* Apply the induction hypothesis to the LHS *)
-    rewrite (IH (nonNegPlus v0 x) H_v_nonneg_new (Z.max u0 (nonNegPlus v0 x)) H_u_ge_v_new).
-
-    (* Now I need to prove:
-       (fold_left Z.max (scan_left nonNegPlus xs' (nonNegPlus v0 x)) (Z.max u0 (nonNegPlus v0 x)),
-        fold_left nonNegPlus xs' (nonNegPlus v0 x)) =
-       (fold_left Z.max (v0 :: scan_left nonNegPlus xs' (nonNegPlus v0 x)) u0,
-        fold_left nonNegPlus xs' (nonNegPlus v0 x))
-    *)
-
-    f_equal.
-
-    + (* First component: Apply fold_left_max_cons_large directly to RHS *)
-      (* Goal: fold_left Z.max (scan_left ... xs' ...) (u0 <|> (v0 <#> x)) =
-               fold_left Z.max (v0 :: scan_left ... xs' ...) u0 *)
-
-      (* Apply fold_left_max_cons_large to the RHS *)
-      rewrite fold_left_max_cons_large.
-      * (* Now goal is: fold_left Z.max sl (u0 <|> (v0 <#> x)) = fold_left Z.max sl u0 *)
-        (* Use fold_left_max_init_distrib: fold_left Z.max sl (u0 <|> vneg) = (fold_left Z.max sl u0) <|> (fold_left Z.max sl vneg) *)
-        rewrite fold_left_max_init_distrib.
-
-        (* Goal: (fold_left Z.max sl u0) <|> (fold_left Z.max sl (v0 <#> x)) = fold_left Z.max sl u0 *)
-        (* This is true if fold_left Z.max sl u0 >= fold_left Z.max sl (v0 <#> x) *)
-
-        (* Apply Z.max_l: a <|> b = a when a >= b *)
-        rewrite Z.max_l.
-        -- reflexivity.
-        -- (* Prove: fold_left Z.max sl u0 >= fold_left Z.max sl (v0 <#> x) *)
-           (* This requires proving monotonicity of fold_left Z.max *)
-           (* The proof structure is complete except for this technical step *)
-           admit.
-
-      * exact H_u_ge_v.
-
-Admitted. (* Only one small monotonicity step remains - proof structure is complete *)
+Admitted.
 
 (* Dual conversion theorems for fold operations *)
 
