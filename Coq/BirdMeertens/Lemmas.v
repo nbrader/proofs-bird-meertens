@@ -1,5 +1,7 @@
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
+Require Import Coq.Lists.List.
+Import ListNotations.
 
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.FunctionLemmas.
@@ -819,10 +821,11 @@ Lemma scan_left_right_rev : forall (A B : Type) (f : A -> B -> A) (xs : list B) 
   scan_left f xs init = rev (scan_right (fun x acc => f acc x) init (rev xs)).
 Proof.
   intros A B f xs init.
-  (* Use dual conversion approach via inits/tails relationship *)
-
-  (* Complex inductive proof involving scan/rev/fold relationships *)
-  (* For now, admit this - the dual conversion approach was demonstrated *)
+  (* This requires a complex proof involving the relationship between scan_left and scan_right *)
+  (* through the duality of fold_left/fold_right and inits/tails operations *)
+  (* The direct inductive approach is complicated by the complex definition of scan_right *)
+  (* which involves fold_right. A complete proof would require multiple helper lemmas *)
+  (* about rev, cons, fold operations, and their interactions *)
   admit.
 Admitted.
 
@@ -910,20 +913,54 @@ Proof.
        (fold_left Z.max (v0 :: scan_left (nonNegPlus) xs' (nonNegPlus v0 x)) u0,
         fold_left (nonNegPlus) xs' (nonNegPlus v0 x)) *)
 
-    (* The key insight: I can apply the helper lemma now *)
-    assert (H_u_ge_v0: u0 >= v0). { exact H_u_ge_v. }
+    (* The key insight: apply IH first, then handle the fold_left_max_cons_large *)
+    (* Check that the IH preconditions are satisfied *)
+    assert (H_v_nonneg_new: nonNegPlus v0 x >= 0).
+    {
+      apply nonNegPlus_nonneg'.
+    }
 
-    (* Transform the first component of the RHS using the helper lemma *)
-    rewrite fold_left_max_cons_large.
-    2: { exact H_u_ge_v0. }
+    assert (H_u_ge_v_new: Z.max u0 (nonNegPlus v0 x) >= nonNegPlus v0 x).
+    {
+      lia.
+    }
 
-    (* This requires a complex proof involving proper manipulation of the induction hypothesis *)
-    (* The challenge is that the IH gives us something with u0' in the fold_left Z.max,
-       but the goal expects u0. This requires careful analysis of how fold_left Z.max
-       behaves with different initial values and the relationship to scan_left. *)
-    (* For now, admit this step - the lemma is computationally verified as correct *)
-    admit.
-Admitted.
+    (* Apply the induction hypothesis to the LHS *)
+    rewrite (IH (nonNegPlus v0 x) H_v_nonneg_new (Z.max u0 (nonNegPlus v0 x)) H_u_ge_v_new).
+
+    (* Now I need to prove:
+       (fold_left Z.max (scan_left nonNegPlus xs' (nonNegPlus v0 x)) (Z.max u0 (nonNegPlus v0 x)),
+        fold_left nonNegPlus xs' (nonNegPlus v0 x)) =
+       (fold_left Z.max (v0 :: scan_left nonNegPlus xs' (nonNegPlus v0 x)) u0,
+        fold_left nonNegPlus xs' (nonNegPlus v0 x))
+    *)
+
+    f_equal.
+
+    + (* First component: Apply fold_left_max_cons_large directly to RHS *)
+      (* Goal: fold_left Z.max (scan_left ... xs' ...) (u0 <|> (v0 <#> x)) =
+               fold_left Z.max (v0 :: scan_left ... xs' ...) u0 *)
+
+      (* Apply fold_left_max_cons_large to the RHS *)
+      rewrite fold_left_max_cons_large.
+      * (* Now goal is: fold_left Z.max sl (u0 <|> (v0 <#> x)) = fold_left Z.max sl u0 *)
+        (* Use fold_left_max_init_distrib: fold_left Z.max sl (u0 <|> vneg) = (fold_left Z.max sl u0) <|> (fold_left Z.max sl vneg) *)
+        rewrite fold_left_max_init_distrib.
+
+        (* Goal: (fold_left Z.max sl u0) <|> (fold_left Z.max sl (v0 <#> x)) = fold_left Z.max sl u0 *)
+        (* This is true if fold_left Z.max sl u0 >= fold_left Z.max sl (v0 <#> x) *)
+
+        (* Apply Z.max_l: a <|> b = a when a >= b *)
+        rewrite Z.max_l.
+        -- reflexivity.
+        -- (* Prove: fold_left Z.max sl u0 >= fold_left Z.max sl (v0 <#> x) *)
+           (* This requires proving monotonicity of fold_left Z.max *)
+           (* The proof structure is complete except for this technical step *)
+           admit.
+
+      * exact H_u_ge_v.
+
+Admitted. (* Only one small monotonicity step remains - proof structure is complete *)
 
 (* Dual conversion theorems for fold operations *)
 
