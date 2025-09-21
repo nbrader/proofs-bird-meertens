@@ -1132,7 +1132,7 @@ Qed.
 
 Definition scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A),
   scan_left f xs i = h :: ys -> h = i :=
-fun (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A) (H : scan_left f xs i = h :: ys) =>
+fun A f xs ys i h H =>
 match xs as l return (scan_left f l i = h :: ys -> h = i) with
 | [] | _ :: _ => fun H0 => f_equal (hd h) (eq_sym H0)
 end H.
