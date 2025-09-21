@@ -915,11 +915,10 @@ Lemma tails_app_singleton : forall {A} (l : list A) (x : A),
   tails (l ++ [x]) = map (fun t => t ++ [x]) (tails l) ++ [[]].
 Proof.
   intros A l x.
-  induction l as [| y ys IH].
-  - simpl. reflexivity.
-  - simpl. rewrite IH.
-    admit.
-Admitted.
+  rewrite tails_rec_equiv.
+  rewrite (tails_rec_equiv l).
+  apply tails_rec_app_singleton.
+Qed.
 
 Lemma map_rev_commute : forall {A B} (f : A -> B) (l : list A),
   map f (rev l) = rev (map f l).
@@ -941,14 +940,36 @@ Lemma inits_tails_duality : forall {A : Type} (xs : list A),
   map (@rev A) (inits xs) = rev (tails (rev xs)).
 Proof.
   intros A xs.
+  (* Use the recursive equivalences to simplify the proof *)
+  rewrite inits_rec_equiv.
+  rewrite tails_rec_equiv.
+  (* Now prove: map (@rev A) (inits_rec xs) = rev (tails_rec (rev xs)) *)
   induction xs as [| x xs IH].
   - simpl. reflexivity.
-  - (* inits (x::xs) = [] :: map (cons x) (inits xs) *)
-    simpl in *.
-    unfold inits; simpl fold_right; simpl.
-    rewrite tails_app_singleton.
-    rewrite map_rev_cons.
-Admitted.
+  - simpl inits_rec.
+    simpl map.
+    simpl rev.
+    rewrite tails_rec_app_singleton.
+    rewrite rev_app_distr.
+    simpl rev at 1.
+    (* Goal: [] :: map (@rev A) (map (cons x) (inits_rec xs)) = rev [[]] ++ rev (map (fun ys => ys ++ [x]) (tails_rec (rev xs))) *)
+    rewrite map_map.
+    simpl rev at 1.
+    (* Goal: [] :: map (fun l => rev (cons x l)) (inits_rec xs) = [[]] ++ rev (map (fun ys => ys ++ [x]) (tails_rec (rev xs))) *)
+    simpl rev.
+    (* Goal: [] :: map (fun x0 => rev x0 ++ [x]) (inits_rec xs) = [[]] ++ rev (map (fun ys => ys ++ [x]) (tails_rec (rev xs))) *)
+    simpl app.
+    f_equal.
+    (* Need to show: map (fun x0 => rev x0 ++ [x]) (inits_rec xs) = rev (map (fun ys => ys ++ [x]) (tails_rec (rev xs))) *)
+    (* Use IH: map (@rev A) (inits_rec xs) = rev (tails_rec (rev xs)) *)
+    (* We want to show that applying the same transformation to both sides preserves equality *)
+    rewrite <- (map_rev_commute (fun ys => ys ++ [x])).
+    rewrite <- IH.
+    rewrite map_map.
+    apply map_ext.
+    intro l.
+    reflexivity.
+Qed.
 
 (* Key lemma: fold_left Z.max distributes over initial Z.max *)
 Lemma fold_left_max_init_distrib : forall sl a b,
