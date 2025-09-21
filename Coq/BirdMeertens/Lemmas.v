@@ -1037,9 +1037,9 @@ Lemma fold_left_nonNegPlus_to_fold_right : forall xs init,
   fold_right (fun x acc => nonNegPlus acc x) init (rev xs).
 Proof.
   intros xs init H_init_nonneg.
-  (* This follows from the general fold_left/fold_right reversal property *)
-  admit.
-Admitted.
+  (* Apply the general fold_left/fold_right reversal property *)
+  apply fold_left_right_rev.
+Qed.
 
 (* Dual version of fold_scan_fusion_pair - works with fold_left and scan_left *)
 Lemma fold_scan_fusion_pair_dual :
