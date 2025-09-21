@@ -751,7 +751,7 @@ Proof.
         (* Goal is now: b = a <|> b, and since a <= b we have max(a,b) = b *)
         symmetry.
         apply Z.max_r.
-        lia.
+        assumption.
 
   - (* Case: b < a *)
     destruct (Z_le_gt_dec a c) as [H_ac | H_ac].
@@ -773,24 +773,24 @@ Proof.
       destruct (Z_le_gt_dec b c) as [H_bc | H_bc].
       * (* Case: b < a, c < a, b <= c *)
         (* So b <= c < a, meaning max(a,b) = a, max(a,c) = a, max(b,c) = c *)
-        assert (H1: Z.max a b = a) by (apply Z.max_l; lia).
-        assert (H2: Z.max a c = a) by (apply Z.max_l; lia).
-        assert (H3: Z.max b c = c) by (apply Z.max_r; lia).
+        assert (H1: Z.max a b = a) by (apply Z.max_l; apply Z.gt_lt in H_ab; apply Z.lt_le_incl; assumption).
+        assert (H2: Z.max a c = a) by (apply Z.max_l; apply Z.gt_lt in H_ac; apply Z.lt_le_incl; assumption).
+        assert (H3: Z.max b c = c) by (apply Z.max_r; assumption).
         rewrite H1, H2, H3.
         (* Goal is now: a = a <|> c, and since c < a we have max(a,c) = a *)
         symmetry.
         apply Z.max_l.
-        lia.
+        apply Z.gt_lt in H_ac; apply Z.lt_le_incl; assumption.
       * (* Case: b < a, c < a, c < b *)
         (* So c < b < a, meaning max(a,b) = a, max(a,c) = a, max(b,c) = b *)
-        assert (H1: Z.max a b = a) by (apply Z.max_l; lia).
-        assert (H2: Z.max a c = a) by (apply Z.max_l; lia).
-        assert (H3: Z.max b c = b) by (apply Z.max_l; lia).
+        assert (H1: Z.max a b = a) by (apply Z.max_l; apply Z.gt_lt in H_ab; apply Z.lt_le_incl; assumption).
+        assert (H2: Z.max a c = a) by (apply Z.max_l; apply Z.gt_lt in H_ac; apply Z.lt_le_incl; assumption).
+        assert (H3: Z.max b c = b) by (apply Z.max_l; apply Z.gt_lt in H_bc; apply Z.lt_le_incl; assumption).
         rewrite H1, H2, H3.
         (* Goal is now: a = a <|> b, and since b < a we have max(a,b) = a *)
         symmetry.
         apply Z.max_l.
-        lia.
+        apply Z.gt_lt in H_ab; apply Z.lt_le_incl; assumption.
 Qed.
 
 (* Helper lemma: tails_rec on concatenation with singleton *)
@@ -1161,7 +1161,7 @@ Proof.
     f_equal. (* Reduces the goal to u0 = Z.max u0 v0 *)
     symmetry.
     apply Z.max_l. (* Applies because of hypothesis H_u_ge_v: u0 >= v0 *)
-    lia.
+    apply Z.ge_le; assumption.
 
   - (* Inductive Step: xs = x :: xs' *)
     intros u0 v0 H_u_ge_v H_v_nonneg.
@@ -1187,7 +1187,7 @@ Proof.
     f_equal.
     
     (* Simplify the accumulator on the RHS using the hypothesis u0 >= v0. *)
-    rewrite (Z.max_l u0 v0); [| lia].
+    rewrite (Z.max_l u0 v0); [| apply Z.ge_le; assumption].
     
     (* The goal is now equality of the first components:
        fold_left Z.max (scan_left ... xs' v_next) u_next =
@@ -1312,7 +1312,7 @@ Proof.
   intros v x Hv.
   unfold nonNegPlus.
   destruct (Z.leb 0 (v + x)) eqn:H1; destruct (Z.leb 0 (x + v)) eqn:H2.
-  - lia.
+  - apply Z.add_comm.
   - apply Z.leb_le in H1. apply Z.leb_gt in H2. lia.
   - apply Z.leb_gt in H1. apply Z.leb_le in H2. lia.
   - reflexivity.
