@@ -759,9 +759,9 @@ Proof.
       destruct (Z_le_gt_dec b c) as [H_bc | H_bc].
       * (* Case: b < a, a <= c, b <= c *)
         (* So b <= c and b < a <= c, meaning max(a,b) = a, max(a,c) = c, max(b,c) = c *)
-        assert (H1: Z.max a b = a) by (apply Z.max_l; lia).
-        assert (H2: Z.max a c = c) by (apply Z.max_r; lia).
-        assert (H3: Z.max b c = c) by (apply Z.max_r; lia).
+        assert (H1: Z.max a b = a) by (apply Z.max_l; apply Z.gt_lt in H_ab; apply Z.lt_le_incl; assumption).
+        assert (H2: Z.max a c = c) by (apply Z.max_r; assumption).
+        assert (H3: Z.max b c = c) by (apply Z.max_r; assumption).
         rewrite H1, H2, H3.
         (* Goal is now: c = c <|> c *)
         symmetry.
