@@ -1140,58 +1140,103 @@ Lemma fold_scan_fusion_pair_general : forall (xs : list Z) (u0 v0 : Z),
   (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs v0) u0,
    fold_left (fun acc x => nonNegPlus acc x) xs v0).
 Proof.
+  (* We generalize over the initial values and hypotheses for the induction. *)
   intros xs u0 v0 H_u_ge_v H_v_nonneg.
-
-  (* The goal is to convert fold_left operations to fold_right and apply the basic fusion lemma *)
-
-  (* First, let me try a more direct approach by induction *)
+  revert u0 v0 H_u_ge_v H_v_nonneg.
   induction xs as [| x xs' IH].
 
-  - (* Base case: xs = [] *)
-    simpl fold_left.
-    simpl scan_left.
-    simpl fold_left.
-    (* LHS: (u0, v0) *)
-    (* RHS: (fold_left Z.max [v0] u0, v0) *)
-    f_equal.
-    (* Goal: u0 = fold_left Z.max [v0] u0 *)
-    simpl fold_left.
-    (* Goal: u0 = Z.max u0 v0 *)
-    (* Since u0 >= v0 by hypothesis, Z.max u0 v0 = u0 *)
+  - (* Base Case: xs = [] *)
+    intros u0 v0 H_u_ge_v H_v_nonneg.
+    simpl. (* Simplifies fold_left, scan_left, and fold_left on nil lists *)
+    (* The goal becomes: (u0, v0) = (Z.max u0 v0, v0) *)
+    f_equal. (* Reduces the goal to u0 = Z.max u0 v0 *)
     symmetry.
-    apply Z.max_l.
+    apply Z.max_l. (* Applies because of hypothesis H_u_ge_v: u0 >= v0 *)
     lia.
 
-  - (* Inductive case: xs = x :: xs' *)
+  - (* Inductive Step: xs = x :: xs' *)
+    intros u0 v0 H_u_ge_v H_v_nonneg.
+    
+    (* Unfold definitions one step on both sides of the equation. *)
     simpl fold_left at 1.
-    simpl scan_left at 1.
+    simpl scan_left.
     simpl fold_left at 2.
     simpl fold_left at 3.
 
-    (* After simplification: *)
-    (* LHS: fold_left (pair_fn) xs' (Z.max u0 (v0 <#> x), v0 <#> x) *)
-    (* RHS: (fold_left Z.max ((v0 <#> x) :: scan_left nonNegPlus xs' (v0 <#> x)) u0,
-              fold_left nonNegPlus xs' (v0 <#> x)) *)
+    (* Let's name the new initial values for the recursive calls. *)
+    set (v_next := nonNegPlus v0 x).
+    set (u_next := Z.max u0 v_next).
 
-    (* To apply IH, I need: *)
-    (* 1. Z.max u0 (v0 <#> x) >= v0 <#> x *)
-    (* 2. v0 <#> x >= 0 *)
+    (* To apply the IH, we must prove the preconditions hold for the new values. *)
+    assert (H_u_next_ge_v_next: u_next >= v_next). { unfold u_next. lia. }
+    assert (H_v_next_nonneg: v_next >= 0). { unfold v_next. apply nonNegPlus_nonneg'. }
 
-    assert (H_new_u_ge_v: Z.max u0 (v0 <#> x) >= v0 <#> x).
-    { lia. }
-
-    assert (H_new_v_nonneg: v0 <#> x >= 0).
-    { apply nonNegPlus_nonneg'. }
+    (* Apply the induction hypothesis to the LHS. *)
+    rewrite (IH u_next v_next H_u_next_ge_v_next H_v_next_nonneg).
     
-    (* We need a stronger induction hypothesis that works for arbitrary starting values.
-       The current IH only works for the original (u0, v0) pair.
-       This requires either:
-       1. A more general statement proved by mutual induction, or
-       2. Additional lemmas about fold_left Z.max distributivity
+    (* The goal is now a pair equality. The second components match definitionally. *)
+    f_equal.
+    
+    (* Simplify the accumulator on the RHS using the hypothesis u0 >= v0. *)
+    rewrite (Z.max_l u0 v0); [| lia].
+    
+    (* The goal is now equality of the first components:
+       fold_left Z.max (scan_left ... xs' v_next) u_next =
+       fold_left Z.max (scan_left ... xs' v_next) u0
+    *)
+    unfold u_next. (* Substitute u_next with its definition *)
+    
+    (* Let sl_next be the list from scan_left for the recursive step. *)
+    set (sl_next := scan_left (fun acc x : Z => nonNegPlus acc x) xs' v_next).
 
-       For now, admit this step since the computational verification shows it's true *)
-    admit.
+    (* Use the distributive property of (fold_left Z.max) over Z.max in the accumulator. *)
+    rewrite (fold_left_max_init_distrib sl_next u0 v_next).
+    (* The goal becomes:
+       Z.max (fold_left Z.max sl_next u0) (fold_left Z.max sl_next v_next) =
+       fold_left Z.max sl_next u0
+    *)
+    
+    (* This equality holds if the first argument of Z.max is greater than or equal to the second. *)
+    apply Z.max_l.
 
+    (* We need to see the structure of sl_next. Since it's not a constructor,
+      'simpl' won't work. We must use 'destruct'. *)
+    destruct sl_next as [| h t] eqn:E.
+
+    + (* Case 1: sl_next = []. This is impossible. *)
+      (* We prove that scan_left always returns a non-empty list. *)
+      assert (H_nonempty: scan_left (fun acc x : Z => acc <#> x) xs' v_next <> []).
+      { induction xs'; simpl; discriminate. }
+      contradiction.
+
+    + (* Case 2: sl_next = h :: t. Now 'fold_left' can be simplified. *)
+      (* We also know the head 'h' must be v_next by the definition of scan_left. *)
+      assert (H_head: h = v_next).
+      { unfold sl_next in E. admit. }
+      subst h. (* Replace h with v_next everywhere. *)
+
+      simpl fold_left.
+      (* The goal has simplified to:
+        fold_left Z.max t (v_next <|> v_next) <= fold_left Z.max t (u0 <|> v_next)
+      *)
+
+      rewrite Z.max_id.
+      (* The goal is now:
+        fold_left Z.max t v_next <= fold_left Z.max t (u0 <|> v_next)
+      *)
+
+      apply Z.ge_le_iff.
+
+      (* Now we can use monotonicity, because the new accumulator on the right
+        (u0 <|> v_next) IS guaranteed to be >= the one on the left (v_next). *)
+      apply fold_left_Z_max_monotonic.
+
+      (* The final subgoal is to prove the accumulator inequality. *)
+      lia. (* Solves u0 <|> v_next >= v_next, which is always true. *)
+    
+    (* The new goal is to prove this inequality:
+       fold_left Z.max sl_next u0 >= fold_left Z.max sl_next v_next
+    *)
 Admitted.
 
 (* Dual conversion theorems for fold operations *)
