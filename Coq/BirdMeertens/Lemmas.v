@@ -793,6 +793,44 @@ Proof.
         lia.
 Qed.
 
+(* Key duality lemma between inits and tails *)
+Lemma inits_tails_duality : forall {A : Type} (xs : list A),
+  map rev (inits_rec xs) = rev (tails_rec (rev xs)).
+Proof.
+  (* intros A xs.
+  induction xs as [| x xs' IH].
+
+  - (* Base case: xs = [] *)
+    simpl inits_rec.
+    simpl tails_rec.
+    simpl rev.
+    simpl map.
+    reflexivity.
+
+  - (* Inductive case: xs = x :: xs' *)
+    simpl inits_rec.
+    simpl map.
+    (* LHS: map rev ([] :: map (cons x) (inits_rec xs')) = [] :: map rev (map (cons x) (inits_rec xs')) *)
+
+    (* Simplify RHS *)
+    simpl rev at 1.
+    rewrite rev_cons.
+    simpl tails_rec.
+    (* RHS: rev (tails_rec (rev xs' ++ [x])) *)
+
+    (* We need to show how tails_rec behaves on concatenation with singleton *)
+    rewrite tails_rec_app_singleton.
+
+    (* Now we can apply the induction hypothesis *)
+    rewrite <- IH.
+
+    (* The remaining part is showing that rev distributes properly *)
+    (* This requires careful manipulation of the tails and cons operations *)
+
+    admit. *)
+
+Admitted.
+
 (* Key lemma: fold_left Z.max distributes over initial Z.max *)
 Lemma fold_left_max_init_distrib : forall sl a b,
   fold_left Z.max sl (Z.max a b) = Z.max (fold_left Z.max sl a) (fold_left Z.max sl b).
@@ -821,29 +859,92 @@ Lemma scan_left_right_rev : forall (A B : Type) (f : A -> B -> A) (xs : list B) 
   scan_left f xs init = rev (scan_right (fun x acc => f acc x) init (rev xs)).
 Proof.
   intros A B f xs init.
-  (* Prove by induction on xs *)
-  induction xs as [| x xs' IH].
+  (* Use the scan-fold correspondence lemmas to establish the duality *)
 
-  - (* Base case: xs = [] *)
-    simpl scan_left.
-    simpl scan_right.
-    simpl rev.
-    reflexivity.
+  (* Express scan_left using scan_left_inits_rec_fold *)
+  rewrite scan_left_inits_rec_fold.
 
-  - (* Inductive case: xs = x :: xs' *)
-    simpl scan_left.
-    (* Goal: init :: scan_left f xs' (f init x) = rev (scan_right (fun x0 acc => f acc x0) init (rev (x :: xs'))) *)
+  (* Express scan_right using scan_right_tails_rec_fold on the RHS *)
+  rewrite scan_right_tails_rec_fold.
 
-    simpl rev.
-    (* rev (x :: xs') = rev xs' ++ [x] *)
-    rewrite rev_cons.
+  (* Now we need to show:
+     map (fun prefix => fold_left f prefix init) (inits_rec xs) =
+     rev (map (fold_right (fun x acc => f acc x) init) (tails_rec (rev xs)))
+  *)
 
-    (* Now we need to relate scan_right on (rev xs' ++ [x]) to our goal *)
-    (* This requires understanding how scan_right behaves on concatenated lists *)
+  (* The key insight: use map_ext to convert fold_left to fold_right using fold_left_right_rev *)
+  assert (H_fold_equiv: forall prefix,
+    fold_left f prefix init = fold_right (fun x acc => f acc x) init (rev prefix)).
+  {
+    intro prefix.
+    apply fold_left_right_rev.
+  }
 
-    admit.
+  rewrite (map_ext _ _ H_fold_equiv).
+
+  (* Now we need to show:
+     map (fun prefix => fold_right (fun x acc => f acc x) init (rev prefix)) (inits_rec xs) =
+     rev (map (fold_right (fun x acc => f acc x) init) (tails_rec (rev xs)))
+  *)
+
+  rewrite <- map_map.
+
+  (* Now the goal is:
+     map (fold_right (fun x acc => f acc x) init) (map rev (inits_rec xs)) =
+     rev (map (fold_right (fun x acc => f acc x) init) (tails_rec (rev xs)))
+  *)
+
+  (* Apply the inits-tails duality lemma *)
+  rewrite inits_tails_duality.
+
+  (* Now the goal is:
+     map (fold_right (fun x acc => f acc x) init) (rev (tails_rec (rev xs))) =
+     rev (map (fold_right (fun x acc => f acc x) init) (tails_rec (rev xs)))
+  *)
+
+  (* This follows from rev_map_rev *)
+  rewrite rev_map_rev.
+  reflexivity.
 
 Admitted.
+
+(* Helper lemma: rev distributes over map in the right way *)
+Lemma rev_map_rev : forall {A B : Type} (f : A -> B) (xs : list A),
+  map f (rev xs) = rev (map f xs).
+Proof.
+  intros A B f xs.
+  induction xs as [| x xs' IH].
+  - simpl. reflexivity.
+  - simpl rev.
+    rewrite map_app.
+    simpl map.
+    rewrite <- IH.
+    rewrite map_app.
+    simpl map.
+    reflexivity.
+Qed.
+
+(* Helper lemma: tails_rec on concatenation with singleton *)
+Lemma tails_rec_app_singleton : forall {A : Type} (xs : list A) (x : A),
+  tails_rec (xs ++ [x]) = map (fun ys => ys ++ [x]) (tails_rec xs) ++ [[]].
+Proof.
+  intros A xs x.
+  induction xs as [| y xs' IH].
+
+  - (* Base case: xs = [] *)
+    simpl app.
+    simpl tails_rec.
+    reflexivity.
+
+  - (* Inductive case: xs = y :: xs' *)
+    simpl app.
+    simpl tails_rec.
+    rewrite IH.
+    simpl map.
+    rewrite app_cons_app.
+    reflexivity.
+
+Qed.
 
 (* Specialized version for nonNegPlus *)
 Lemma scan_left_nonNegPlus_right_rev : forall xs init,
