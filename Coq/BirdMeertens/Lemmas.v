@@ -1131,10 +1131,10 @@ Proof.
 Qed.
 
 Definition scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A),
-  scan_left f xs i = h :: ys -> h = i :=
+  scan_left f xs i = h :: ys -> i = h :=
 fun A f xs ys i h H =>
-match xs as l return (scan_left f l i = h :: ys -> h = i) with
-| [] | _ :: _ => fun H0 => f_equal (hd h) (eq_sym H0)
+match xs as l return (scan_left f l i = h :: ys -> i = h) with
+| [] | _ :: _ => fun H0 => f_equal (hd h) H0
 end H.
 
 (* General helper lemma for fold_scan_fusion_pair_dual *)
@@ -1219,7 +1219,7 @@ Proof.
     + (* Case 2: sl_next = h :: t. Now 'fold_left' can be simplified. *)
       (* We also know the head 'h' must be v_next by the definition of scan_left. *)
       assert (H_head: h = v_next).
-      { unfold sl_next in E. apply (scan_head _ (fun acc x : Z => acc <#> x) xs' t). apply E. }
+      { unfold sl_next in E. apply eq_sym. apply (scan_head _ (fun acc x : Z => acc <#> x) xs' t). apply E. }
       subst h. (* Replace h with v_next everywhere. *)
 
       simpl fold_left.
