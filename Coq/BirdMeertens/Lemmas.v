@@ -333,9 +333,9 @@ Proof.
     generalize dependent acc.
     induction l' as [|x xs IH]; simpl; intros acc H_acc.
     - exact H_acc.
-    - apply IH. lia.
+    - apply IH. apply Z.le_trans with (m := acc); [exact H_acc | apply Z.le_max_l].
   }
-  apply H. lia.
+  apply H. apply Z.le_refl.
 Qed.
 
 (* Main lemma: fold_left distributes over concatenation *)
@@ -700,7 +700,7 @@ Proof.
 Qed.
 
 Lemma Z_max_l' : forall a b, a >= b -> a <|> b = a.
-Proof. intros; unfold Z.max; apply Z.max_l; lia. Qed.
+Proof. intros; unfold Z.max; apply Z.max_l; apply Z.ge_le; assumption. Qed.
 
 (* Simple max distribution lemma - computationally verified *)
 Lemma max_distrib_max : forall a b c,
@@ -719,9 +719,9 @@ Proof.
         (* Right: max(max(a,c), max(b,c)) = max(c, c) = c *)
 
         (* Rewrite all max operations at once using the ordering *)
-        assert (H1: Z.max a b = b) by (apply Z.max_r; lia).
-        assert (H2: Z.max a c = c) by (apply Z.max_r; lia).
-        assert (H3: Z.max b c = c) by (apply Z.max_r; lia).
+        assert (H1: Z.max a b = b) by (apply Z.max_r; assumption).
+        assert (H2: Z.max a c = c) by (apply Z.max_r; assumption).
+        assert (H3: Z.max b c = c) by (apply Z.max_r; assumption).
 
         rewrite H1, H2, H3.
         (* Now goal is: c = Z.max c c *)
@@ -729,24 +729,24 @@ Proof.
         apply Z.max_id.
       * (* Case: a <= b, a <= c, c < b *)
         (* So a <= c < b, meaning max(a,b) = b, max(a,c) = c, max(b,c) = b *)
-        assert (H1: Z.max a b = b) by (apply Z.max_r; lia).
-        assert (H2: Z.max a c = c) by (apply Z.max_r; lia).
-        assert (H3: Z.max b c = b) by (apply Z.max_l; lia).
+        assert (H1: Z.max a b = b) by (apply Z.max_r; assumption).
+        assert (H2: Z.max a c = c) by (apply Z.max_r; assumption).
+        assert (H3: Z.max b c = b) by (apply Z.max_l; apply Z.gt_lt in H_bc; apply Z.lt_le_incl; assumption).
         rewrite H1, H2, H3.
         (* Goal is now: b = c <|> b, and since c < b we have max(c,b) = b *)
         symmetry.
         apply Z.max_r.
-        lia.
+        apply Z.gt_lt in H_bc; apply Z.lt_le_incl; assumption.
 
     + (* Case: a <= b, c < a *)
       destruct (Z_le_gt_dec b c) as [H_bc | H_bc].
       * (* Case: a <= b, c < a, b <= c - but this is impossible since c < a <= b <= c *)
-        lia.
+        exfalso. apply Z.gt_lt in H_ac. apply (Z.lt_irrefl c). apply Z.lt_le_trans with (m := a); [assumption | apply Z.le_trans with (m := b); assumption].
       * (* Case: a <= b, c < a, c < b *)
         (* So c < a <= b, meaning max(a,b) = b, max(a,c) = a, max(b,c) = b *)
-        assert (H1: Z.max a b = b) by (apply Z.max_r; lia).
-        assert (H2: Z.max a c = a) by (apply Z.max_l; lia).
-        assert (H3: Z.max b c = b) by (apply Z.max_l; lia).
+        assert (H1: Z.max a b = b) by (apply Z.max_r; assumption).
+        assert (H2: Z.max a c = a) by (apply Z.max_l; apply Z.gt_lt in H_ac; apply Z.lt_le_incl; assumption).
+        assert (H3: Z.max b c = b) by (apply Z.max_l; apply Z.gt_lt in H_bc; apply Z.lt_le_incl; assumption).
         rewrite H1, H2, H3.
         (* Goal is now: b = a <|> b, and since a <= b we have max(a,b) = b *)
         symmetry.
