@@ -1130,12 +1130,15 @@ Proof.
     apply Z.ge_le_iff. apply Z.max_le_compat_r. apply Z.ge_le; assumption.
 Qed.
 
-Lemma scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A),
-  scan_left f xs i = h :: ys -> h = i.
-Proof.
-  intros A f xs ys i h H.
-  destruct xs; simpl in H; congruence.
-Qed.
+Definition scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A),
+  scan_left f xs i = h :: ys -> h = i :=
+fun (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A) (H : scan_left f xs i = h :: ys) =>
+match xs as l return (scan_left f l i = h :: ys -> h = i) with
+| [] => fun H0 : scan_left f [] i = h :: ys =>
+    f_equal (fun t : list A => match t with | [] => h | x :: _ => x end) (eq_sym H0)
+| a :: l => fun H0 : scan_left f (a :: l) i = h :: ys =>
+    f_equal (fun t : list A => match t with | [] => h | x :: _ => x end) (eq_sym H0)
+end H.
 
 (* General helper lemma for fold_scan_fusion_pair_dual *)
 Lemma fold_scan_fusion_pair_general : forall (xs : list Z) (u0 v0 : Z),
