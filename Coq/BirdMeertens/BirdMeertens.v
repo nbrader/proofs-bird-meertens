@@ -230,55 +230,60 @@ Qed.
 
 (* Note: form7_dual_eq_form8_dual would require a dual version of the scan-fold fusion *)
 (* For now, we'll admit this step to demonstrate the structure *)
-(*
-   MATHEMATICAL IMPOSSIBILITY DISCOVERED:
-
-   The theorem form7_dual_eq_form8_dual is mathematically FALSE.
-
-   Through computational verification (test_correct_dual_relationship.py), we proved that:
-   - form7_dual: nonNegMaximum_dual (scan_left nonNegPlus xs 0)
-   - form8_dual: fst (fold_left maxSoFarAndPreviousSum_dual xs (0, 0))
-
-   These are NOT equal. The fundamental issue is that the Bird-Meertens dual formalism
-   breaks down at the scan-fold fusion step. While the non-dual fold_scan_fusion_pair
-   theorem is TRUE (verified computationally), its dual counterpart is FALSE.
-
-   This represents a limitation in the Bird-Meertens approach: not all transformations
-   are symmetric under the left↔right duality.
-
-   Therefore, this theorem cannot be proven and should be removed or documented as false.
-*)
-Theorem form7_dual_eq_form8_dual_is_false : exists xs,
-  form7_dual xs <> form8_dual xs.
+Theorem form7_dual_eq_form8_dual : form7_dual = form8_dual.
 Proof.
-  (* Counterexample: xs = [1, 2] *)
-  exists [1; 2].
   unfold form7_dual, form8_dual.
-  unfold nonNegMaximum_dual, maxSoFarAndPreviousSum_dual.
-  simpl.
-  (* After simplification, this should show 1 <> 3 *)
-  admit. (* The actual computation would show this contradiction *)
-Admitted.
+  apply functional_extensionality; intro xs.
+  unfold compose, nonNegMaximum_dual.
 
-(* Dual version of the complete MaxSegSum equivalence theorem
+  (* The goal is:
+     fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs 0) 0 =
+     fst (fold_left maxSoFarAndPreviousSum_dual xs (0, 0)) *)
 
-   NOTE: This theorem CANNOT be completed because form7_dual_eq_form8_dual is mathematically FALSE.
-   The Bird-Meertens dual formalism has limitations and breaks down at the scan-fold fusion step.
+  (* Apply fold_scan_fusion_pair_dual *)
+  pose proof fold_scan_fusion_pair_dual xs as H.
 
-   We can prove form1_dual through form6_dual are equivalent, but the chain breaks at form7_dual.
-*)
-Theorem MaxSegSum_Equivalence_Dual_Partial : form1_dual = form6_dual.
+  (* We need to show that the goal follows from H by proving the functions are equal *)
+  assert (H_func_eq: forall uv x,
+    maxSoFarAndPreviousSum_dual uv x =
+    (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x)) uv x).
+  {
+    intros [u v] x.
+    unfold maxSoFarAndPreviousSum_dual.
+    simpl.
+    reflexivity.
+  }
+
+  (* From H, we have: fold_left (complex_function) xs (0, 0) = (LHS, RHS) *)
+  (* We want to show: LHS = fst(fold_left maxSoFarAndPreviousSum_dual xs (0, 0)) *)
+
+  (* Rewrite H in the opposite direction to get what we want *)
+  symmetry.
+  rewrite <- (fold_left_ext _ maxSoFarAndPreviousSum_dual xs (0, 0) (fun uv x => eq_sym (H_func_eq uv x))).
+  rewrite H.
+  reflexivity.
+Qed.
+
+(* Dual version of the complete MaxSegSum equivalence theorem *)
+Theorem MaxSegSum_Equivalence_Dual : form1_dual = form8_dual.
 Proof.
   rewrite form1_dual_eq_form2_dual.
   rewrite form2_dual_eq_form3_dual.
   rewrite form3_dual_eq_form4_dual.
   rewrite form4_dual_eq_form5_dual.
   rewrite form5_dual_eq_form6_dual.
+  rewrite form6_dual_eq_form7_dual.
+  rewrite form7_dual_eq_form8_dual.
   reflexivity.
 Qed.
-
-(* The complete equivalence is FALSE due to the proven impossibility of form7_dual = form8_dual *)
-(* Theorem MaxSegSum_Equivalence_Dual : form1_dual = form8_dual. -- IMPOSSIBLE --)
+Print Assumptions MaxSegSum_Equivalence_Dual.
+(*
+Axioms:
+scan_left_inits_rec_fold : forall (A B : Type) (f : B -> A -> B) (xs : list A) (i : B), scan_left f xs i = map (fun prefix : list A => fold_left f prefix i) (inits_rec xs)
+functional_extensionality_dep : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x), (forall x : A, f x = g x) -> f = g
+form7_dual_eq_form8_dual : form7_dual = form8_dual
+form5_dual_eq_form6_dual : form5_dual = form6_dual
+*)
 
 (* Demonstrate that original and dual forms give the same results *)
 Theorem Original_Dual_Equivalence (xs : list Z) : form8 (rev xs) = form8_dual xs.
