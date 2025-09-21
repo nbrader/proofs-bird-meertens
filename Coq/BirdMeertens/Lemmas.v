@@ -825,63 +825,21 @@ Proof.
   (* Unfold the definitions of inits and tails as fold_right operations *)
   unfold inits, tails.
 
-  (* Goal: map rev (fold_right (fun x => cons [] ∘ map (cons x)) [[]] xs) =
-           rev (fold_right (pattern match function) [[]] (rev xs)) *)
+  rewrite <- fold_left_right_rev.
 
-  (* Now I can use the proven rev_fold_right_left theorem *)
-  (* This establishes the fundamental fold duality: *)
-  (* fold_left (fun acc x => x :: acc) l [] = rev (fold_right cons [] l) *)
+  (* Goal 1
 
-  (* The key insight: both sides compute the same result through different paths *)
-  (* LHS: map rev (inits xs) builds all reversed prefixes *)
-  (* RHS: rev (tails (rev xs)) builds the same via the dual construction *)
+  A : Type
 
-  (* Based on computational verification, both sides produce: *)
-  (* [[], [x₁], [x₂,x₁], [x₃,x₂,x₁], ...] for input [x₁,x₂,x₃,...] *)
+  xs : list A
 
-  (* The proof strategy: *)
-  (* 1. Use induction on xs *)
-  (* 2. Apply rev_fold_right_left to establish the core duality *)
-  (* 3. Use properties of map, rev, and fold operations *)
+  (1 / 1)
+  map (rev (A:=A)) (fold_right (fun x : A => cons [] ∘ map (cons x)) [[]] xs) = rev (fold_left (fun (acc : list (list A)) (x : A) => match acc with
+  | [] => [[]]
+  | xs0 :: xss => (x :: xs0) :: xs0 :: xss
+  end) xs [[]]) *)
 
-  induction xs as [| x xs' IH].
-
-  - (* Base case: xs = [] *)
-    simpl inits. simpl tails. simpl rev. simpl map.
-    reflexivity.
-
-  - (* Inductive case: xs = x :: xs' *)
-    (* Goal: map rev (inits (x :: xs')) = rev (tails (rev (x :: xs'))) *)
-
-    simpl inits.
-    simpl rev.
-    simpl tails.
-
-    (* LHS becomes: map rev ([] :: map (x ::) (inits xs')) *)
-    (* RHS becomes: rev (tails (rev xs' ++ [x])) *)
-
-    simpl map.
-    (* LHS: [] :: map rev (map (x ::) (inits xs')) *)
-
-    (* Simplify map rev (map (x ::) ...) using map composition *)
-    rewrite map_map.
-    (* LHS: [] :: map (rev ∘ (x ::)) (inits xs') *)
-
-    (* Simplify rev ∘ (x ::) *)
-    change (fun l => rev (x :: l)) with (fun l => rev l ++ [x]).
-    (* LHS: [] :: map (fun l => rev l ++ [x]) (inits xs') *)
-
-    (* Based on computational verification, both sides produce the same result *)
-    (* The proof involves complex manipulation of fold operations and list properties *)
-
-    (* This is a deep structural theorem that requires several helper lemmas about: *)
-    (* - How tails behaves with appended singletons *)
-    (* - Interaction between map, rev, and the fold operations in inits/tails *)
-    (* - Properties of the rev_fold_right_left duality *)
-
-    (* Since this is computationally verified to be true, and serves as a foundation *)
-    (* for other proofs, admit the inductive case for now *)
-    admit.
+  (* rewrite <- rev_fold_left_right. *)
 
 Admitted.
 
@@ -1062,35 +1020,49 @@ Proof.
   induction xs as [| x xs' IH].
 
   - (* Base case: xs = [] *)
-    (* Need to check what the actual LHS and RHS are *)
-    (* LHS: fold_left (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x)) [] (u0, v0) = (u0, v0) *)
-    (* RHS: (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) [] v0) u0, fold_left (fun acc x => nonNegPlus acc x) [] v0) *)
-    simpl.
-    (* The issue might be that scan_left [] v0 = [v0], not [] *)
-    (* And fold_left Z.max [v0] u0 = Z.max u0 v0, not u0 *)
-    (* So we need: (u0, v0) = (Z.max u0 v0, v0) *)
-    (* This is only true if u0 >= v0, which is our hypothesis! *)
+    simpl fold_left.
+    simpl scan_left.
+    simpl fold_left.
+    (* LHS: (u0, v0) *)
+    (* RHS: (fold_left Z.max [v0] u0, v0) *)
     f_equal.
-    (* Goal: u0 = u0 <|> v0, i.e., u0 = Z.max u0 v0 *)
-    (* Since u0 >= v0, we have Z.max u0 v0 = u0 *)
+    (* Goal: u0 = fold_left Z.max [v0] u0 *)
+    simpl fold_left.
+    (* Goal: u0 = Z.max u0 v0 *)
+    (* Since u0 >= v0 by hypothesis, Z.max u0 v0 = u0 *)
     symmetry.
     apply Z.max_l.
     lia.
 
   - (* Inductive case: xs = x :: xs' *)
-    simpl fold_left.
-    simpl scan_left.
-    simpl fold_left.
+    simpl fold_left at 1.
+    simpl scan_left at 1.
+    simpl fold_left at 2.
+    simpl fold_left at 3.
 
-    (* LHS: fold_left (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x)) xs' (Z.max u0 (nonNegPlus v0 x), nonNegPlus v0 x) *)
-    (* RHS: (fold_left Z.max (nonNegPlus v0 x :: scan_left (fun acc x => nonNegPlus acc x) xs' (nonNegPlus v0 x)) u0, fold_left (fun acc x => nonNegPlus acc x) xs' (nonNegPlus v0 x)) *)
+    (* After simplification: *)
+    (* LHS: fold_left (pair_fn) xs' (Z.max u0 (v0 <#> x), v0 <#> x) *)
+    (* RHS: (fold_left Z.max ((v0 <#> x) :: scan_left nonNegPlus xs' (v0 <#> x)) u0,
+              fold_left nonNegPlus xs' (v0 <#> x)) *)
 
-    (* The current IH is for the specific u0, v0 values *)
-    (* But I need to apply it to the new accumulated values *)
-    (* Let me try a different approach - work with the structures directly *)
+    (* To apply IH, I need: *)
+    (* 1. Z.max u0 (v0 <#> x) >= v0 <#> x *)
+    (* 2. v0 <#> x >= 0 *)
 
-    (* Actually, the current goal is quite complex. Let me admit this for now *)
-    (* and focus on making sure at least one proof goes through completely *)
+    assert (H_new_u_ge_v: Z.max u0 (v0 <#> x) >= v0 <#> x).
+    { lia. }
+
+    assert (H_new_v_nonneg: v0 <#> x >= 0).
+    { apply nonNegPlus_nonneg'. }
+    
+    (* The IH is: fold_left (pair_fn) xs' (u0, v0) = (fold_left Z.max (scan_left nonNegPlus xs' v0) u0, fold_left nonNegPlus xs' v0) *)
+    (* We need to adapt this to: fold_left (pair_fn) xs' (Z.max u0 (v0 <#> x), v0 <#> x) *)
+
+    (* This requires a generalization of the induction hypothesis *)
+    (* The IH only applies to the original u0, v0 but we need it for new values *)
+    (* This is where we need the distributivity lemma for fold_left Z.max *)
+
+    (* For now, admit this complex case that requires additional helper lemmas *)
     admit.
 
 Admitted.
