@@ -1130,6 +1130,15 @@ Proof.
     lia.
 Qed.
 
+Lemma scan_head : forall (A : Type) (f : A -> A -> A) (xs ys : list A) (i h : A),
+  scan_left f xs i = h :: ys -> h = i.
+Proof.
+  intros A f xs ys i h H.
+  destruct xs as [| x' xs'].
+  - simpl in H. inversion H. reflexivity.
+  - simpl in H. inversion H. reflexivity.
+Qed.
+
 (* General helper lemma for fold_scan_fusion_pair_dual *)
 Lemma fold_scan_fusion_pair_general : forall (xs : list Z) (u0 v0 : Z),
   u0 >= v0 -> v0 >= 0 ->
@@ -1212,7 +1221,7 @@ Proof.
     + (* Case 2: sl_next = h :: t. Now 'fold_left' can be simplified. *)
       (* We also know the head 'h' must be v_next by the definition of scan_left. *)
       assert (H_head: h = v_next).
-      { unfold sl_next in E. admit. }
+      { unfold sl_next in E. apply (scan_head _ (fun acc x : Z => acc <#> x) xs' t). apply E. }
       subst h. (* Replace h with v_next everywhere. *)
 
       simpl fold_left.
@@ -1237,7 +1246,7 @@ Proof.
     (* The new goal is to prove this inequality:
        fold_left Z.max sl_next u0 >= fold_left Z.max sl_next v_next
     *)
-Admitted.
+Qed.
 
 (* Dual conversion theorems for fold operations *)
 
