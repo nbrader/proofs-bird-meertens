@@ -810,12 +810,13 @@ Proof.
   - (* Inductive case: xs = x :: xs' *)
     simpl inits_rec.
     simpl map.
-    (* LHS: map rev ([] :: map (cons x) (inits_rec xs')) = [] :: map rev (map (cons x) (inits_rec xs')) *)
+    (* LHS: [] :: map rev (map (cons x) (inits_rec xs')) *)
 
     (* Simplify RHS - note that rev (x :: xs') = rev xs' ++ [x] *)
     simpl rev at 1.
 
-    (* The remaining part is complex - let me admit this for now and focus on completing dependencies *)
+    (* This proof is complex and depends on tails_rec_app_singleton which comes later *)
+    (* For now, let me admit this to keep compilation working *)
     admit.
 
 Admitted.
@@ -927,9 +928,15 @@ Proof.
     reflexivity.
 
   - (* Inductive case: xs = y :: xs' *)
-    admit.
+    simpl app.
+    simpl tails_rec.
+    rewrite IH.
+    simpl map.
+    (* Goal: (y :: xs') ++ [x] :: map (fun ys => ys ++ [x]) (tails_rec xs') ++ [[]] =
+              ((y :: xs') ++ [x]) :: map (fun ys => ys ++ [x]) (tails_rec xs') ++ [[]] *)
+    reflexivity.
 
-Admitted.
+Qed.
 
 (* Specialized version for nonNegPlus *)
 Lemma scan_left_nonNegPlus_right_rev : forall xs init,
