@@ -530,7 +530,7 @@ Theorem scan_left_fold_correspondence : forall (xs : list Z),
   map (fun prefix => fold_left (fun acc x => nonNegPlus acc x) prefix 0) (inits_rec xs).
 Proof.
   intro xs.
-  exact (@scan_left_inits_rec_fold Z Z (fun acc x => nonNegPlus acc x) xs 0).
+  exact (@scan_left_lemma Z Z (fun acc x => nonNegPlus acc x) xs 0).
 Qed.
 
 Lemma Z_max_l' : forall a b, a >= b -> a <|> b = a.
@@ -710,11 +710,11 @@ Proof.
   intros A B f xs init.
   (* Use the scan-fold correspondence lemmas to establish the duality *)
 
-  (* Express scan_left using scan_left_inits_rec_fold *)
-  rewrite scan_left_inits_rec_fold.
+  (* Express scan_left using scan_left_lemma *)
+  rewrite scan_left_lemma.
 
-  (* Express scan_right using scan_right_tails_rec_fold on the RHS *)
-  rewrite scan_right_tails_rec_fold.
+  (* Express scan_right using scan_right_lemma on the RHS *)
+  rewrite scan_right_lemma.
 
   (* Now we need to show:
      map (fun prefix => fold_left f prefix init) (inits_rec xs) =
@@ -1013,7 +1013,7 @@ Theorem scan_nonNegPlus_duality : forall (xs : list Z),
   map (fun y => fold_left (fun acc x => nonNegPlus acc x) y 0) (inits_rec xs).
 Proof.
   intro xs.
-  exact (@scan_left_inits_rec_fold Z Z (fun acc x => nonNegPlus acc x) xs 0).
+  exact (@scan_left_lemma Z Z (fun acc x => nonNegPlus acc x) xs 0).
 Qed.
 
 (* Duality for fold operations on pairs - this is needed for fold_scan_fusion_pair_dual *)

@@ -87,9 +87,9 @@ Proof.
   (* We need to lift the list-level equality to the nonNegMaximum level *)
   f_equal.
   (* This gives us: map (fold_right nonNegPlus 0) (tails_rec xs) = scan_right nonNegPlus 0 xs *)
-  (* Which is exactly what scan_right_tails_rec_fold gives us, but in reverse *)
+  (* Which is exactly what scan_right_lemma gives us, but in reverse *)
   symmetry.
-  exact (@scan_right_tails_rec_fold Z Z nonNegPlus 0 xs).
+  exact (@scan_right_lemma Z Z nonNegPlus 0 xs).
 Qed.
 
 (* form7 = form8 *)
@@ -219,9 +219,9 @@ Proof.
   intro xs.
   unfold compose.
   f_equal.
-  (* This follows from scan_left_inits_rec_fold, but in reverse *)
+  (* This follows from scan_left_lemma, but in reverse *)
   symmetry.
-  exact (@scan_left_inits_rec_fold Z Z (fun acc x => nonNegPlus acc x) xs 0).
+  exact (@scan_left_lemma Z Z (fun acc x => nonNegPlus acc x) xs 0).
 Qed.
 
 (* Note: form7_dual_eq_form8_dual would require a dual version of the scan-fold fusion *)

@@ -394,5 +394,5 @@ Qed.
 (* are imported from Lemmas.v and available for BirdMeertens.v *)
 
 (* ===== UTILITY LIBRARY FUNCTIONS ===== *)
-(* Note: tails_rec_equiv_ext, scan_right_tails_rec_fold, scan_left_inits_rec_fold *)
+(* Note: tails_rec_equiv_ext, scan_right_lemma, scan_left_lemma *)
 (* are imported from CoqUtilLib.ListFunctions and available for BirdMeertens.v *)
