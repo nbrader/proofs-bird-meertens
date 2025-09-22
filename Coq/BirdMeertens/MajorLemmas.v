@@ -46,6 +46,24 @@ Proof.
 Qed.
 
 (* 2. fold_promotion - imported from Lemmas.v *)
+Lemma fold_promotion : nonNegMaximum ∘ concat = nonNegMaximum ∘ map nonNegMaximum.
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros x.
+  induction x as [|xs xss IH].
+  - simpl. reflexivity.
+  - simpl. unfold nonNegMaximum at 1.
+    rewrite app_concat.
+    simpl fold_right at 1.
+    unfold nonNegMaximum at 2.
+    simpl map at 1.
+    simpl fold_right at 2.
+    rewrite fold_max_app.
+    f_equal.
+    rewrite app_concat in IH.
+    exact IH.
+Qed.
 
 (* 3. nonNegPlus_comm - used in form7_eq_form8 *)
 Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
@@ -126,7 +144,32 @@ Qed.
 (* ===== DUAL FORM DEPENDENCIES ===== *)
 
 (* 8. fold_promotion_dual - used in form3_dual_eq_form4_dual *)
-(* Note: This theorem is available from Lemmas.v where it is properly defined *)
+Lemma fold_promotion_dual : nonNegMaximum_dual ∘ (concat (A:=Z)) = nonNegMaximum_dual ∘ map nonNegMaximum_dual.
+Proof.
+  unfold compose.
+  apply functional_extensionality.
+  intros x.
+  unfold nonNegMaximum_dual.
+  (* Convert both sides using duality *)
+  rewrite max_fold_duality_zero.
+  rewrite max_fold_duality_zero.
+  (* Now both sides use fold_right, so we can apply the original fold_promotion *)
+  unfold nonNegMaximum.
+  (* We need to show that the mapped functions are equivalent under duality *)
+  assert (H_map_eq: map (fun xs => fold_left (fun x0 y : Z => x0 <|> y) xs 0) x =
+                    map (fun xs => fold_right (fun x0 y : Z => x0 <|> y) 0 xs) x).
+  {
+    apply map_ext.
+    intro xs.
+    apply max_fold_duality_zero.
+  }
+  rewrite H_map_eq.
+  (* Now apply the original fold_promotion with the right-fold version *)
+  assert (H_fold_prom := fold_promotion).
+  unfold compose in H_fold_prom.
+  unfold nonNegMaximum in H_fold_prom.
+  apply (equal_f H_fold_prom x).
+Qed.
 
 (* 9. fold_scan_fusion_pair_dual - used in form7_dual_eq_form8_dual *)
 Lemma fold_scan_fusion_pair_dual :
