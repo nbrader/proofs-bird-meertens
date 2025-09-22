@@ -30,11 +30,8 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 ### Python Analysis Tools
 **NOTE**: Use `python3` for all Python commands (not `python`)
 - `python3 Python/references.py` - Generates dependency graph in TGF format
-- `python3 Python/summarize_dependencies.py` - Analyzes Coq dependencies
-- `python3 Python/check_pure_proofs.py` - Analyzes proof completeness
-- `python3 Python/completed_proofs_report.py` - Reports on completed proofs
-- `python3 Python/theorem_catalog.py` - Catalogs theorem definitions
-- Various shell and batch scripts for automation (TODO: organize into appropriate directories)
+- `python3 Python/completed_proofs_report.py` - Reports on completed proofs (100% completion)
+- `python3 Python/theorem_catalog.py` - Catalogs theorem definitions by category
 
 ## Code Architecture
 
