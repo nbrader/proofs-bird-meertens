@@ -39,11 +39,17 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 ## Code Architecture
 
 ### Coq Structure
-The main Coq development is in `Coq/BirdMeertens/` with five key modules:
+The main Coq development is in `Coq/BirdMeertens/` with the following module organization:
 
 1. **BirdMeertens.v** - Main theorem proving Kadane's algorithm correctness through 8 equivalent forms
-2. **Lemmas.v** - Mathematical definitions and operations (`nonNegPlus`, `nonNegSum`, `nonNegMaximum`)
-3. **Extra.v** - A place to put results that aren't necessary for the main theorems.
+2. **MajorLemmas.v** - Theorems that BirdMeertens.v depends on immediately (direct dependencies not in libraries)
+3. **Lemmas.v** - Theorems that BirdMeertens.v depends on indirectly (dependencies of MajorLemmas.v)
+4. **Extra.v** - Results that aren't necessary for the main theorems (unused by BirdMeertens.v)
+
+**REORGANIZATION PLAN (September 2025)**:
+- **MajorLemmas.v** contains immediate dependencies like `generalised_horners_rule`, `fold_scan_fusion_pair`, `maxSoFarAndPreviousSum`, `nonNegPlus_comm`, `tails_rec_equiv_ext`, `map_promotion`, `fold_promotion`, and their dual versions
+- **Lemmas.v** contains indirect dependencies like definition and basic property lemmas for `nonNegPlus`, `nonNegSum`, `nonNegMaximum`, etc.
+- **Extra.v** contains all theorems not used directly or indirectly by BirdMeertens.v
 
 **Additional Libraries:**
 - **CoqUtilLib** - Utility functions for list operations and functional programming  
