@@ -168,7 +168,7 @@ Proof.
   apply fold_right_max_returns_max; assumption.
 Qed.
 
-Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
+Lemma nonneg_tropical_horners_rule : forall xs : list Z,
   nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
 Proof.
   intros xs.
@@ -216,8 +216,8 @@ Proof.
   - exact H_xs_mapped.
 Qed.
 
-(* 11. fold_left_nonNegPlus_eq_max_suffixes - used in form5_dual_eq_form6_dual *)
-Lemma fold_left_nonNegPlus_eq_max_suffixes : forall xs : list Z,
+(* 11. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
+Lemma nonneg_tropical_horners_rule_dual : forall xs : list Z,
   fold_left (fun acc x => nonNegPlus acc x) xs 0 =
   nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
 Proof.
@@ -279,8 +279,8 @@ Proof.
   apply functional_extensionality.
   intros xs.
   unfold compose.
-  (* This follows directly from fold_left_nonNegPlus_eq_max_suffixes *)
-  apply fold_left_nonNegPlus_eq_max_suffixes.
+  (* This follows directly from nonneg_tropical_horners_rule_dual *)
+  apply nonneg_tropical_horners_rule_dual.
 Qed.
 
 (* 14. generalised_horners_rule_dual' - SHOULD BE used in form5_dual_eq_form6_dual BUT ISN'T *)
@@ -299,7 +299,7 @@ Proof.
   (* This follows from our first dual lemma:
      nonNegMaximum (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
   symmetry.
-  apply fold_left_nonNegPlus_eq_max_suffixes.
+  apply nonneg_tropical_horners_rule_dual.
 Qed.
 
 (* 5. generalised_horners_rule - used in form5_eq_form6 *)
@@ -320,7 +320,7 @@ Proof.
   unfold compose.
   unfold nonNegSum.
   (* Apply the key lemma *)
-  apply fold_right_nonNegPlus_eq_max_prefixes.
+  apply nonneg_tropical_horners_rule.
 Qed.
 
 (* 6. generalised_horners_rule' - used in form5_eq_form6 *)
@@ -338,7 +338,7 @@ Proof.
   (* This follows from our first lemma:
      nonNegMaximum (map (fold_right nonNegPlus 0) (inits tail)) = fold_right nonNegPlus 0 tail *)
   symmetry.
-  apply fold_right_nonNegPlus_eq_max_prefixes.
+  apply nonneg_tropical_horners_rule.
 Qed.
 
 (* 3. nonNegPlus_comm - used in form7_eq_form8 *)

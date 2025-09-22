@@ -206,8 +206,8 @@ Proof.
   (* Note that fold_left (fun acc x => nonNegPlus acc x) prefix 0 = nonNegSum_dual prefix *)
   (* So we need: nonNegMaximum_dual (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
 
-  (* Apply fold_left_nonNegPlus_eq_max_suffixes in reverse *)
-  rewrite <- fold_left_nonNegPlus_eq_max_suffixes.
+  (* Apply nonneg_tropical_horners_rule_dual in reverse *)
+  rewrite <- nonneg_tropical_horners_rule_dual.
   unfold nonNegSum_dual.
   reflexivity.
 Qed.
