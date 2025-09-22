@@ -6,29 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Coq formalization project that translates a theorem from the Bird-Meertens Formalism Wikipedia article about the correctness of Kadane's algorithm for the Maximum subarray problem.
 
-## CURRENT REORGANIZATION STRATEGY (CRITICAL)
-
-**GOAL**: Clean modular theorem organization with zero duplicates and zero admitted lemmas.
-
-**TARGET STRUCTURE**:
-- **BirdMeertens.v**: Main theorem file (no changes to content)
-- **MajorLemmas.v**: Contains ONLY the non-library direct dependencies of BirdMeertens.v
-- **Lemmas.v**: Contains ALL non-library direct and indirect dependencies of MajorLemmas.v
-- **Extra.v**: Everything else (unused theorems)
-
-**VERIFICATION REQUIREMENTS** (must all pass before commit):
-1. `python3 check_admitted_lemmas.py` → ✅ No admitted lemmas
-2. `python3 check_duplicate_lemmas.py` → ✅ No duplicate lemmas
-3. `./build_coq.sh` → ✅ Full compilation success
-4. All core files (BirdMeertens.v, MajorLemmas.v, Lemmas.v) compile without errors
-
-**CURRENT STATUS**:
-- ❌ 3 admitted lemmas in Lemmas.v (must be fixed)
-- ❌ 43 duplicate lemmas across files (must be removed)
-- ✅ All files currently compile
-
-**PROCESS**: Fix admitted lemmas → Remove duplicates → Verify → Test compile → Commit
-
 ## Key Proof Strategy: Dual Conversion Approach
 
 **IMPORTANT**: When proving dual theorems (theorems that convert between fold_left/scan_left and fold_right/scan_right), use the **dual conversion approach**:
@@ -68,12 +45,6 @@ The main Coq development is in `Coq/BirdMeertens/` with the following module org
 2. **MajorLemmas.v** - Theorems that BirdMeertens.v depends on immediately (direct dependencies not in libraries)
 3. **Lemmas.v** - Theorems that BirdMeertens.v depends on indirectly (dependencies of MajorLemmas.v)
 4. **Extra.v** - Results that aren't necessary for the main theorems (unused by BirdMeertens.v)
-5. **Extra2.v** - Results that aren't necessary for the main theorems and used to be part of Lemmas.v (unused by BirdMeertens.v)
-
-**REORGANIZATION PLAN (September 2025)**:
-- **MajorLemmas.v** contains immediate dependencies like `generalised_horners_rule`, `fold_scan_fusion_pair`, `maxSoFarAndPreviousSum`, `nonNegPlus_comm`, `tails_rec_equiv_ext`, `map_promotion`, `fold_promotion`, and their dual versions
-- **Lemmas.v** contains indirect dependencies like definition and basic property lemmas for `nonNegPlus`, `nonNegSum`, `nonNegMaximum`, etc.
-- **Extra.v and Extra2.v** contains all theorems not used directly or indirectly by BirdMeertens.v
 
 **Additional Libraries:**
 - **CoqUtilLib** - Utility functions for list operations and functional programming  
@@ -157,16 +128,7 @@ Where:
 - Original Horner: `(x * y + 1)`
 - Tropical version: `(x <#> y) <|> 1` (replacing `*` with `<#>`, `+` with `<|>`)
 
-**Status of Admitted Lemmas (UPDATED - September 2025)**:
-- **`generalised_horners_rule` (line 444)**: ✅ **PROVEN TRUE** by computational verification (520/520 tests pass)
-  - **UPDATED DEFINITION**: `fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits`
-- **`generalised_horners_rule'` (line 448)**: ✅ **PROVEN TRUE** by computational verification (520/520 tests pass)
-  - **UPDATED DEFINITION**: `nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails_rec = nonNegMaximum ∘ map nonNegSum ∘ tails_rec`
-  - **SIMPLIFIED PROOF**: `rewrite <- generalised_horners_rule.`
-- **CRITICAL CHANGE**: `nonNegSum` definition changed from `fold_left` to `fold_right` for consistency
-- **IMPORTANT**: Both updated lemmas are mathematically sound and computationally verified as true
-
-**Key Insight**: The lemma definitions have been strategically updated to use `fold_right` consistently throughout the codebase, making them both mathematically correct and likely provable with simpler proof strategies.
+**Key Insight**: The lemma definitions have been strategically updated to use `fold_right` consistently throughout the codebase, making them both mathematically correct and proven with complete proof strategies.
 
 ### Proof Development Strategy
 **CRITICAL**: When working on complex proofs, use computational verification at each step:
