@@ -218,7 +218,7 @@ Qed.
 
 (* 11. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
 Lemma nonneg_tropical_horners_rule_dual : forall xs : list Z,
-  fold_left nonNegPlus xs 0 = nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
+  nonNegSum_dual xs = nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
 Proof.
   intros xs.
 
