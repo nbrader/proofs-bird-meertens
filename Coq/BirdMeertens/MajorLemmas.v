@@ -273,11 +273,10 @@ Qed.
 
 (* 13. generalised_horners_rule_dual - SHOULD BE used in form5_dual_eq_form6_dual BUT ISN'T *)
 Lemma generalised_horners_rule_dual :
-  (fun xs => fold_left (fun acc x => nonNegPlus acc x) xs 0) = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
+  nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
 Proof.
   apply functional_extensionality.
   intros xs.
-  unfold compose.
   (* This follows directly from nonneg_tropical_horners_rule_dual *)
   apply nonneg_tropical_horners_rule_dual.
 Qed.
@@ -301,22 +300,11 @@ Proof.
 Qed.
 
 (* 5. generalised_horners_rule - used in form5_eq_form6 *)
-Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
+Lemma generalised_horners_rule : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
   apply functional_extensionality.
   intros xs.
-  (* First, simplify using the fact that (x <#> y <|> 0) = (x <#> y) *)
-  assert (H: fold_right (fun x y : Z => x <#> y <|> 0) 0 xs = fold_right nonNegPlus 0 xs).
-  {
-    apply fold_right_ext.
-    intros a b.
-    apply tropical_horner_eq_nonNegPlus.
-  }
-  rewrite H.
-  clear H.
   (* Now we need to prove: fold_right nonNegPlus 0 xs = (nonNegMaximum ∘ map nonNegSum ∘ inits) xs *)
-  unfold compose.
-  unfold nonNegSum.
   (* Apply the key lemma *)
   apply nonneg_tropical_horners_rule.
 Qed.
