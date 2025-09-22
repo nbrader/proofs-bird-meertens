@@ -425,14 +425,6 @@ Proof.
   - simpl. rewrite H. rewrite IH. reflexivity.
 Qed.
 
-Lemma max_add_distributes : forall s t x,
-  Z.max s t + x = Z.max (s + x) (t + x).
-Proof.
-  intros.
-  rewrite Z.add_max_distr_r.
-  reflexivity.
-Qed.
-
 (* Helper lemmas for fold_scan_fusion_pair_general *)
 Lemma max_distrib_max : forall a b c,
   Z.max (Z.max a b) c = Z.max (Z.max a c) (Z.max b c).

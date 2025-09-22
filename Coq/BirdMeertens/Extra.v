@@ -283,6 +283,14 @@ Qed.
 (* Instead, let's add a simple provable lemma about nonNegPlus *)
 Definition distributes_over_max (op : Z -> Z -> Z) := forall s t x, op (Z.max s t) x = Z.max  (op s x) (op t x).
 
+Lemma max_add_distributes : forall s t x,
+  Z.max s t + x = Z.max (s + x) (t + x).
+Proof.
+  intros.
+  rewrite Z.add_max_distr_r.
+  reflexivity.
+Qed.
+
 (* Helper lemma: addition distributes over max *)
 Lemma nonNegPlus_distributes_over_max : distributes_over_max nonNegPlus.
 Proof.
