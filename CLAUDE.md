@@ -14,7 +14,7 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 - **BirdMeertens.v**: Main theorem file (no changes to content)
 - **MajorLemmas.v**: Contains ONLY the non-library direct dependencies of BirdMeertens.v
 - **Lemmas.v**: Contains ALL non-library direct and indirect dependencies of MajorLemmas.v
-- **Extras.v**: Everything else (unused theorems)
+- **Extra.v**: Everything else (unused theorems)
 
 **VERIFICATION REQUIREMENTS** (must all pass before commit):
 1. `python3 check_admitted_lemmas.py` → ✅ No admitted lemmas
@@ -213,5 +213,5 @@ Where:
 2. **EXCLUDE only library dependencies**: Do not include theorems from CoqUtilLib, FreeMonoid, or standard Coq libraries
 3. **Include ALL non-library dependencies**: If MajorLemmas.v uses theorem A, and theorem A uses theorem B (non-library), then Lemmas.v must contain both A and B
 4. **Complete dependency closure**: Lemmas.v should be self-contained for all non-library dependencies
-5. **No duplication with Extras.v files**: Remove any theorems from Extras.v that are in any other file
+5. **No duplication with Extra.v files**: Remove any theorems from Extra.v that are in any other file
 6. **Library imports remain**: Keep all `Require Import` statements for external libraries in both files as needed
