@@ -23,23 +23,18 @@ Require Import Coq.ZArith.Zmax.
 Open Scope Z_scope.
 
 (* ===== CORE DEFINITIONS ===== *)
-
-(* Max notation *)
 Notation "x <|> y" := (Z.max x y) (at level 50, left associativity).
 
-(* NonNegPlus definition and notation *)
 Definition nonNegPlus (x y : Z) : Z :=
   if Z.leb 0 (x + y) then x + y else 0.
 
 Notation "x <#> y" := (nonNegPlus x y) (at level 40, left associativity).
 
-(* Core sum and maximum operations *)
 Definition nonNegSum (xs : list Z) : Z := fold_right nonNegPlus 0%Z xs.
 Definition nonNegSum_dual (xs : list Z) : Z := fold_left (fun acc x => nonNegPlus acc x) xs 0.
 Definition nonNegMaximum : list Z -> Z := fold_right (fun x y => x <|> y) 0.
 Definition nonNegMaximum_dual (xs : list Z) : Z := fold_left (fun x y => x <|> y) xs 0.
 
-(* Helper definitions for scan operations *)
 Definition maxSoFarAndPreviousSum : Z -> (Z * Z) -> (Z * Z) := fun x uv => match uv with
   | (u, v) => let w := (v <#> x)  in (u <|> w, w)
 end.
@@ -48,9 +43,8 @@ Definition maxSoFarAndPreviousSum_dual : (Z * Z) -> Z -> (Z * Z) := fun uv x => 
   | (u, v) => let w := (v <#> x) in (u <|> w, w)
 end.
 
-(* ===== BASIC PROPERTIES ===== *)
 
-(* NonNegPlus properties *)
+(* ===== PROPERTIES ===== *)
 Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
 Proof.
   intros x y.
@@ -60,7 +54,6 @@ Proof.
   - apply Z.le_ge. apply Z.le_refl.
 Qed.
 
-(* NonNegSum properties *)
 Lemma nonNegSum_dual_nonneg : forall xs : list Z, nonNegSum_dual xs >= 0.
 Proof.
   intros xs.
@@ -76,9 +69,6 @@ Proof.
   apply H. apply Z.le_ge. apply Z.le_refl.
 Qed.
 
-(* ===== LIST OPERATION HELPERS ===== *)
-
-(* concat operations *)
 Lemma app_concat [A : Type] : forall (l : list (list A)),
   concat l = fold_right (@app A) [] l.
 Proof.
@@ -87,7 +77,6 @@ Proof.
   - rewrite IH. reflexivity.
 Qed.
 
-(* fold max operations *)
 Lemma fold_max_nonneg : forall (l : list Z),
   (0 <= fold_right Z.max 0 l)%Z.
 Proof.
@@ -110,7 +99,6 @@ Proof.
   - rewrite IH. rewrite Z.max_assoc. reflexivity.
 Qed.
 
-(* Tropical horner operations *)
 Lemma tropical_horner_eq_nonNegPlus : forall x y : Z,
   (x <#> y <|> 0) = x <#> y.
 Proof.
@@ -122,8 +110,6 @@ Proof.
   - apply Z.leb_gt in H.
     rewrite Z.max_r; [reflexivity | apply Z.le_refl].
 Qed.
-
-(* ===== MONOTONICITY PROPERTIES ===== *)
 
 Lemma fold_left_monotonic_nonNegPlus : forall (xs : list Z) (a b : Z),
   a <= b -> fold_left (fun acc x => nonNegPlus acc x) xs a <= fold_left (fun acc x => nonNegPlus acc x) xs b.
@@ -271,7 +257,6 @@ Proof.
       reflexivity.
 Qed.
 
-(* Tails properties *)
 Lemma tails_are_suffixes : forall (A : Type) (xs ys : list A),
   In ys (tails xs) -> exists zs, zs ++ ys = xs.
 Proof.
@@ -288,9 +273,6 @@ Proof.
       exists (x :: zs). simpl. f_equal. exact H_eq.
 Qed.
 
-(* ===== FOLD MAX UTILITIES ===== *)
-
-(* Helper for fold equivalence - temporarily admitted *)
 Theorem fold_left_right_equiv :
   forall (A : Type) (f : A -> A -> A) (z : A) (l : list A),
     (forall x y z, f x (f y z) = f (f x y) z) -> (* Associativity of f *)
@@ -303,7 +285,6 @@ Proof.
   - apply H_comm.
 Qed.
 
-(* Max fold duality *)
 Theorem max_fold_duality : forall (xs : list Z) (init : Z),
   fold_left (fun x y => x <|> y) xs init = fold_right (fun x y => x <|> y) init xs.
 Proof.
@@ -319,7 +300,6 @@ Proof.
   intro xs. apply max_fold_duality.
 Qed.
 
-(* Fold max helper properties *)
 Lemma fold_right_max_le : forall (xs : list Z) (ub : Z),
   ub >= 0 ->
   (forall y, In y xs -> y <= ub) ->
@@ -366,8 +346,6 @@ Proof.
   rewrite max_fold_duality_zero.
   apply fold_right_max_returns_max; assumption.
 Qed.
-
-(* ===== EXTENSION UTILITIES ===== *)
 
 Lemma fold_right_ext {A B : Type} : forall (f g : A -> B -> B) (xs : list A) (init : B),
   (forall x acc, f x acc = g x acc) ->
@@ -622,8 +600,6 @@ Proof.
        fold_left Z.max sl_next u0 >= fold_left Z.max sl_next v_next
     *)
 Qed.
-
-(* ===== KEY LEMMAS USED BY MajorLemmas.v ===== *)
 
 Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
   nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
