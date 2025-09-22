@@ -52,17 +52,14 @@ Qed.
 
 Theorem form3_eq_form4 : form3 = form4.
 Proof.
-  unfold form3.
-  unfold form4.
-  rewrite compose_assoc.
+  unfold form3, form4.
   rewrite fold_promotion.
   reflexivity.
 Qed.
 
 Theorem form4_eq_form5 : form4 = form5.
 Proof.
-  unfold form4.
-  unfold form5.
+  unfold form4, form5.
   f_equal.
   rewrite compose_assoc.
   rewrite compose_assoc.
@@ -167,8 +164,7 @@ Qed.
 
 Theorem form3_dual_eq_form4_dual : form3_dual = form4_dual.
 Proof.
-  unfold form3_dual.
-  unfold form4_dual.
+  unfold form3_dual, form4_dual.
   rewrite compose_assoc.
   rewrite fold_promotion_dual.
   reflexivity.
@@ -176,8 +172,7 @@ Qed.
 
 Theorem form4_dual_eq_form5_dual : form4_dual = form5_dual.
 Proof.
-  unfold form4_dual.
-  unfold form5_dual.
+  unfold form4_dual, form5_dual.
   f_equal.
   rewrite compose_assoc.
   rewrite compose_assoc.
