@@ -45,11 +45,12 @@ The main Coq development is in `Coq/BirdMeertens/` with the following module org
 2. **MajorLemmas.v** - Theorems that BirdMeertens.v depends on immediately (direct dependencies not in libraries)
 3. **Lemmas.v** - Theorems that BirdMeertens.v depends on indirectly (dependencies of MajorLemmas.v)
 4. **Extra.v** - Results that aren't necessary for the main theorems (unused by BirdMeertens.v)
+5. **Extra2.v** - Results that aren't necessary for the main theorems and used to be part of Lemmas.v (unused by BirdMeertens.v)
 
 **REORGANIZATION PLAN (September 2025)**:
 - **MajorLemmas.v** contains immediate dependencies like `generalised_horners_rule`, `fold_scan_fusion_pair`, `maxSoFarAndPreviousSum`, `nonNegPlus_comm`, `tails_rec_equiv_ext`, `map_promotion`, `fold_promotion`, and their dual versions
 - **Lemmas.v** contains indirect dependencies like definition and basic property lemmas for `nonNegPlus`, `nonNegSum`, `nonNegMaximum`, etc.
-- **Extra.v** contains all theorems not used directly or indirectly by BirdMeertens.v
+- **Extra.v and Extra2.v** contains all theorems not used directly or indirectly by BirdMeertens.v
 
 **Additional Libraries:**
 - **CoqUtilLib** - Utility functions for list operations and functional programming  
@@ -189,5 +190,5 @@ Where:
 2. **EXCLUDE only library dependencies**: Do not include theorems from CoqUtilLib, FreeMonoid, or standard Coq libraries
 3. **Include ALL non-library dependencies**: If MajorLemmas.v uses theorem A, and theorem A uses theorem B (non-library), then Lemmas.v must contain both A and B
 4. **Complete dependency closure**: Lemmas.v should be self-contained for all non-library dependencies
-5. **No duplication with Extras.v files**: Remove any theorems from Extras.v that are now in Lemmas.v
+5. **No duplication with Extras.v and Extras2.v files**: Remove any theorems from Extras.v and Extras.v that are in any other file
 6. **Library imports remain**: Keep all `Require Import` statements for external libraries in both files as needed
