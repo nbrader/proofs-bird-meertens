@@ -31,25 +31,7 @@ Proof.
   apply concat_map.
 Qed.
 
-(* 2. fold_promotion - used in form3_eq_form4 *)
-Lemma fold_promotion : nonNegMaximum ∘ concat = nonNegMaximum ∘ map nonNegMaximum.
-Proof.
-  unfold compose.
-  apply functional_extensionality.
-  intros x.
-  induction x as [|xs xss IH].
-  - simpl. reflexivity.
-  - simpl. unfold nonNegMaximum at 1.
-    rewrite app_concat.
-    simpl fold_right at 1.
-    unfold nonNegMaximum at 2.
-    simpl map at 1.
-    simpl fold_right at 2.
-    rewrite fold_max_app.
-    f_equal.
-    rewrite app_concat in IH.
-    exact IH.
-Qed.
+(* 2. fold_promotion - imported from Lemmas.v *)
 
 (* 3. nonNegPlus_comm - used in form7_eq_form8 *)
 Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
@@ -125,16 +107,7 @@ Proof.
   apply fold_right_nonNegPlus_eq_max_prefixes.
 Qed.
 
-(* 7. fold_right_ext - used in generalised_horners_rule and form7_eq_form8 *)
-Lemma fold_right_ext {A B : Type} : forall (f g : A -> B -> B) (xs : list A) (init : B),
-  (forall x acc, f x acc = g x acc) ->
-  fold_right f init xs = fold_right g init xs.
-Proof.
-  intros f g xs init H.
-  induction xs as [|x xs' IH].
-  - simpl. reflexivity.
-  - simpl. rewrite H. rewrite IH. reflexivity.
-Qed.
+(* 7. fold_right_ext - imported from Lemmas.v *)
 
 (* ===== DUAL FORM DEPENDENCIES ===== *)
 

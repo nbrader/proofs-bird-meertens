@@ -6,6 +6,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Coq formalization project that translates a theorem from the Bird-Meertens Formalism Wikipedia article about the correctness of Kadane's algorithm for the Maximum subarray problem.
 
+## CURRENT REORGANIZATION STRATEGY (CRITICAL)
+
+**GOAL**: Clean modular theorem organization with zero duplicates and zero admitted lemmas.
+
+**TARGET STRUCTURE**:
+- **BirdMeertens.v**: Main theorem file (no changes to content)
+- **MajorLemmas.v**: Contains ONLY the non-library direct dependencies of BirdMeertens.v
+- **Lemmas.v**: Contains ALL non-library direct and indirect dependencies of MajorLemmas.v
+- **Extras.v/Extras2.v**: Everything else (unused theorems)
+
+**VERIFICATION REQUIREMENTS** (must all pass before commit):
+1. `python3 check_admitted_lemmas.py` → ✅ No admitted lemmas
+2. `python3 check_duplicate_lemmas.py` → ✅ No duplicate lemmas
+3. `./build_coq.sh` → ✅ Full compilation success
+4. All core files (BirdMeertens.v, MajorLemmas.v, Lemmas.v) compile without errors
+
+**CURRENT STATUS**:
+- ❌ 3 admitted lemmas in Lemmas.v (must be fixed)
+- ❌ 43 duplicate lemmas across files (must be removed)
+- ✅ All files currently compile
+
+**PROCESS**: Fix admitted lemmas → Remove duplicates → Verify → Test compile → Commit
+
 ## Key Proof Strategy: Dual Conversion Approach
 
 **IMPORTANT**: When proving dual theorems (theorems that convert between fold_left/scan_left and fold_right/scan_right), use the **dual conversion approach**:
