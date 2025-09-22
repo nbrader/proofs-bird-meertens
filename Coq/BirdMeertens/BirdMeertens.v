@@ -9,7 +9,7 @@ Require Import Coq.Init.Datatypes.
 Require Import Coq.Structures.GenericMinMax.
 Open Scope Z_scope.
 
-Require Import BirdMeertens.Lemmas.
+Require Import BirdMeertens.MajorLemmas.
 Require Import BirdMeertens.ListFunctions.
 Require Import CoqUtilLib.ListFunctions.
 
