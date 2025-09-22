@@ -168,10 +168,11 @@ Proof.
   apply fold_right_max_returns_max; assumption.
 Qed.
 
-Lemma nonneg_tropical_horners_rule : forall xs : list Z,
-  nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
+Lemma nonneg_tropical_horners_rule : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
+  apply functional_extensionality.
   intros xs.
+
   assert (H_in: In xs (inits xs)).
   { apply inits_contains_original. }
 
@@ -207,8 +208,7 @@ Proof.
       + apply Z.leb_le in Heq; exact Heq.
       + simpl. apply Z.le_refl.
   }
-
-  unfold nonNegMaximum.
+  
   symmetry.
   apply fold_right_max_returns_max with (m := nonNegSum xs).
   - apply Z.ge_le_iff. exact Hm_nonneg.
@@ -217,8 +217,7 @@ Proof.
 Qed.
 
 (* 13. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
-Lemma nonneg_tropical_horners_rule_dual :
-  nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
+Lemma nonneg_tropical_horners_rule_dual : nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
 Proof.
   apply functional_extensionality.
   intros xs.
@@ -264,30 +263,11 @@ Proof.
   }
 
   (* Now apply fold_left_max_returns_max *)
-  unfold compose.
   symmetry.
   apply fold_left_max_returns_max with (m := nonNegSum_dual xs).
   - exact Hm_nonneg.
   - exact H_is_max.
   - exact H_xs_mapped.
-Qed.
-
-(* 6. generalised_horners_rule' - used in form5_eq_form6 *)
-Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails_rec = nonNegMaximum ∘ map nonNegSum ∘ tails_rec.
-Proof.
-  apply functional_extensionality.
-  intros xs.
-  unfold compose.
-  f_equal.
-  apply map_ext.
-  intros tail.
-  (* For each tail, we need: (nonNegMaximum ∘ map nonNegSum ∘ inits) tail = nonNegSum tail *)
-  unfold compose.
-  unfold nonNegSum.
-  (* This follows from our first lemma:
-     nonNegMaximum (map (fold_right nonNegPlus 0) (inits tail)) = fold_right nonNegPlus 0 tail *)
-  symmetry.
-  apply nonneg_tropical_horners_rule.
 Qed.
 
 (* 3. nonNegPlus_comm - used in form7_eq_form8 *)

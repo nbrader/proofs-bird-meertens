@@ -71,8 +71,17 @@ Qed.
 Theorem form5_eq_form6 : form5 = form6.
 Proof.
   unfold form5, form6.
+  apply functional_extensionality; intro xs.
+  unfold compose.
   rewrite tails_rec_equiv_ext.
-  apply generalised_horners_rule'.
+
+  f_equal.
+  apply map_ext.
+  intros.
+  replace (nonNegMaximum (map nonNegSum (inits a)))
+    with ((nonNegMaximum ∘ map nonNegSum ∘ inits) a) by reflexivity.
+  rewrite <- nonneg_tropical_horners_rule.
+  reflexivity.
 Qed.
 
 Theorem form6_eq_form7 : form6 = form7.
