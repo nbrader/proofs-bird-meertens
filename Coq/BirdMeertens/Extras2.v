@@ -280,10 +280,6 @@ Proof.
   + intros x y. apply Z.max_comm.
 Qed.
 
-  
-
-
-
 (* Instead, let's add a simple provable lemma about nonNegPlus *)
 Definition distributes_over_max (op : Z -> Z -> Z) := forall s t x, op (Z.max s t) x = Z.max  (op s x) (op t x).
 
@@ -1250,4 +1246,3 @@ Print Assumptions nonNegSum_nonneg.
 
 (* The key insight is that we need proper dual versions of the existing lemmas *)
 (* Let's create a basic framework that builds up the needed proofs step by step *)
-
