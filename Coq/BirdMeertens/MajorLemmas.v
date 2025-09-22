@@ -376,19 +376,6 @@ Proof.
     apply Z.max_comm.
 Qed.
 
-(* 12. fold_left_right_rev - used in Original_Dual_Equivalence *)
-Theorem fold_left_right_rev {A B : Type} :
-  forall (f : A -> B -> B) (xs : list A) (init : B),
-    fold_left (fun acc x => f x acc) xs init = fold_right f init (rev xs).
-Proof.
-  intros f xs init.
-  revert init.
-  induction xs as [|x xs' IH]; intros init.
-  - simpl. reflexivity.
-  - simpl rev. rewrite fold_right_app. simpl.
-    simpl fold_left. rewrite IH. reflexivity.
-Qed.
-
 (* ===== HELPER DEFINITIONS ===== *)
 (* Note: maxSoFarAndPreviousSum and maxSoFarAndPreviousSum_dual definitions *)
 (* are imported from Lemmas.v and available for BirdMeertens.v *)
