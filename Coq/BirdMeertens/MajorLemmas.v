@@ -100,46 +100,16 @@ Proof.
     apply Z.max_comm.
 Qed.
 
-(* 5. generalised_horners_rule - used in form5_eq_form6 *)
-Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
+(* 7. fold_right_ext - use in form7_eq_form8 *)
+Lemma fold_right_ext {A B : Type} : forall (f g : A -> B -> B) (xs : list A) (init : B),
+  (forall x acc, f x acc = g x acc) ->
+  fold_right f init xs = fold_right g init xs.
 Proof.
-  apply functional_extensionality.
-  intros xs.
-  (* First, simplify using the fact that (x <#> y <|> 0) = (x <#> y) *)
-  assert (H: fold_right (fun x y : Z => x <#> y <|> 0) 0 xs = fold_right nonNegPlus 0 xs).
-  {
-    apply fold_right_ext.
-    intros a b.
-    apply tropical_horner_eq_nonNegPlus.
-  }
-  rewrite H.
-  clear H.
-  (* Now we need to prove: fold_right nonNegPlus 0 xs = (nonNegMaximum ∘ map nonNegSum ∘ inits) xs *)
-  unfold compose.
-  unfold nonNegSum.
-  (* Apply the key lemma *)
-  apply fold_right_nonNegPlus_eq_max_prefixes.
+  intros f g xs init H.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl. rewrite H. rewrite IH. reflexivity.
 Qed.
-
-(* 6. generalised_horners_rule' - used in form5_eq_form6 *)
-Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails_rec = nonNegMaximum ∘ map nonNegSum ∘ tails_rec.
-Proof.
-  apply functional_extensionality.
-  intros xs.
-  unfold compose.
-  f_equal.
-  apply map_ext.
-  intros tail.
-  (* For each tail, we need: (nonNegMaximum ∘ map nonNegSum ∘ inits) tail = nonNegSum tail *)
-  unfold compose.
-  unfold nonNegSum.
-  (* This follows from our first lemma:
-     nonNegMaximum (map (fold_right nonNegPlus 0) (inits tail)) = fold_right nonNegPlus 0 tail *)
-  symmetry.
-  apply fold_right_nonNegPlus_eq_max_prefixes.
-Qed.
-
-(* 7. fold_right_ext - imported from Lemmas.v *)
 
 (* ===== DUAL FORM DEPENDENCIES ===== *)
 
@@ -198,6 +168,88 @@ Proof.
   induction xs as [|x xs' IH]; simpl; intro init.
   - reflexivity.
   - rewrite H. apply IH.
+Qed.
+
+Lemma fold_right_max_returns_max :
+  forall (xs : list Z) (m : Z),
+    m >= 0 ->
+    (forall y, In y xs -> y <= m) ->
+    In m xs ->
+    fold_right (fun x y => x <|> y) 0 xs = m.
+Proof.
+  intros xs m Hm_nonneg H_ub H_in.
+  induction xs as [|x xs' IH].
+  - simpl in H_in. contradiction.
+  - simpl in *.
+    destruct H_in as [H_eq | H_in'].
+    + subst. apply Z.max_l.
+      apply fold_right_max_le.
+      * exact Hm_nonneg.
+      * intros y Hy. apply H_ub. right. exact Hy.
+    + rewrite IH.
+      * apply Z.max_r. apply H_ub. left. reflexivity.
+      * intros y Hy. apply H_ub. right. exact Hy.
+      * exact H_in'.
+Qed.
+
+Lemma fold_left_max_returns_max :
+  forall (xs : list Z) (m : Z),
+    m >= 0 ->
+    (forall y, In y xs -> y <= m) ->
+    In m xs ->
+    fold_left (fun x y => x <|> y) xs 0 = m.
+Proof.
+  intros xs m Hm_nonneg H_ub H_in.
+  rewrite max_fold_duality_zero.
+  apply fold_right_max_returns_max; assumption.
+Qed.
+
+Lemma fold_right_nonNegPlus_eq_max_prefixes : forall xs : list Z,
+  nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
+Proof.
+  intros xs.
+  assert (H_in: In xs (inits xs)).
+  { apply inits_contains_original. }
+
+  assert (H_max: forall ys, In ys (inits xs) -> nonNegSum ys <= nonNegSum xs).
+  {
+    intros ys H_ys_in.
+    destruct (inits_are_prefixes Z xs ys H_ys_in) as [zs H_app].
+    apply nonNegSum_prefix_le.
+    exists zs; exact H_app.
+  }
+
+  assert (H_is_max: forall y, In y (map nonNegSum (inits xs)) -> y <= nonNegSum xs).
+  {
+    intros y H_y_in.
+    rewrite in_map_iff in H_y_in.
+    destruct H_y_in as [ys [H_eq H_ys_in]].
+    rewrite <- H_eq.
+    apply H_max; exact H_ys_in.
+  }
+
+  assert (H_xs_mapped: In (nonNegSum xs) (map nonNegSum (inits xs))).
+  {
+    rewrite in_map_iff.
+    exists xs; split; [reflexivity | exact H_in].
+  }
+
+  assert (Hm_nonneg: 0 <= nonNegSum xs).
+  {
+    induction xs as [|x xs' IH].
+    - simpl. apply Z.le_refl.
+    - simpl. unfold nonNegPlus.
+      destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
+      + apply Z.leb_le in Heq; exact Heq.
+      + simpl. apply Z.le_refl.
+  }
+
+  unfold nonNegMaximum.
+  symmetry.
+  apply fold_right_max_returns_max with (m := nonNegSum xs).
+  - apply Z.ge_le_iff. exact Hm_nonneg.
+  - exact H_is_max.
+  - exact H_xs_mapped.
 Qed.
 
 (* 11. fold_left_nonNegPlus_eq_max_suffixes - used in form5_dual_eq_form6_dual *)
@@ -297,6 +349,45 @@ Proof.
      nonNegMaximum (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
   symmetry.
   apply fold_left_nonNegPlus_eq_max_suffixes.
+Qed.
+
+(* 5. generalised_horners_rule - used in form5_eq_form6 *)
+Lemma generalised_horners_rule : fold_right (fun x y : Z => x <#> y <|> 0) 0 = nonNegMaximum ∘ map nonNegSum ∘ inits.
+Proof.
+  apply functional_extensionality.
+  intros xs.
+  (* First, simplify using the fact that (x <#> y <|> 0) = (x <#> y) *)
+  assert (H: fold_right (fun x y : Z => x <#> y <|> 0) 0 xs = fold_right nonNegPlus 0 xs).
+  {
+    apply fold_right_ext.
+    intros a b.
+    apply tropical_horner_eq_nonNegPlus.
+  }
+  rewrite H.
+  clear H.
+  (* Now we need to prove: fold_right nonNegPlus 0 xs = (nonNegMaximum ∘ map nonNegSum ∘ inits) xs *)
+  unfold compose.
+  unfold nonNegSum.
+  (* Apply the key lemma *)
+  apply fold_right_nonNegPlus_eq_max_prefixes.
+Qed.
+
+(* 6. generalised_horners_rule' - used in form5_eq_form6 *)
+Lemma generalised_horners_rule' : nonNegMaximum ∘ map (nonNegMaximum ∘ map nonNegSum ∘ inits) ∘ tails_rec = nonNegMaximum ∘ map nonNegSum ∘ tails_rec.
+Proof.
+  apply functional_extensionality.
+  intros xs.
+  unfold compose.
+  f_equal.
+  apply map_ext.
+  intros tail.
+  (* For each tail, we need: (nonNegMaximum ∘ map nonNegSum ∘ inits) tail = nonNegSum tail *)
+  unfold compose.
+  unfold nonNegSum.
+  (* This follows from our first lemma:
+     nonNegMaximum (map (fold_right nonNegPlus 0) (inits tail)) = fold_right nonNegPlus 0 tail *)
+  symmetry.
+  apply fold_right_nonNegPlus_eq_max_prefixes.
 Qed.
 
 (* ===== HELPER DEFINITIONS ===== *)

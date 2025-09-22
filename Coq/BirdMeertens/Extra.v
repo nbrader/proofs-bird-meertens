@@ -6,6 +6,7 @@ Import ListNotations.
 Require Import BirdMeertens.ListFunctions.
 Require Import BirdMeertens.FunctionLemmas.
 Require Import BirdMeertens.TailsMonoid.
+Require Import BirdMeertens.MajorLemmas.
 Require Import BirdMeertens.Lemmas.
 Require Import CoqUtilLib.ListFunctions.
 
