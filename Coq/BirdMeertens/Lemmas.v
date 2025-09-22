@@ -425,19 +425,6 @@ Proof.
   - simpl. rewrite H. rewrite IH. reflexivity.
 Qed.
 
-Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
-  map f ∘ map g = map (f ∘ g).
-Proof.
-  intros.
-  unfold compose.
-  f_equal.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH]; simpl.
-  - reflexivity.
-  - rewrite IH. reflexivity.
-Qed.
-
 Lemma max_add_distributes : forall s t x,
   Z.max s t + x = Z.max (s + x) (t + x).
 Proof.

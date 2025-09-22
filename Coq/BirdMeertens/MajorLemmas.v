@@ -19,6 +19,20 @@ Open Scope Z_scope.
 (* ===== IMMEDIATE DEPENDENCIES FROM BirdMeertens.v ===== *)
 (* These are the actual theorem statements that BirdMeertens.v uses directly *)
 
+(* 0. map_promotion - used in form4_eq_form5 *)
+Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
+  map f ∘ map g = map (f ∘ g).
+Proof.
+  intros.
+  unfold compose.
+  f_equal.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity.
+  - rewrite IH. reflexivity.
+Qed.
+
 (* 1. map_promotion - used in form2_eq_form3 *)
 Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
   map f ∘ concat = concat ∘ map (map f).
