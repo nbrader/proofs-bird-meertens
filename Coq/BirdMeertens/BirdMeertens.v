@@ -10,6 +10,7 @@ Require Import Coq.Structures.GenericMinMax.
 Open Scope Z_scope.
 
 Require Import BirdMeertens.MajorLemmas.
+Require Import BirdMeertens.Lemmas.
 Require Import BirdMeertens.ListFunctions.
 Require Import CoqUtilLib.ListFunctions.
 

@@ -253,16 +253,6 @@ Qed.
 (* Refs:
  - form2_eq_form3 -> (* Refs: NONE *)
 *)
-Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
-  map f ∘ concat = concat ∘ map (map f).
-Proof.
-  intros.
-  unfold compose.
-  f_equal.
-  apply functional_extensionality.
-  intros.
-  apply concat_map.
-Qed.
 
 Lemma app_concat [A : Type] : forall (l : list (list A)),
   concat l = fold_right (@app A) [] l.
@@ -360,6 +350,19 @@ Qed.
 
   
 
+
+
+Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
+  map f ∘ concat = concat ∘ map (map f).
+Proof.
+  intros.
+  unfold compose.
+  f_equal.
+  apply functional_extensionality.
+  intros.
+  apply concat_map.
+Qed.
+
 Lemma fold_promotion : nonNegMaximum ∘ concat = nonNegMaximum ∘ map nonNegMaximum.
 Proof.
   unfold compose.
@@ -378,7 +381,6 @@ Proof.
     rewrite app_concat in IH.
     exact IH.
 Qed.
-
 
 (* Instead, let's add a simple provable lemma about nonNegPlus *)
 Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
@@ -665,6 +667,7 @@ Proof.
     apply Z.le_refl.
 Qed.
 
+
 Lemma fold_scan_fusion_pair :
   forall (xs : list Z),
     fold_right
@@ -828,21 +831,17 @@ Proof.
   - apply H_comm.
 Qed.
 
-Theorem fold_left_right_rev :
-  forall (A B : Type) (f : A -> B -> A) (z : A) (l : list B),
-    fold_left f l z =
-    fold_right (fun x acc => f acc x) z (rev l).
+
+Theorem fold_left_right_rev {A B : Type} :
+  forall (f : A -> B -> B) (xs : list A) (init : B),
+    fold_left (fun acc x => f x acc) xs init = fold_right f init (rev xs).
 Proof.
-  intros A B f z l.
-  revert z.
-  induction l as [|x xs IH]; intros z.
+  intros f xs init.
+  revert init.
+  induction xs as [|x xs' IH]; intros init.
   - simpl. reflexivity.
-  - simpl. rewrite IH.
-    (* Now goal:
-       fold_right (fun x0 acc => f acc x0) (f z x) (rev xs)
-         = fold_right (fun x0 acc => f acc x0) z (rev xs ++ [x]) *)
-    rewrite fold_right_app. simpl.
-    reflexivity.
+  - simpl rev. rewrite fold_right_app. simpl.
+    simpl fold_left. rewrite IH. reflexivity.
 Qed.
 
 (* More general lemma: fold_left with cons and arbitrary initial accumulator *)
@@ -1339,27 +1338,13 @@ Proof.
 Qed.
 
 (* Dual version of fold_scan_fusion_pair - works with fold_left and scan_left *)
-Lemma fold_scan_fusion_pair_dual :
-  forall (xs : list Z),
-    fold_left
-      (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x))
-      xs (0, 0)
-    =
-    (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs 0) 0,
-     fold_left (fun acc x => nonNegPlus acc x) xs 0).
-Proof.
-  intro xs.
-  (* This is a special case of fold_scan_fusion_pair_general with u0 = 0, v0 = 0 *)
-  apply fold_scan_fusion_pair_general.
-  - (* 0 >= 0 *) apply Z.ge_le_iff. apply Z.le_refl.
-  - (* 0 >= 0 *) apply Z.ge_le_iff. apply Z.le_refl.
-Qed.
 
 (* fold_right extensionality lemma - needed for BirdMeertens.v *)
-Lemma fold_right_ext : forall {A B : Type} (f g : A -> B -> B) (xs : list A) (init : B),
-  (forall x acc, f x acc = g x acc) -> fold_right f init xs = fold_right g init xs.
+Lemma fold_right_ext {A B : Type} : forall (f g : A -> B -> B) (xs : list A) (init : B),
+  (forall x acc, f x acc = g x acc) ->
+  fold_right f init xs = fold_right g init xs.
 Proof.
-  intros A B f g xs init H.
+  intros f g xs init H.
   induction xs as [|x xs' IH].
   - simpl. reflexivity.
   - simpl. rewrite H. rewrite IH. reflexivity.
@@ -1374,6 +1359,23 @@ Proof.
   induction xs as [|x xs' IH]; simpl; intro init.
   - reflexivity.
   - rewrite H. apply IH.
+Qed.
+
+(* Dual version of fold_scan_fusion_pair - works with fold_left and scan_left *)
+Lemma fold_scan_fusion_pair_dual :
+  forall (xs : list Z),
+    fold_left
+      (fun uv x => let '(u, v) := uv in (Z.max u (nonNegPlus v x), nonNegPlus v x))
+      xs (0, 0)
+    =
+    (fold_left Z.max (scan_left (fun acc x => nonNegPlus acc x) xs 0) 0,
+     fold_left (fun acc x => nonNegPlus acc x) xs 0).
+Proof.
+  intro xs.
+  (* This is a special case of fold_scan_fusion_pair_general with u0 = 0, v0 = 0 *)
+  apply fold_scan_fusion_pair_general.
+  - (* 0 >= 0 *) apply Z.ge_le_iff. apply Z.le_refl.
+  - (* 0 >= 0 *) apply Z.ge_le_iff. apply Z.le_refl.
 Qed.
 
 (* Monoid framework for Horner's rule using TailsMonoid *)
@@ -1822,26 +1824,25 @@ Proof.
   apply functional_extensionality.
   intros x.
   unfold nonNegMaximum_dual.
-  (* Convert both sides to fold_right using duality *)
+  (* Convert both sides using duality *)
   rewrite max_fold_duality_zero.
   rewrite max_fold_duality_zero.
-  (* Convert the map function to use fold_right instead of fold_left *)
-  assert (H_map_eq: map (fun xs => fold_left (fun x y : Z => x <|> y) xs 0) x =
-                    map (fun xs => fold_right (fun x y : Z => x <|> y) 0 xs) x).
+  (* Now both sides use fold_right, so we can apply the original fold_promotion *)
+  unfold nonNegMaximum.
+  (* We need to show that the mapped functions are equivalent under duality *)
+  assert (H_map_eq: map (fun xs => fold_left (fun x0 y : Z => x0 <|> y) xs 0) x =
+                    map (fun xs => fold_right (fun x0 y : Z => x0 <|> y) 0 xs) x).
   {
-    induction x as [|xs xss IH].
-    - simpl. reflexivity.
-    - simpl. f_equal.
-      + rewrite max_fold_duality_zero. reflexivity.
-      + exact IH.
+    apply map_ext.
+    intro xs.
+    apply max_fold_duality_zero.
   }
   rewrite H_map_eq.
-  (* Now we can apply the original fold_promotion *)
-  unfold nonNegMaximum.
-  assert (H_promotion := fold_promotion).
-  unfold compose in H_promotion.
-  unfold nonNegMaximum in H_promotion.
-  apply (equal_f H_promotion x).
+  (* Now apply the original fold_promotion with the right-fold version *)
+  assert (H_fold_prom := fold_promotion).
+  unfold compose in H_fold_prom.
+  unfold nonNegMaximum in H_fold_prom.
+  apply (equal_f H_fold_prom x).
 Qed.
 
 (* Helper lemma: fold_left gives a value that's <= any upper bound *)
@@ -2165,61 +2166,9 @@ Qed.
 
 (* Key lemma: the sum equals the maximum of prefix sums with nonNegPlus *)
 Lemma fold_left_nonNegPlus_eq_max_suffixes : forall xs : list Z,
-  nonNegSum_dual xs = nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
+  fold_left (fun acc x => nonNegPlus acc x) xs 0 =
+  nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
 Proof.
-  (* intros xs.
-  (* xs is one of its inits *)
-  assert (H_in: In xs (inits xs)).
-  { apply inits_contains_original. }
-
-  (* Every element of inits xs is a prefix of xs, hence its nonNegSum_dual <= nonNegSum_dual xs *)
-  assert (H_max: forall ys, In ys (inits xs) -> nonNegSum_dual ys <= nonNegSum_dual xs).
-  {
-    intros ys H_ys_in.
-    (* inits_are_prefixes gives ys ++ zs = xs *)
-    destruct (inits_are_prefixes Z xs ys H_ys_in) as [zs H_app].
-    apply nonNegSum_dual_suffix_le.
-    exists zs; exact H_app.
-  }
-
-  (* map the above fact to the mapped list *)
-  assert (H_is_max: forall y, In y (map nonNegSum_dual (inits xs)) -> y <= nonNegSum_dual xs).
-  {
-    intros y H_y_in.
-    rewrite in_map_iff in H_y_in.
-    destruct H_y_in as [ys [H_eq H_ys_in]].
-    rewrite <- H_eq.
-    apply H_max; exact H_ys_in.
-  }
-
-  (* nonNegSum_dual xs is indeed an element of the mapped list *)
-  assert (H_xs_mapped: In (nonNegSum_dual xs) (map nonNegSum_dual (inits xs))).
-  {
-    rewrite in_map_iff.
-    exists xs; split; [reflexivity | exact H_in].
-  }
-
-  (* show nonNegSum_dual xs >= 0 by induction on xs *)
-  assert (Hm_nonneg: 0 <= nonNegSum_dual xs).
-  {
-    induction xs as [|x xs' IH].
-    - simpl. apply Z.le_refl.
-    - simpl.
-      unfold nonNegPlus.
-      destruct (Z.leb 0 (x + nonNegSum_dual xs')) eqn:Heq.
-      + apply Z.leb_le in Heq; exact Heq.
-      + simpl. apply Z.le_refl.
-  }
-
-  (* Now apply fold_right_max_returns_max on the mapped list *)
-  unfold nonNegMaximum_dual.
-  symmetry.
-  apply fold_left_max_returns_max with (m := nonNegSum_dual xs).
-  - apply Z.ge_le_iff.
-    exact Hm_nonneg.
-  - exact H_is_max.
-  - exact H_xs_mapped.
-Qed. *)
   intros xs.
 
   (* xs is one of its tails *)
@@ -2344,3 +2293,4 @@ Proof.
   symmetry.
   apply fold_left_nonNegPlus_eq_max_suffixes.
 Qed.
+

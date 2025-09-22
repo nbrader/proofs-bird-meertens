@@ -171,3 +171,12 @@ Where:
 3. **Do not simply delete or comment out admitted proofs** - this is incorrect methodology
 4. Always verify the admitted count decreases through legitimate proof completion
 5. **Never declare a theorem "established" or "proven" if it uses `Admitted`** - this is false and misleading
+
+### Theorem Extraction Verification
+**CRITICAL**: When extracting theorems to separate files (like MajorLemmas.v), ALWAYS verify the target file contains actual theorem statements, not just comments:
+1. **Check that theorem files contain actual `Lemma`/`Theorem` statements with `Proof...Qed.`**
+2. **Never accept files that only contain comments about theorems** - this defeats the purpose of extraction
+3. **Use `Grep` to verify theorem statements exist**: `grep "^Lemma\|^Theorem" target_file.v`
+4. **If the file only contains `(* comments *)` and `Require` statements, the extraction failed**
+5. **MANDATORY CHECK**: After any theorem extraction, verify the file has actual executable theorem code
+6. **Document this check requirement** in any instructions about theorem organization
