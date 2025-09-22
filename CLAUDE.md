@@ -171,6 +171,8 @@ Where:
 3. **Do not simply delete or comment out admitted proofs** - this is incorrect methodology
 4. Always verify the admitted count decreases through legitimate proof completion
 5. **Never declare a theorem "established" or "proven" if it uses `Admitted`** - this is false and misleading
+6. **NEVER introduce new `Admitted` lemmas during refactoring or reorganization** - this is a regression that decreases proof quality
+7. **When reorganizing theorems between files, preserve all existing proofs with `Qed.`** - do not admit working proofs
 
 ### Theorem Extraction Verification
 **CRITICAL**: When extracting theorems to separate files (like MajorLemmas.v), ALWAYS verify the target file contains actual theorem statements, not just comments:
@@ -180,3 +182,12 @@ Where:
 4. **If the file only contains `(* comments *)` and `Require` statements, the extraction failed**
 5. **MANDATORY CHECK**: After any theorem extraction, verify the file has actual executable theorem code
 6. **Document this check requirement** in any instructions about theorem organization
+
+### Lemmas.v Dependency Requirements
+**CRITICAL**: When reorganizing theorems for MajorLemmas.v dependencies, follow these specific rules:
+1. **Lemmas.v must contain ALL dependencies of MajorLemmas.v** - both direct and indirect dependencies
+2. **EXCLUDE only library dependencies**: Do not include theorems from CoqUtilLib, FreeMonoid, or standard Coq libraries
+3. **Include ALL non-library dependencies**: If MajorLemmas.v uses theorem A, and theorem A uses theorem B (non-library), then Lemmas.v must contain both A and B
+4. **Complete dependency closure**: Lemmas.v should be self-contained for all non-library dependencies
+5. **No duplication with Extras.v files**: Remove any theorems from Extras.v that are now in Lemmas.v
+6. **Library imports remain**: Keep all `Require Import` statements for external libraries in both files as needed
