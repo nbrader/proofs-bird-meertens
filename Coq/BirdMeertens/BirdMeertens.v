@@ -182,33 +182,19 @@ Proof.
 Qed.
 
 (* Note: form5_dual_eq_form6_dual would require a dual version of generalised_horners_rule *)
-(* For now, we'll admit this step to demonstrate the structure *)
 Theorem form5_dual_eq_form6_dual : form5_dual = form6_dual.
 Proof.
   unfold form5_dual, form6_dual.
   apply functional_extensionality; intro xs.
   unfold compose.
 
-  (* We need to prove:
-     nonNegMaximum_dual (map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) (inits_rec xs)) =
-     nonNegMaximum_dual (map (fun prefix => fold_left (fun acc x => nonNegPlus acc x) prefix 0) (inits_rec xs)) *)
-
   f_equal.
-
-  (* Now we need to prove the maps are equal *)
-  apply map_ext; intro prefix.
-  unfold compose.
-
-  (* For each prefix, we need to prove:
-     nonNegMaximum_dual (map nonNegSum_dual (tails prefix)) =
-     fold_left (fun acc x => nonNegPlus acc x) prefix 0 *)
-
-  (* Note that fold_left (fun acc x => nonNegPlus acc x) prefix 0 = nonNegSum_dual prefix *)
-  (* So we need: nonNegMaximum_dual (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
-
-  (* Apply nonneg_tropical_horners_rule_dual in reverse *)
+  apply map_ext.
+  intros.
+  fold nonNegSum_dual.
+  replace (nonNegMaximum_dual (map nonNegSum_dual (tails a)))
+    with ((nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) a) by reflexivity.
   rewrite <- nonneg_tropical_horners_rule_dual.
-  unfold nonNegSum_dual.
   reflexivity.
 Qed.
 

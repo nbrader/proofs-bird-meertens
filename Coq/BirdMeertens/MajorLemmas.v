@@ -216,10 +216,11 @@ Proof.
   - exact H_xs_mapped.
 Qed.
 
-(* 11. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
-Lemma nonneg_tropical_horners_rule_dual : forall xs : list Z,
-  nonNegSum_dual xs = nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
+(* 13. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
+Lemma nonneg_tropical_horners_rule_dual :
+  nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
 Proof.
+  apply functional_extensionality.
   intros xs.
 
   (* xs is one of its tails *)
@@ -263,50 +264,12 @@ Proof.
   }
 
   (* Now apply fold_left_max_returns_max *)
-  unfold nonNegMaximum_dual.
+  unfold compose.
   symmetry.
   apply fold_left_max_returns_max with (m := nonNegSum_dual xs).
   - exact Hm_nonneg.
   - exact H_is_max.
   - exact H_xs_mapped.
-Qed.
-
-(* 13. generalised_horners_rule_dual - SHOULD BE used in form5_dual_eq_form6_dual BUT ISN'T *)
-Lemma generalised_horners_rule_dual :
-  nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
-Proof.
-  apply functional_extensionality.
-  intros xs.
-  (* This follows directly from nonneg_tropical_horners_rule_dual *)
-  apply nonneg_tropical_horners_rule_dual.
-Qed.
-
-(* 14. generalised_horners_rule_dual' - SHOULD BE used in form5_dual_eq_form6_dual BUT ISN'T *)
-Lemma generalised_horners_rule_dual' :
-  nonNegMaximum_dual ∘ map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ inits_rec.
-Proof.
-  apply functional_extensionality.
-  intros xs.
-  unfold compose.
-  f_equal.
-  apply map_ext.
-  intros prefix.
-  (* For each prefix, we need: (nonNegMaximum ∘ map nonNegSum_dual ∘ tails) prefix = nonNegSum_dual prefix *)
-  unfold compose.
-  (* This follows from our first dual lemma:
-     nonNegMaximum (map nonNegSum_dual (tails prefix)) = nonNegSum_dual prefix *)
-  symmetry.
-  apply nonneg_tropical_horners_rule_dual.
-Qed.
-
-(* 5. generalised_horners_rule - used in form5_eq_form6 *)
-Lemma generalised_horners_rule : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
-Proof.
-  apply functional_extensionality.
-  intros xs.
-  (* Now we need to prove: fold_right nonNegPlus 0 xs = (nonNegMaximum ∘ map nonNegSum ∘ inits) xs *)
-  (* Apply the key lemma *)
-  apply nonneg_tropical_horners_rule.
 Qed.
 
 (* 6. generalised_horners_rule' - used in form5_eq_form6 *)
