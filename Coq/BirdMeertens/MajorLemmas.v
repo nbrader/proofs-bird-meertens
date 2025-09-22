@@ -218,8 +218,7 @@ Qed.
 
 (* 11. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
 Lemma nonneg_tropical_horners_rule_dual : forall xs : list Z,
-  fold_left (fun acc x => nonNegPlus acc x) xs 0 =
-  nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
+  fold_left nonNegPlus xs 0 = nonNegMaximum_dual (map nonNegSum_dual (tails xs)).
 Proof.
   intros xs.
 
@@ -285,8 +284,7 @@ Qed.
 
 (* 14. generalised_horners_rule_dual' - SHOULD BE used in form5_dual_eq_form6_dual BUT ISN'T *)
 Lemma generalised_horners_rule_dual' :
-  nonNegMaximum_dual ∘ map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec =
-  nonNegMaximum_dual ∘ map nonNegSum_dual ∘ inits_rec.
+  nonNegMaximum_dual ∘ map (nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) ∘ inits_rec = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ inits_rec.
 Proof.
   apply functional_extensionality.
   intros xs.
