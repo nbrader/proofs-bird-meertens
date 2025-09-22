@@ -168,7 +168,13 @@ Proof.
   apply fold_right_max_returns_max; assumption.
 Qed.
 
-Lemma nonneg_tropical_horners_rule : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
+(*
+  To do: Prove the actual generalised horners rule and use it instead of using these lemmas:
+   - nonneg_tropical_fold_right_returns_max
+   - nonneg_tropical_fold_left_returns_max
+*)
+
+Lemma nonneg_tropical_fold_right_returns_max : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
   apply functional_extensionality.
   intros xs.
@@ -216,8 +222,8 @@ Proof.
   - exact H_xs_mapped.
 Qed.
 
-(* 13. nonneg_tropical_horners_rule_dual - used in form5_dual_eq_form6_dual *)
-Lemma nonneg_tropical_horners_rule_dual : nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
+(* 13. nonneg_tropical_fold_left_returns_max - used in form5_dual_eq_form6_dual *)
+Lemma nonneg_tropical_fold_left_returns_max : nonNegSum_dual = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
 Proof.
   apply functional_extensionality.
   intros xs.

@@ -80,7 +80,7 @@ Proof.
   intros.
   replace (nonNegMaximum (map nonNegSum (inits a)))
     with ((nonNegMaximum ∘ map nonNegSum ∘ inits) a) by reflexivity.
-  rewrite <- nonneg_tropical_horners_rule.
+  rewrite <- nonneg_tropical_fold_right_returns_max.
   reflexivity.
 Qed.
 
@@ -203,7 +203,7 @@ Proof.
   fold nonNegSum_dual.
   replace (nonNegMaximum_dual (map nonNegSum_dual (tails a)))
     with ((nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails) a) by reflexivity.
-  rewrite <- nonneg_tropical_horners_rule_dual.
+  rewrite <- nonneg_tropical_fold_left_returns_max.
   reflexivity.
 Qed.
 
