@@ -174,6 +174,7 @@ Qed.
    - nonneg_tropical_fold_left_returns_max
 *)
 
+(* 13. nonneg_tropical_fold_right_returns_max - used in form5_eq_form6 *)
 Lemma nonneg_tropical_fold_right_returns_max : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
   apply functional_extensionality.
