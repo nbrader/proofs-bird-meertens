@@ -19,20 +19,6 @@ Open Scope Z_scope.
 (* ===== IMMEDIATE DEPENDENCIES FROM BirdMeertens.v ===== *)
 (* These are the actual theorem statements that BirdMeertens.v uses directly *)
 
-(* 0. map_promotion - used in form4_eq_form5 *)
-Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
-  map f ∘ map g = map (f ∘ g).
-Proof.
-  intros.
-  unfold compose.
-  f_equal.
-  apply functional_extensionality.
-  intros.
-  induction x as [|x xs IH]; simpl.
-  - reflexivity.
-  - rewrite IH. reflexivity.
-Qed.
-
 (* 1. map_promotion - used in form2_eq_form3 *)
 Lemma map_promotion {A : Type} : forall (f : (list A) -> A),
   map f ∘ concat = concat ∘ map (map f).
@@ -45,7 +31,7 @@ Proof.
   apply concat_map.
 Qed.
 
-(* 2. fold_promotion - imported from Lemmas.v *)
+(* 2. fold_promotion - used in form3_eq_form4*)
 Lemma fold_promotion : nonNegMaximum ∘ concat = nonNegMaximum ∘ map nonNegMaximum.
 Proof.
   unfold compose.
@@ -65,42 +51,21 @@ Proof.
     exact IH.
 Qed.
 
-(* 3. nonNegPlus_comm - used in form7_eq_form8 *)
-Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
+(* 0. map_distr - used in form4_eq_form5 *)
+Lemma map_distr {A B C : Type} : forall (f : B -> C) (g : A -> B),
+  map f ∘ map g = map (f ∘ g).
 Proof.
-  intros x y.
-  unfold nonNegPlus.
-  rewrite Z.add_comm.
-  reflexivity.
+  intros.
+  unfold compose.
+  f_equal.
+  apply functional_extensionality.
+  intros.
+  induction x as [|x xs IH]; simpl.
+  - reflexivity.
+  - rewrite IH. reflexivity.
 Qed.
 
-(* 4. fold_scan_fusion_pair - used in form7_eq_form8 *)
-Lemma fold_scan_fusion_pair :
-  forall (xs : list Z),
-    fold_right
-      (fun x uv => let '(u, v) := uv in (Z.max u (nonNegPlus x v), nonNegPlus x v))
-      (0, 0) xs
-    =
-    (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
-     fold_right nonNegPlus 0 xs).
-Proof.
-  intros xs.
-  induction xs as [| x xs' IH].
-  - (* Base case: xs = [] *)
-    simpl.
-    reflexivity.
-  - (* Inductive case: xs = x :: xs' *)
-    simpl scan_right.
-    simpl fold_right.
-    (* Destructure the IH *)
-    rewrite IH.
-    (* Now we need to prove the components are equal *)
-    f_equal.
-    (* For the first component, we need Z.max commutativity *)
-    apply Z.max_comm.
-Qed.
-
-(* 7. fold_right_ext - use in form7_eq_form8 *)
+(* 7. fold_right_ext - used in form7_eq_form8 *)
 Lemma fold_right_ext {A B : Type} : forall (f g : A -> B -> B) (xs : list A) (init : B),
   (forall x acc, f x acc = g x acc) ->
   fold_right f init xs = fold_right g init xs.
@@ -111,7 +76,6 @@ Proof.
   - simpl. rewrite H. rewrite IH. reflexivity.
 Qed.
 
-(* ===== DUAL FORM DEPENDENCIES ===== *)
 
 (* 8. fold_promotion_dual - used in form3_dual_eq_form4_dual *)
 Lemma fold_promotion_dual : nonNegMaximum_dual ∘ (concat (A:=Z)) = nonNegMaximum_dual ∘ map nonNegMaximum_dual.
@@ -308,19 +272,6 @@ Proof.
   - exact H_xs_mapped.
 Qed.
 
-(* 12. fold_left_right_rev - used in Original_Dual_Equivalence *)
-Theorem fold_left_right_rev {A B : Type} :
-  forall (f : A -> B -> B) (xs : list A) (init : B),
-    fold_left (fun acc x => f x acc) xs init = fold_right f init (rev xs).
-Proof.
-  intros f xs init.
-  revert init.
-  induction xs as [|x xs' IH]; intros init.
-  - simpl. reflexivity.
-  - simpl rev. rewrite fold_right_app. simpl.
-    simpl fold_left. rewrite IH. reflexivity.
-Qed.
-
 (* 13. generalised_horners_rule_dual - SHOULD BE used in form5_dual_eq_form6_dual BUT ISN'T *)
 Lemma generalised_horners_rule_dual :
   (fun xs => fold_left (fun acc x => nonNegPlus acc x) xs 0) = nonNegMaximum_dual ∘ map nonNegSum_dual ∘ tails.
@@ -388,6 +339,54 @@ Proof.
      nonNegMaximum (map (fold_right nonNegPlus 0) (inits tail)) = fold_right nonNegPlus 0 tail *)
   symmetry.
   apply fold_right_nonNegPlus_eq_max_prefixes.
+Qed.
+
+(* 3. nonNegPlus_comm - used in form7_eq_form8 *)
+Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
+Proof.
+  intros x y.
+  unfold nonNegPlus.
+  rewrite Z.add_comm.
+  reflexivity.
+Qed.
+
+(* 4. fold_scan_fusion_pair - used in form7_eq_form8 *)
+Lemma fold_scan_fusion_pair :
+  forall (xs : list Z),
+    fold_right
+      (fun x uv => let '(u, v) := uv in (Z.max u (nonNegPlus x v), nonNegPlus x v))
+      (0, 0) xs
+    =
+    (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
+     fold_right nonNegPlus 0 xs).
+Proof.
+  intros xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl scan_right.
+    simpl fold_right.
+    (* Destructure the IH *)
+    rewrite IH.
+    (* Now we need to prove the components are equal *)
+    f_equal.
+    (* For the first component, we need Z.max commutativity *)
+    apply Z.max_comm.
+Qed.
+
+(* 12. fold_left_right_rev - used in Original_Dual_Equivalence *)
+Theorem fold_left_right_rev {A B : Type} :
+  forall (f : A -> B -> B) (xs : list A) (init : B),
+    fold_left (fun acc x => f x acc) xs init = fold_right f init (rev xs).
+Proof.
+  intros f xs init.
+  revert init.
+  induction xs as [|x xs' IH]; intros init.
+  - simpl. reflexivity.
+  - simpl rev. rewrite fold_right_app. simpl.
+    simpl fold_left. rewrite IH. reflexivity.
 Qed.
 
 (* ===== HELPER DEFINITIONS ===== *)
