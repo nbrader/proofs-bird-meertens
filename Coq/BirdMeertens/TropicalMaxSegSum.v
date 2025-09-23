@@ -15,6 +15,7 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.Init.Datatypes.
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Psatz.
+Require Import Coq.Logic.Classical.
 
 Open Scope Z_scope.
 
@@ -33,9 +34,20 @@ Lemma case_trichotomy : forall xs : list Z,
   all_nonnegative xs \/ all_nonpositive xs \/ mixed_signs xs.
 Proof.
   intro xs.
-  (* This can be proven constructively, but it's complex - for now we focus on the main result *)
-  admit.
-Admitted.
+  (* Use classical logic to decide between the three cases *)
+  destruct (classic (all_nonnegative xs)) as [H_nonneg | H_not_nonneg].
+  - (* Case 1: all_nonnegative xs *)
+    left. exact H_nonneg.
+  - (* Case 2: ~(all_nonnegative xs) *)
+    destruct (classic (all_nonpositive xs)) as [H_nonpos | H_not_nonpos].
+    + (* Case 2a: all_nonpositive xs *)
+      right. left. exact H_nonpos.
+    + (* Case 2b: ~(all_nonpositive xs) *)
+      (* This is the mixed_signs case *)
+      right. right.
+      unfold mixed_signs.
+      split; [exact H_not_nonneg | exact H_not_nonpos].
+Qed.
 
 (* Helper: nonNegSum is monotonic on non-negative sequences *)
 Lemma nonNegSum_monotonic_nonneg : forall xs ys : list Z,
