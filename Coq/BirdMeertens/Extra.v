@@ -1382,6 +1382,11 @@ Lemma fold_right_mult_dist : forall (x : Z) (ys : list Z),
 Proof.
   intros x ys.
   induction ys as [| y ys' IH].
-  - simpl. ring.
-  - simpl. rewrite <- IH. ring.
+  - simpl.
+    (* Goal: x * 0 = 0 *)
+    apply Z.mul_0_r.
+  - simpl. rewrite <- IH.
+    (* Goal: x * (y + fold_right Z.add 0 ys') = x * y + fold_right Z.add 0 (map (Z.mul x) ys') *)
+    rewrite Z.mul_add_distr_l.
+    reflexivity.
 Qed.

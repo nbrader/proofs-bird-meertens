@@ -217,9 +217,11 @@ Proof.
     rewrite <- IH.
 
     (* Final simplification *)
-    ring.
+    (* Goal is: x * fold_right (fun x0 y => x0 * y + 1) 1 xs' + 1 = 1 + x * fold_right (fun x0 y => x0 * y + 1) 1 xs' *)
+    (* This is just commutativity of addition *)
+    rewrite Z.add_comm.
+    reflexivity.
 Qed.
-(* Lemma generalised_horners_rule_left : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits. *)
 
 (* 13. nonneg_tropical_fold_right_returns_max - used in form5_eq_form6 *)
 Lemma nonneg_tropical_fold_right_returns_max : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.

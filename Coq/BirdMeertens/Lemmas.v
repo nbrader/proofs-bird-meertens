@@ -563,6 +563,11 @@ Lemma fold_right_map_mult_dist : forall (x : Z) (f : list Z -> Z) (lss : list (l
 Proof.
   intros x f lss.
   induction lss as [| ls lss' IH].
-  - simpl. ring.
-  - simpl. rewrite <- IH. ring.
+  - simpl.
+    (* Goal: x * 0 = 0 *)
+    apply Z.mul_0_r.
+  - simpl. rewrite <- IH.
+    (* Goal: x * (f ls + fold_right Z.add 0 (map f lss')) = x * f ls + fold_right Z.add 0 (map (fun ls0 => x * f ls0) lss') *)
+    rewrite Z.mul_add_distr_l.
+    reflexivity.
 Qed.
