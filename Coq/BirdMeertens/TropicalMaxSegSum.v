@@ -211,10 +211,87 @@ Lemma nonNegSum_ge_sum_when_sum_nonneg : forall xs : list Z,
   fold_right Z.add 0 xs >= 0 ->
   nonNegSum xs >= fold_right Z.add 0 xs.
 Proof.
-  (* This lemma is computationally verified but the proof is complex *)
-  (* The key insight is that when the total sum is non-negative, *)
-  (* nonNegSum preserves or increases the sum due to clamping effects *)
-  admit. (* Complex proof - verified computationally *)
+  intros xs H_sum_nonneg.
+  (* Strategy: prove by induction that nonNegSum either equals or exceeds regular sum *)
+  induction xs as [|x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl. lia.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl. unfold nonNegPlus.
+    destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
+    + (* Case: no clamping, x + nonNegSum xs' >= 0 *)
+      apply Z.leb_le in Heq.
+      (* Goal: x + nonNegSum xs' >= x + fold_right Z.add 0 xs' *)
+      (* This follows from IH if we can establish fold_right Z.add 0 xs' >= 0 *)
+
+      (* Key insight: since x + fold_right Z.add 0 xs' >= 0 (from H_sum_nonneg) *)
+      (* and nonNegSum xs' >= 0 always, we can reason about the relationship *)
+
+      assert (H_xs'_case: fold_right Z.add 0 xs' >= 0 \/ fold_right Z.add 0 xs' < 0).
+      { lia. }
+
+      destruct H_xs'_case as [H_xs'_nonneg | H_xs'_neg].
+      * (* Subcase: fold_right Z.add 0 xs' >= 0 *)
+        (* Apply IH directly *)
+        assert (H_IH_applied: nonNegSum xs' >= fold_right Z.add 0 xs').
+        { apply IH. exact H_xs'_nonneg. }
+        lia.
+      * (* Subcase: fold_right Z.add 0 xs' < 0 *)
+        (* Since x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0, *)
+        (* we have x > -fold_right Z.add 0 xs' >= 0 *)
+        (* Also nonNegSum xs' >= 0 always *)
+        (* So x + nonNegSum xs' >= x + 0 = x > -fold_right Z.add 0 xs' *)
+        (* Therefore x + nonNegSum xs' > x + fold_right Z.add 0 xs' *)
+        assert (H_nonneg_xs': nonNegSum xs' >= 0).
+        {
+          induction xs' as [|y ys IH_inner].
+          - simpl. lia.
+          - simpl. unfold nonNegPlus.
+            destruct (Z.leb 0 (y + nonNegSum ys)) eqn:Heq_inner.
+            + apply Z.leb_le in Heq_inner. apply Z.ge_le_iff. exact Heq_inner.
+            + simpl. lia.
+        }
+        lia.
+
+    + (* Case: clamping occurs, x + nonNegSum xs' < 0, so result is 0 *)
+      apply Z.leb_gt in Heq.
+      (* We have: x + nonNegSum xs' < 0 (clamping condition) *)
+      (* and:     x + fold_right Z.add 0 xs' >= 0 (from hypothesis) *)
+      (* Goal:    0 >= x + fold_right Z.add 0 xs' *)
+
+      (* Strategy: show that clamping implies the sum must be exactly 0 *)
+      (* If sum > 0, then we get a contradiction; if sum = 0, then 0 >= 0 holds *)
+
+      (* Case analysis on whether the sum is exactly 0 or positive *)
+      assert (H_sum_eq_zero: x + fold_right Z.add 0 xs' = 0).
+      {
+        (* Prove by contradiction: assume x + fold_right Z.add 0 xs' > 0 *)
+        destruct (Z.compare_spec (x + fold_right Z.add 0 xs') 0) as [H_eq | H_lt | H_gt].
+        - (* x + fold_right Z.add 0 xs' = 0 is what we want *)
+          exact H_eq.
+        - (* x + fold_right Z.add 0 xs' < 0 contradicts H_sum_nonneg *)
+          exfalso.
+          (* H_sum_nonneg says fold_right Z.add 0 (x :: xs') >= 0 *)
+          (* But fold_right Z.add 0 (x :: xs') = x + fold_right Z.add 0 xs' *)
+          simpl in H_sum_nonneg.
+          lia.
+        - (* x + fold_right Z.add 0 xs' > 0 *)
+          (* This would mean 0 > x + fold_right Z.add 0 xs' > 0, impossible *)
+          exfalso.
+          (* We need 0 >= x + fold_right Z.add 0 xs' but x + fold_right Z.add 0 xs' > 0 *)
+          (* This is only consistent if we can show the goal 0 >= positive is impossible *)
+          (* But actually, we're trying to prove this goal, so let's approach differently *)
+
+          (* The key insight: if x + fold_right Z.add 0 xs' > 0, *)
+          (* then maybe clamping shouldn't occur in the first place *)
+          (* Let's check if we can derive a contradiction from the clamping condition *)
+
+          (* We have x + nonNegSum xs' < 0 and need to relate this to x + fold_right Z.add 0 xs' > 0 *)
+          (* The question is: can nonNegSum xs' be significantly less than fold_right Z.add 0 xs'? *)
+
+          admit. (* Complex case - proof requires deeper analysis of nonNegSum vs regular sum relationship *)
+      }
+      rewrite H_sum_eq_zero. lia.
 Admitted.
 
 (* Skip complex lemma for now *)
@@ -389,18 +466,32 @@ Proof.
     f_equal.
 
     (* Key step: establish correspondence between the operations *)
-    (* We need to show that when we map both sides appropriately, they become equal *)
+    (* LHS: fold_right Z.max 0 (map nonNegSum (inits xs)) *)
+    (* RHS: fold_right tropical_add NegInf (map (fold_right tropical_mul (Finite 0)) (inits (map Finite xs))) *)
 
-    (* The complete structural proof requires establishing deep correspondences
-       between nonNegSum and tropical operations. Since the necessary helper lemmas
-       about prefix correspondence are complex, we document the approach: *)
+    (* Strategy: show that these are structurally equivalent using our helper lemmas *)
 
-    (* Key correspondences established:
-       1. tropical_add (Finite a) (Finite b) = Finite (Z.max a b)
-       2. fold_right tropical_mul (Finite 0) (map Finite xs) = Finite (fold_right Z.add 0 xs)
-       3. Structure preservation through inits and map operations *)
+    (* First, establish that the mapped functions correspond *)
+    assert (H_map_corresp: forall ys : list Z,
+      In ys (inits xs) ->
+      nonNegSum ys >= 0 ->
+      Finite (nonNegSum ys) = fold_right tropical_mul (Finite 0) (map Finite ys)).
+    {
+      intros ys H_in H_nonneg_ys.
+      (* The correspondence requires showing Finite (nonNegSum ys) = fold_right tropical_mul (Finite 0) (map Finite ys) *)
+      (* This follows from our structural correspondence lemma *)
+      (* But the exact pattern matching requires more careful setup *)
 
-    admit. (* Complex correspondence proof - main algorithmic result established via case analysis *)
+      admit. (* Pattern matching issue - requires refinement of correspondence lemma application *)
+    }
+
+    (* The structural correspondence requires showing that fold_right operations preserve the relationship *)
+    (* This involves detailed analysis of how inits interacts with map operations *)
+
+    (* The complete proof would establish the full structural correspondence *)
+    (* using the tropical semiring properties and our helper lemmas *)
+
+    admit. (* Complex structural correspondence - requires systematic mapping preservation *)
 Admitted.
 (* Case 3: Mixed signs - use tropical Horner's rule connection *)
 Lemma maxsegsum_mixed_case : forall xs : list Z,
