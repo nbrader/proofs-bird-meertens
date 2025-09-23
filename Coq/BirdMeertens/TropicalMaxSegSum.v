@@ -83,7 +83,7 @@ Lemma maxsegsum_all_nonnegative : forall xs : list Z,
 Proof.
   intros xs H_nonneg.
   (* Use the existing proof strategy but leverage monotonicity for non-negative case *)
-  apply (equal_f nonneg_tropical_fold_right_returns_max xs).
+  apply (equal_f nonneg_tropical_fold_right_returns_max xs). (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
   (* The existing proof works regardless of the sign pattern *)
   (* but in the non-negative case, we have additional nice properties *)
 Qed.
@@ -703,6 +703,7 @@ Proof.
   (* Extract from Finite wrapper *)
   injection H_finite_eq. intro. exact H.
 Admitted.
+
 (* Case 3: Mixed signs - use tropical Horner's rule connection *)
 Lemma maxsegsum_mixed_case : forall xs : list Z,
   mixed_signs xs ->
@@ -725,7 +726,7 @@ Proof.
 
   (* Apply the existing proven theorem directly *)
   (* The tropical bridge connection is for theoretical interest, but not needed for the proof *)
-  apply (equal_f nonneg_tropical_fold_right_returns_max xs).
+  apply (equal_f nonneg_tropical_fold_right_returns_max xs). (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
 Qed.
 
 (* Main theorem: alternative proof of nonneg_tropical_fold_right_returns_max *)
