@@ -632,7 +632,54 @@ Proof.
 
   (* Final step: show that fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs)) *)
   assert (H_final: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs))).
-  admit. (* This requires showing that for each prefix, fold_right Z.add 0 = nonNegSum when appropriate *)
+  {
+    (* Strategy: show that map (fold_right Z.add 0) (inits xs) = map nonNegSum (inits xs) *)
+    (* This requires showing that for each prefix, fold_right Z.add 0 = nonNegSum when conditions are met *)
+
+    (* Key insight: we need to determine when fold_right Z.add 0 = nonNegSum *)
+    (* This happens when all prefix sums are non-negative *)
+
+    unfold nonNegMaximum.
+    f_equal.
+
+    (* Goal: map (fold_right Z.add 0) (inits xs) = map nonNegSum (inits xs) *)
+    (* This means: for each prefix in inits xs, fold_right Z.add 0 prefix = nonNegSum prefix *)
+
+    apply map_ext_in.
+    intros prefix H_in_inits.
+
+    (* We need to show: fold_right Z.add 0 prefix = nonNegSum prefix *)
+    (* This is true when all prefix sums of prefix are non-negative *)
+
+    (* Check if we can use our existing correspondence lemmas *)
+    (* We have simple_correspondence which says this holds when all elements are non-negative *)
+    (* and all partial sums are non-negative *)
+
+    (* For now, let's see if we can apply simple_correspondence conditions *)
+    destruct (classic (forall x, In x prefix -> x >= 0)) as [H_all_nonneg | H_not_all_nonneg].
+
+    - (* Case: all elements in prefix are non-negative *)
+      destruct (classic (forall n : nat, (n <= length prefix)%nat -> fold_right Z.add 0 (firstn n prefix) >= 0)) as [H_all_prefixes_nonneg | H_not_all_prefixes_nonneg].
+
+      + (* Case: all prefix sums are non-negative *)
+        symmetry.
+        apply simple_correspondence; assumption.
+
+      + (* Case: some prefix sum is negative, but all elements are non-negative *)
+        (* This is actually impossible if all elements are non-negative *)
+        exfalso.
+        apply H_not_all_prefixes_nonneg.
+        intros n H_n_le.
+        apply fold_right_add_nonneg.
+        intros x H_x_in_firstn.
+        apply H_all_nonneg.
+        apply (firstn_In _ _ _ _ H_x_in_firstn).
+
+    - (* Case: some element in prefix is negative *)
+      (* In this case, we need to analyze more carefully *)
+      (* For now, we'll need a more sophisticated analysis *)
+      admit. (* Complex case requiring detailed prefix analysis *)
+  }
 
   (* Combine all the steps *)
   (* From tropical Horner: LHS = RHS *)
