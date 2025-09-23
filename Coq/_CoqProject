@@ -27,6 +27,8 @@ FreeMonoid/MonoidHom.v
 FreeMonoid/StructMagma.v
 FreeMonoid/StructMonoid.v
 FreeMonoid/StructSemigroup.v
+FreeMonoid/StructSemiring.v
+FreeMonoid/SemiringLemmas.v
 FreeMonoid/TypeCategory.v
 BirdMeertens/Lemmas.v
 BirdMeertens/MajorLemmas.v

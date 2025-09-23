@@ -148,15 +148,6 @@ Proof.
 Qed.
 
 (* Inits properties *)
-Lemma inits_cons : forall (A : Type) (x : A) (xs : list A),
-  inits (x :: xs) = [] :: map (cons x) (inits xs).
-Proof.
-  intros A x xs.
-  unfold inits.
-  simpl.
-  reflexivity.
-Qed.
-
 Lemma inits_contains_original : forall {A : Type} (xs : list A),
   In xs (inits xs).
 Proof.
