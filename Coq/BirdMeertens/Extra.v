@@ -1375,3 +1375,13 @@ Proof.
   - simpl. rewrite Z.max_l; [reflexivity | rewrite Z.leb_le in H; assumption].
   - simpl. rewrite Z.max_r; [reflexivity | reflexivity].
 Qed.
+
+(* Helper lemma for distributivity of multiplication over fold_right addition - unused *)
+Lemma fold_right_mult_dist : forall (x : Z) (ys : list Z),
+  x * fold_right Zplus 0 ys = fold_right Zplus 0 (map (Zmult x) ys).
+Proof.
+  intros x ys.
+  induction ys as [| y ys' IH].
+  - simpl. ring.
+  - simpl. rewrite <- IH. ring.
+Qed.

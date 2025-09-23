@@ -556,3 +556,13 @@ Proof.
        fold_left Z.max sl_next u0 >= fold_left Z.max sl_next v_next
     *)
 Qed.
+
+(* Helper lemma for distributivity - used by horners_rule_right *)
+Lemma fold_right_map_mult_dist : forall (x : Z) (f : list Z -> Z) (lss : list (list Z)),
+  x * fold_right Zplus 0 (map f lss) = fold_right Zplus 0 (map (fun ls => x * f ls) lss).
+Proof.
+  intros x f lss.
+  induction lss as [| ls lss' IH].
+  - simpl. ring.
+  - simpl. rewrite <- IH. ring.
+Qed.

@@ -174,6 +174,53 @@ Qed.
    - nonneg_tropical_fold_left_returns_max
 *)
 
+Lemma horners_rule_right : fold_right (fun x y => Zplus (Zmult x y) 1) 1 = fold_right Zplus 0 ∘ map (fold_right Zmult 1) ∘ inits.
+Proof.
+  apply functional_extensionality.
+  intros xs.
+  unfold compose.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    (* Left side: fold_right (fun x y => x * y + 1) 1 (x :: xs') = x * fold_right (fun x y => x * y + 1) 1 xs' + 1 *)
+    change (fold_right (fun x y => Zplus (Zmult x y) 1) 1 (x :: xs')) with
+           (Zplus (Zmult x (fold_right (fun x y => Zplus (Zmult x y) 1) 1 xs')) 1).
+
+    (* Right side: work with inits (x :: xs') *)
+    rewrite inits_cons.
+
+    (* Expand map over the cons structure *)
+    change (map (fold_right Zmult 1) ([] :: map (cons x) (inits xs'))) with
+           (fold_right Zmult 1 [] :: map (fold_right Zmult 1) (map (cons x) (inits xs'))).
+
+    (* Simplify fold_right Zmult 1 [] = 1 *)
+    change (fold_right Zmult 1 []) with 1.
+
+    (* Simplify fold_right Zplus on the cons *)
+    change (fold_right Zplus 0 (1 :: map (fold_right Zmult 1) (map (cons x) (inits xs')))) with
+           (Zplus 1 (fold_right Zplus 0 (map (fold_right Zmult 1) (map (cons x) (inits xs'))))).
+
+    (* Apply map composition *)
+    rewrite map_map.
+    unfold compose.
+
+    (* Simplify fold_right Zmult 1 (x :: l) = x * fold_right Zmult 1 l *)
+    change (map (fun l : list Z => fold_right Zmult 1 (x :: l)) (inits xs')) with
+           (map (fun l : list Z => Zmult x (fold_right Zmult 1 l)) (inits xs')).
+
+    (* Apply distributivity *)
+    rewrite <- fold_right_map_mult_dist.
+
+    (* Apply inductive hypothesis *)
+    rewrite <- IH.
+
+    (* Final simplification *)
+    ring.
+Qed.
+(* Lemma generalised_horners_rule_left : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits. *)
+
 (* 13. nonneg_tropical_fold_right_returns_max - used in form5_eq_form6 *)
 Lemma nonneg_tropical_fold_right_returns_max : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
 Proof.
