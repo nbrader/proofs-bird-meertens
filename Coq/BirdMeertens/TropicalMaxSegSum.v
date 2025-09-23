@@ -714,20 +714,12 @@ Proof.
   (* In the mixed case, nonNegSum xs >= 0 by definition (nonNegSum always returns >= 0) *)
   (* This allows us to bridge to the tropical semiring framework *)
 
-  (* First establish that nonNegSum xs >= 0 *)
-  assert (H_nonneg: nonNegSum xs >= 0).
-  { (* nonNegSum always returns non-negative values by definition *)
-    induction xs as [|x xs' IH].
-    - simpl. lia.
-    - simpl. unfold nonNegPlus.
-      destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
-      + apply Z.leb_le in Heq. apply Z.ge_le_iff. exact Heq.
-      + simpl. lia.
-  }
+  (* Run tropical_insight.hs for insight into this. *)
+  
+  (* The idea is to prove this using tropical_horners_rule (proved in the library files) along
+     with thefact that the non-negative clamped functions are equal to their regular versions
+     when the result would have been non-negative anyway. *)
 
-  (* Apply the existing proven theorem directly *)
-  (* The tropical bridge connection is for theoretical interest, but not needed for the proof *)
-  (* apply (equal_f nonneg_tropical_fold_right_returns_max xs).*) (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
   admit.
 Admitted.
 

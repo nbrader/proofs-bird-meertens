@@ -78,76 +78,7 @@ The project proves equivalence through transformational forms:
 
 The project structure allows for cross-language validation of the formal Coq proofs against executable Haskell implementations.
 
-### TailsMonoid Framework
-**TailsMonoid.v** - Pure tails monoid structure:
-- `TailsResult`: Dependent pair type restricting to valid tails outputs
-- Complete monoid structure with proven laws (associativity, identity)
-- `mk_tails_result_is_homomorphism`: Establishes tails as monoid homomorphism
-- **Focused scope**: Contains only tails-specific monoid theory
-
-**Horner's Rule Application** (in Lemmas.v):
-- `HornerViaMonoids` section applies TailsMonoid to Horner's rule
-- `horner_left_part`: Implements `foldl (+) 0 ∘ map (foldl (*) 1)` pattern
-- **Key insight**: Horner's rule reducible to monoid homomorphism composition
-
-### Progress Made with Libraries
-- `MonoidConcat.v` provides `mconcat` operations relevant for fold proofs
-- Multiple monoid instances could help with `fold_scan_fusion`
-- Rich theoretical framework available for remaining fold-related proofs
-
-**Core Structural Challenge** (Strategically Bypassed):
-The complex `fold_right` definition of `tails` creates structural proof difficulties:
-
-```coq
-Definition tails {A : Type}: list A -> list (list A) := fold_right (fun x xsxss => match xsxss with
-  | [] => [[]] (* This case is impossible. *)
-  | xs :: xss => (x::xs) :: (xs::xss)
-end) [[]].
-```
-
-**Strategic Solution Applied:**
-Rather than proving the complex `tails_rec_equiv`, `form6` was redefined to use the simpler `tails_rec` directly:
-```coq
-Definition form6 : list Z -> Z := nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ tails_rec.
-
-Fixpoint tails_rec {A : Type} (xs : list A) : list (list A) :=
-  match xs with
-  | [] => [[]]
-  | x :: xs' => xs :: tails_rec xs'
-  end.
-```
-
-**Impact**: Bypassed complex structural induction requirements for the form6→form7 proof while maintaining both `tails` definitions for potential future use.
-
-### Semiring Structure Issues and Solutions
-**CRITICAL INSIGHT**: The project uses a tropical-like semiring with operations:
-- **Addition operation**: `Z.max` (with identity `0`)
-- **Multiplication operation**: `nonNegPlus` (non-negative addition, with identity `0`)
-
-**Root Cause of False Generalized Horner's Rule**:
-The original Wikipedia Bird-Meertens example uses the standard semiring (addition, multiplication) with identities (0, 1). However, this project attempts to use a variant of the tropical semiring with (max, nonNegPlus) but **incorrectly uses `0` as the identity for both operations**.
-
-**Issue**: For `nonNegPlus` operation, the identity should likely be different. In standard tropical semiring, multiplication corresponds to addition with identity `0`, but here `nonNegPlus` has different semantics that may require a different identity.
-
-**Important Update**: Computational verification has proven that **MaxSegSum_Equivalence IS TRUE**. The issue is not with the equivalence itself, but with the proof method. While the generalized Horner's rule is indeed false, `form5 = form6` can be proven through alternative means that don't depend on this false rule.
-
-### Tropical Semiring Horner's Rule Investigation
-
-**Current Research Status**: Investigating whether a corrected tropical semiring version of Horner's rule might be true, especially with non-negative input restrictions.
-
-**Tropical Horner Operation Defined**:
-```coq
-Definition horner_op_tropical (x y : Z) : Z := (x <#> y) <|> 1.
-```
-Where:
-- Original Horner: `(x * y + 1)`
-- Tropical version: `(x <#> y) <|> 1` (replacing `*` with `<#>`, `+` with `<|>`)
-
-**Key Insight**: The lemma definitions have been strategically updated to use `fold_right` consistently throughout the codebase, making them both mathematically correct and proven with complete proof strategies.
-
-### Tropical Semiring Proof Strategy for nonneg_tropical_fold_right_returns_max
-
-**CRITICAL INSIGHT**: The `nonNegPlus` operation creates a clamped tropical semiring due to its minimum-zero constraint. This breaks the pure semiring structure but enables a case-based proof strategy for Kadane's algorithm.
+### Tropical Semiring Proof Strategy for nonneg_tropical_fold_right_returns_max (and ultimately the form5 to form6 step)
 
 **Proof Strategy**:
 1. **Recognize non-semiring nature**: `nonNegPlus` with zero-clamping doesn't form a proper semiring, so direct application of generalized Horner's rule fails
@@ -157,6 +88,12 @@ Where:
    - **Mixed case**: Use tropical semiring Horner's rule where maximum subarray sum is guaranteed ≥ 0
 3. **Tropical semiring without clamping**: For the mixed case, prove the proper tropical semiring version where the identity constraints are satisfied
 4. **Bridge to clamped version**: Show that for inputs where the maximum is ≥ 0, the clamped and unclamped versions are equivalent
+
+**PLEASE NOTE**:
+- Run tropical_insight.hs for insight into this.
+- In the mixed case, nonNegSum xs >= 0 by definition (nonNegSum always returns >= 0)
+- This allows us to bridge to the tropical semiring framework
+- The idea is to prove this using tropical_horners_rule (proved in the library files) along with thefact that the non-negative clamped functions are equal to their regular versions when the result would have been non-negative anyway.
 
 **Implementation Plan**:
 - Prove `nonneg_tropical_fold_right_returns_max` directly using existing proof techniques (already proven)
