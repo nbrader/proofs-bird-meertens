@@ -57,15 +57,11 @@ Lemma nonNegSum_monotonic_nonneg : forall xs ys : list Z,
   nonNegSum xs <= nonNegSum ys.
 Proof.
   intros xs ys H_xs_nonneg H_ys_nonneg [zs H_app].
-
-  (* Simplify: since both are non-negative, we can use existing result *)
-  (* The key insight is that the existing nonneg_tropical_fold_right_returns_max
-     already handles this - each prefix sum is <= the whole sum *)
-
-  (* For now, use the fact that nonNegSum is prefix-sum-preserving *)
-  (* This follows from the properties of nonNegPlus on non-negative inputs *)
-  admit. (* This requires establishing that nonNegPlus behaves like + on nonneg inputs *)
-Admitted.
+  (* The all_nonnegative conditions aren't actually needed for this monotonicity property *)
+  (* We can apply the general nonNegSum_prefix_le lemma directly *)
+  apply nonNegSum_prefix_le.
+  exists zs. symmetry. exact H_app.
+Qed.
 
 (* Case 1: All non-negative - max subarray is entire array *)
 Lemma maxsegsum_all_nonnegative : forall xs : list Z,
