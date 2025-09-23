@@ -145,6 +145,24 @@ Where:
 
 **Key Insight**: The lemma definitions have been strategically updated to use `fold_right` consistently throughout the codebase, making them both mathematically correct and proven with complete proof strategies.
 
+### Tropical Semiring Proof Strategy for nonneg_tropical_fold_right_returns_max
+
+**CRITICAL INSIGHT**: The `nonNegPlus` operation creates a clamped tropical semiring due to its minimum-zero constraint. This breaks the pure semiring structure but enables a case-based proof strategy for Kadane's algorithm.
+
+**Proof Strategy**:
+1. **Recognize non-semiring nature**: `nonNegPlus` with zero-clamping doesn't form a proper semiring, so direct application of generalized Horner's rule fails
+2. **Case-based approach for Kadane's algorithm**:
+   - **All non-negative case**: Maximum subarray is the entire array (trivial)
+   - **All non-positive case**: Maximum subarray is the singleton of the largest element
+   - **Mixed case**: Use tropical semiring Horner's rule where maximum subarray sum is guaranteed ≥ 0
+3. **Tropical semiring without clamping**: For the mixed case, prove the proper tropical semiring version where the identity constraints are satisfied
+4. **Bridge to clamped version**: Show that for inputs where the maximum is ≥ 0, the clamped and unclamped versions are equivalent
+
+**Implementation Plan**:
+- Prove `nonneg_tropical_fold_right_returns_max` directly using existing proof techniques (already proven)
+- Create separate tropical semiring instance without zero-clamping for theoretical completeness
+- Document the case split strategy for applying this result in the main Kadane's algorithm proof
+
 ### Proof Development Strategy
 **CRITICAL**: When working on complex proofs, use computational verification at each step:
 1. **Write fresh Python scripts** to test each intermediate goal before attempting Coq proof
