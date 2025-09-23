@@ -175,14 +175,6 @@ Qed.
    - nonneg_tropical_fold_left_returns_max
 *)
 
-Lemma horners_rule_right : fold_right (fun x y => Zplus (Zmult x y) 1) 1 = fold_right Zplus 0 ∘ map (fold_right Zmult 1) ∘ inits.
-Proof.
-  (* This follows directly from the generalized Horner's rule with Z_Semiring *)
-  exact (generalised_horners_rule_right Z).
-Qed.
-
-(* The original horners_rule_right can be derived from the generalized version *)
-(* See FreeMonoid.SemiringLemmas.horners_rule_Z_from_general for the connection *)
 
 (* 13. nonneg_tropical_fold_right_returns_max - used in form5_eq_form6 *)
 Lemma nonneg_tropical_fold_right_returns_max : nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits.
