@@ -27,6 +27,24 @@ This is a Coq formalization project that translates a theorem from the Bird-Meer
 - Open the folder containing `.v` files directly in VSCode (not parent folders) for proper file resolution
 - May require submodule initialization after cloning: run "Submodule Update"
 
+### Git Submodule Management
+**CRITICAL**: When making changes to submodules (CoqUtilLib, FreeMonoid), follow this commit sequence:
+1. **First commit changes within the submodule directory**:
+   ```bash
+   cd Coq/CoqUtilLib  # or Coq/FreeMonoid
+   git add .
+   git commit -m "Your changes"
+   git push
+   ```
+2. **Then commit the submodule update in the main repository**:
+   ```bash
+   cd ../..  # Return to main repo root
+   git add Coq/CoqUtilLib  # or Coq/FreeMonoid
+   git commit -m "Update submodule with your changes"
+   git push
+   ```
+3. **NEVER commit submodule changes without first committing within the submodule** - this creates dangling references
+
 ### Python Analysis Tools
 **NOTE**: Use `python3` for all Python commands (not `python`)
 - `python3 Python/references.py` - Generates dependency graph in TGF format
