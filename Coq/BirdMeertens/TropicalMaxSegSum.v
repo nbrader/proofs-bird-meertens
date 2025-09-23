@@ -488,63 +488,130 @@ Proof.
     + apply Z.leb_gt in Heq. lia.
 Qed.
 
-(* Key insight: When maximum subarray sum >= 0, we can use tropical Horner's rule *)
-Lemma tropical_bridge : forall xs : list Z,
-  nonNegSum xs >= 0 ->
-  exists (exs : list ExtZ),
-    list_Z_to_ExtZ xs = exs /\
-    Finite (nonNegSum xs) = fold_right tropical_add NegInf (map (fold_right tropical_mul (Finite 0)) (inits exs)).
+(* Use tropical Horner's rule to prove the main correspondence *)
+Lemma apply_tropical_horners_rule : forall xs : list Z,
+  nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
 Proof.
-  intros xs H_nonneg_sum.
-  exists (list_Z_to_ExtZ xs).
-  split.
-  - reflexivity.
-  - (* Goal: Finite (nonNegSum xs) = fold_right tropical_add NegInf (map (fold_right tropical_mul (Finite 0)) (inits (map Finite xs))) *)
+  intro xs.
 
-    (* Use our established equivalence theorem *)
-    rewrite (equal_f nonneg_tropical_fold_right_returns_max xs).
+  (* The key insight: we need to show that nonNegSum corresponds to the LHS of Horner's rule *)
+  (* and that the RHS corresponds to nonNegMaximum (map nonNegSum (inits xs)) *)
 
-    (* Now show: Finite (nonNegMaximum (map nonNegSum (inits xs))) =
-                 fold_right tropical_add NegInf (map (fold_right tropical_mul (Finite 0)) (inits (map Finite xs))) *)
+  (* First, let's establish what the tropical Horner's rule gives us *)
+  assert (H_tropical := tropical_horners_rule).
+  unfold compose in H_tropical.
 
-    unfold nonNegMaximum, list_Z_to_ExtZ.
+  (* For ExtZ tropical semiring, we have:
+     fold_right (fun x y => (x ⊗ y) ⊕ 𝟏) 𝟏 =
+     fold_right tropical_add NegInf ∘ map (fold_right tropical_mul (Finite 0)) ∘ inits *)
+
+  (* Instantiate for our list converted to ExtZ *)
+  pose (exs := map Finite xs).
+  assert (H_tropical_inst := equal_f H_tropical exs).
+  unfold exs in H_tropical_inst.
+
+  (* The tropical Horner operation is: (x ⊗ y) ⊕ 𝟏 *)
+  (* For tropical semiring: tropical_mul x y `tropical_add` (Finite 0) *)
+  (* This is: Finite (unwrap x + unwrap y) `max` Finite 0 *)
+  (* Which equals: Finite (max 0 (unwrap x + unwrap y)) when x,y are Finite *)
+  (* This is exactly nonNegPlus! *)
+
+  (* So the LHS becomes: fold_right nonNegPlus 0 xs = nonNegSum xs *)
+
+  (* The RHS becomes: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
+  (* But we need: fold_right Z.max 0 (map nonNegSum (inits xs)) *)
+
+  (* The key step: show that for each prefix in inits xs, *)
+  (* fold_right Z.add 0 prefix = nonNegSum prefix *)
+  (* when the computation doesn't involve negative intermediate sums *)
+
+  (* Step 1: Show that nonNegSum corresponds to LHS of tropical Horner *)
+  (* fold_right (fun x y => (x ⊗ y) ⊕ 𝟏) 𝟏 (map Finite xs) *)
+
+  (* For tropical semiring with Finite values: *)
+  (* (Finite a) ⊗ (Finite b) = Finite (a + b) *)
+  (* (Finite a) ⊕ (Finite b) = Finite (Z.max a b) *)
+  (* (Finite a) ⊕ 𝟏 where 𝟏 = Finite 0 gives Finite (Z.max a 0) *)
+
+  (* So (x ⊗ y) ⊕ 𝟏 for Finite x, y becomes: *)
+  (* tropical_add (tropical_mul (Finite x) (Finite y)) (Finite 0) *)
+  (* = tropical_add (Finite (x + y)) (Finite 0) *)
+  (* = Finite (Z.max (x + y) 0) *)
+  (* = Finite (nonNegPlus x y) *)
+
+  assert (H_horner_op_equiv: forall x y : Z,
+    tropical_add (tropical_mul (Finite x) (Finite y)) (Finite 0) = Finite (nonNegPlus x y)).
+  {
+    intros x y.
+    unfold tropical_add, tropical_mul, nonNegPlus.
+    simpl.
+    destruct (Z.leb 0 (x + y)) eqn:Heq.
+    apply Z.leb_le in Heq.
+    rewrite Z.max_l; [reflexivity | assumption].
+    apply Z.leb_gt in Heq.
+    rewrite Z.max_r; [reflexivity | lia].
+  }
+
+  (* Step 2: Show the structural correspondence *)
+  (* LHS: fold_right (fun x y => (x ⊗ y) ⊕ 𝟏) 𝟏 (map Finite xs) *)
+  (*    = fold_right (fun x y => Finite (nonNegPlus (unwrap x) (unwrap y))) (Finite 0) (map Finite xs) *)
+  (*    = Finite (fold_right nonNegPlus 0 xs) *)
+  (*    = Finite (nonNegSum xs) *)
+
+  (* RHS: fold_right tropical_add NegInf (map (fold_right tropical_mul (Finite 0)) (inits (map Finite xs))) *)
+
+  (* Step 3: Show that RHS equals Finite (nonNegMaximum (map nonNegSum (inits xs))) *)
+  (* This requires showing that each mapped term corresponds properly *)
+
+  (* Step 2: Apply tropical Horner's rule directly *)
+  (* We have: fold_right (fun x y => (x ⊗ y) ⊕ 𝟏) 𝟏 = fold_right add_op add_zero ∘ map (fold_right mul_op mul_one) ∘ inits *)
+
+  (* Instantiate H_tropical_inst for map Finite xs *)
+  (* H_tropical_inst: fold_right (fun x y => x ⊗ y ⊕ mul_one) mul_one (map Finite xs) =
+                      fold_right add_op add_zero (map (fold_right mul_op mul_one) (inits (map Finite xs))) *)
+
+  (* LHS = fold_right (fun x y => tropical_add (tropical_mul x y) (Finite 0)) (Finite 0) (map Finite xs) *)
+
+  (* Now we need to show that this equals nonNegSum xs by proving the operations correspond *)
+
+  (* Key step: show fold_right of the tropical Horner operation equals nonNegSum *)
+  (* The LHS of H_tropical_inst is exactly what we want: *)
+  (* fold_right (fun x y => StructSemiring.add_op (StructSemiring.mul_op x y) StructSemiring.mul_one) StructSemiring.mul_one (map Finite xs) *)
+  (* We need to show this equals Finite (nonNegSum xs) *)
+
+  assert (H_lhs_eq: fold_right (fun x y => StructSemiring.add_op (StructSemiring.mul_op x y) StructSemiring.mul_one) StructSemiring.mul_one (map Finite xs) = Finite (nonNegSum xs)).
+  admit. (* This should follow from the correspondence between StructSemiring operations and nonNegPlus *)
+
+  (* RHS: use the correspondence between tropical operations and Z operations *)
+  assert (H_rhs_eq: fold_right StructSemiring.add_op StructSemiring.add_zero (map (fold_right StructSemiring.mul_op StructSemiring.mul_one) (inits (map Finite xs))) =
+                    Finite (fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)))).
+  admit. (* This should follow from correspondence between StructSemiring operations and Z operations *)
+
+  (* Final step: show that fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs)) *)
+  assert (H_final: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs))).
+  admit. (* This requires showing that for each prefix, fold_right Z.add 0 = nonNegSum when appropriate *)
+
+  (* Combine all the steps *)
+  (* From tropical Horner: LHS = RHS *)
+  (* From H_lhs_eq: LHS = Finite (nonNegSum xs) *)
+  (* From H_rhs_eq: RHS = Finite (fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs))) *)
+  (* From H_final: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs)) *)
+
+  (* We need to show: nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)) *)
+  (* Chain of equalities through Finite wrapper: *)
+  (* Finite (nonNegSum xs) = Finite (nonNegMaximum (map nonNegSum (inits xs))) *)
+
+  assert (H_finite_eq: Finite (nonNegSum xs) = Finite (nonNegMaximum (map nonNegSum (inits xs)))).
+  {
+    rewrite <- H_lhs_eq.
+    rewrite H_tropical_inst.
+    rewrite H_rhs_eq.
     f_equal.
+    exact H_final.
+  }
 
-    (* Key step: establish correspondence between the operations *)
-    (* LHS: fold_right Z.max 0 (map nonNegSum (inits xs)) *)
-    (* RHS: fold_right tropical_add NegInf (map (fold_right tropical_mul (Finite 0)) (inits (map Finite xs))) *)
-
-    (* Strategy: show that these are structurally equivalent using our helper lemmas *)
-
-    (* First, establish that the mapped functions correspond *)
-    assert (H_map_corresp: forall ys : list Z,
-      In ys (inits xs) ->
-      nonNegSum ys >= 0 ->
-      Finite (nonNegSum ys) = fold_right tropical_mul (Finite 0) (map Finite ys)).
-    {
-      intros ys H_in H_nonneg_ys.
-      (* Use the structural correspondence lemma and prefix correspondence *)
-      (* The rewrite pattern needs to match exactly - admit for now *)
-
-      (* Key insight: if ys is a prefix with all its prefixes non-negative, *)
-      (* then nonNegSum ys = fold_right Z.add 0 ys *)
-
-      (* We need to show: nonNegSum ys = fold_right Z.add 0 ys *)
-      (* This follows from prefix_sum_correspondence if all prefixes of ys are non-negative *)
-
-      (* For prefixes in inits xs where nonNegSum xs >= 0, we often have this property *)
-      (* But establishing this rigorously requires analyzing the prefix structure *)
-
-      admit. (* Requires showing all prefixes of ys are non-negative - complex prefix analysis *)
-    }
-
-    (* The structural correspondence requires showing that fold_right operations preserve the relationship *)
-    (* This involves detailed analysis of how inits interacts with map operations *)
-
-    (* The complete proof would establish the full structural correspondence *)
-    (* using the tropical semiring properties and our helper lemmas *)
-
-    admit. (* Complex structural correspondence - requires systematic mapping preservation *)
+  (* Extract from Finite wrapper *)
+  injection H_finite_eq. intro. exact H.
 Admitted.
 (* Case 3: Mixed signs - use tropical Horner's rule connection *)
 Lemma maxsegsum_mixed_case : forall xs : list Z,
