@@ -83,10 +83,11 @@ Lemma maxsegsum_all_nonnegative : forall xs : list Z,
 Proof.
   intros xs H_nonneg.
   (* Use the existing proof strategy but leverage monotonicity for non-negative case *)
-  apply (equal_f nonneg_tropical_fold_right_returns_max xs). (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
+  (* apply (equal_f nonneg_tropical_fold_right_returns_max xs).*) (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
   (* The existing proof works regardless of the sign pattern *)
   (* but in the non-negative case, we have additional nice properties *)
-Qed.
+  admit.
+Admitted.
 
 (* Helper: nonNegSum on all-nonpositive lists is 0 *)
 Lemma nonNegSum_all_nonpositive_is_zero : forall xs : list Z,
@@ -726,8 +727,9 @@ Proof.
 
   (* Apply the existing proven theorem directly *)
   (* The tropical bridge connection is for theoretical interest, but not needed for the proof *)
-  apply (equal_f nonneg_tropical_fold_right_returns_max xs). (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
-Qed.
+  (* apply (equal_f nonneg_tropical_fold_right_returns_max xs).*) (* <--- THIS DEFIES THE POINT OF THIS FILE WHICH IS SUPPOSED TO BE AN ALTERNATIVE PROOF TO THIS. *)
+  admit.
+Admitted.
 
 (* Main theorem: alternative proof of nonneg_tropical_fold_right_returns_max *)
 Theorem maxsegsum_alternative_proof :
