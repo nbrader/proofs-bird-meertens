@@ -579,13 +579,56 @@ Proof.
   (* fold_right (fun x y => StructSemiring.add_op (StructSemiring.mul_op x y) StructSemiring.mul_one) StructSemiring.mul_one (map Finite xs) *)
   (* We need to show this equals Finite (nonNegSum xs) *)
 
+  (* Let's prove this correspondence as a separate lemma outside the main proof context *)
+  assert (H_struct_nonneg_correspondence: forall ys : list Z,
+    fold_right (fun x y => StructSemiring.add_op (StructSemiring.mul_op x y) StructSemiring.mul_one) StructSemiring.mul_one (map Finite ys) = Finite (nonNegSum ys)).
+  {
+    intro ys.
+    induction ys as [|y ys' IH].
+    - simpl. unfold StructSemiring.mul_one. reflexivity.
+    - simpl fold_right at 1. simpl map. simpl nonNegSum.
+
+      (* The goal should be: *)
+      (* StructSemiring.add_op (StructSemiring.mul_op (Finite y) (fold_right ... (map Finite ys'))) StructSemiring.mul_one = Finite (nonNegPlus y (nonNegSum ys')) *)
+
+      (* First convert all StructSemiring operations to tropical operations *)
+      unfold StructSemiring.add_op, StructSemiring.mul_op, StructSemiring.mul_one.
+
+      (* Now goal is: tropical_add (tropical_mul (Finite y) (fold_right ... (map Finite ys'))) (Finite 0) = Finite (nonNegPlus y (nonNegSum ys')) *)
+
+      (* We need to apply IH to the fold_right part, but first convert it back to StructSemiring temporarily *)
+
+      (* Let's establish what the tail computes to first *)
+      assert (H_tail_eq: fold_right (fun x y => tropical_add (tropical_mul x y) (Finite 0)) (Finite 0) (map Finite ys') = Finite (nonNegSum ys')).
+      {
+        (* Convert IH back to tropical form *)
+        assert (H_ys'_struct: fold_right (fun x y => StructSemiring.add_op (StructSemiring.mul_op x y) StructSemiring.mul_one) StructSemiring.mul_one (map Finite ys') = Finite (nonNegSum ys')).
+        { apply IH. }
+
+        (* Convert StructSemiring to tropical in this result *)
+        unfold StructSemiring.add_op, StructSemiring.mul_op, StructSemiring.mul_one in H_ys'_struct.
+        exact H_ys'_struct.
+      }
+
+      (* Now use this to rewrite the goal *)
+      rewrite H_tail_eq.
+
+      (* Goal: tropical_add (tropical_mul (Finite y) (Finite (nonNegSum ys'))) (Finite 0) = Finite (nonNegPlus y (nonNegSum ys')) *)
+      apply H_horner_op_equiv.
+  }
+
   assert (H_lhs_eq: fold_right (fun x y => StructSemiring.add_op (StructSemiring.mul_op x y) StructSemiring.mul_one) StructSemiring.mul_one (map Finite xs) = Finite (nonNegSum xs)).
-  admit. (* This should follow from the correspondence between StructSemiring operations and nonNegPlus *)
+  {
+    apply H_struct_nonneg_correspondence.
+  }
 
   (* RHS: use the correspondence between tropical operations and Z operations *)
   assert (H_rhs_eq: fold_right StructSemiring.add_op StructSemiring.add_zero (map (fold_right StructSemiring.mul_op StructSemiring.mul_one) (inits (map Finite xs))) =
                     Finite (fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)))).
-  admit. (* This should follow from correspondence between StructSemiring operations and Z operations *)
+  (* This requires establishing correspondence between tropical operations and Z operations *)
+  (* Key insights: StructSemiring.add_op = tropical_add (max), StructSemiring.mul_op = tropical_mul (plus) *)
+  (* And inits (map Finite xs) should correspond to map (map Finite) (inits xs) *)
+  admit.
 
   (* Final step: show that fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs)) *)
   assert (H_final: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) = nonNegMaximum (map nonNegSum (inits xs))).
