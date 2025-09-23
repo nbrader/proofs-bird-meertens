@@ -45,8 +45,14 @@ Lemma nonNegSum_monotonic_nonneg : forall xs ys : list Z,
   nonNegSum xs <= nonNegSum ys.
 Proof.
   intros xs ys H_xs_nonneg H_ys_nonneg [zs H_app].
-  (* This proof requires careful handling of nonNegPlus properties *)
-  admit.
+
+  (* Simplify: since both are non-negative, we can use existing result *)
+  (* The key insight is that the existing nonneg_tropical_fold_right_returns_max
+     already handles this - each prefix sum is <= the whole sum *)
+
+  (* For now, use the fact that nonNegSum is prefix-sum-preserving *)
+  (* This follows from the properties of nonNegPlus on non-negative inputs *)
+  admit. (* This requires establishing that nonNegPlus behaves like + on nonneg inputs *)
 Admitted.
 
 (* Case 1: All non-negative - max subarray is entire array *)
@@ -61,6 +67,37 @@ Proof.
   (* but in the non-negative case, we have additional nice properties *)
 Qed.
 
+(* Helper: nonNegSum on all-nonpositive lists is 0 *)
+Lemma nonNegSum_all_nonpositive_is_zero : forall xs : list Z,
+  all_nonpositive xs ->
+  nonNegSum xs = 0.
+Proof.
+  intros xs H_nonpos.
+  induction xs as [|x xs' IH].
+  - (* Base case: empty list *)
+    simpl. reflexivity.
+  - (* Inductive case: x :: xs' *)
+    simpl. unfold nonNegPlus.
+    destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
+    + (* Case: x + nonNegSum xs' >= 0 *)
+      (* This contradicts our assumption that all elements are non-positive *)
+      apply Z.leb_le in Heq.
+      (* We know x <= 0 from H_nonpos *)
+      assert (Hx_nonpos: x <= 0).
+      { apply H_nonpos. left. reflexivity. }
+      (* We know nonNegSum xs' = 0 by IH *)
+      assert (Hxs'_zero: nonNegSum xs' = 0).
+      { apply IH. intros y Hy. apply H_nonpos. right. exact Hy. }
+      rewrite Hxs'_zero in Heq.
+      rewrite Z.add_0_r in Heq.
+      (* So we have x >= 0 and x <= 0, which means x = 0 *)
+      assert (Hx_zero: x = 0). { lia. }
+      rewrite Hx_zero, Hxs'_zero. simpl. reflexivity.
+    + (* Case: x + nonNegSum xs' < 0 *)
+      (* nonNegPlus returns 0 in this case *)
+      reflexivity.
+Qed.
+
 (* Case 2: All non-positive - max subarray is singleton of largest element *)
 Lemma maxsegsum_all_nonpositive : forall xs : list Z,
   all_nonpositive xs ->
@@ -68,9 +105,60 @@ Lemma maxsegsum_all_nonpositive : forall xs : list Z,
 Proof.
   intros xs H_nonpos.
   (* When all elements are non-positive, nonNegSum clamps to 0 *)
-  (* except for singletons of the largest (least negative) element *)
-  admit. (* TODO: Prove using properties of nonNegSum on non-positive inputs *)
-Admitted.
+  (* Both sides should equal 0 *)
+
+  (* First, show that nonNegSum xs = 0 *)
+  rewrite (nonNegSum_all_nonpositive_is_zero xs H_nonpos).
+
+  (* Now show that nonNegMaximum (map nonNegSum (inits xs)) = 0 *)
+  (* All elements in (map nonNegSum (inits xs)) are 0 *)
+  assert (H_all_zero: forall y, In y (map nonNegSum (inits xs)) -> y = 0).
+  {
+    intros y Hy.
+    rewrite in_map_iff in Hy.
+    destruct Hy as [prefix [H_eq H_in]].
+    rewrite <- H_eq.
+    apply nonNegSum_all_nonpositive_is_zero.
+    (* Show that prefix is all non-positive *)
+    intros z Hz.
+    (* z is in prefix, and prefix is a prefix of xs *)
+    destruct (inits_are_prefixes Z xs prefix H_in) as [suffix H_app].
+    apply H_nonpos.
+    rewrite <- H_app.
+    apply in_or_app. left. exact Hz.
+  }
+
+  (* nonNegMaximum of all zeros is 0 *)
+  assert (H_max_zero: nonNegMaximum (map nonNegSum (inits xs)) = 0).
+  {
+    (* We use the fact that all elements are 0 *)
+    (* and the empty list is always in inits, so we have at least one 0 *)
+    assert (H_empty_in: In [] (inits xs)).
+    {
+      (* inits always contains the empty list *)
+      induction xs as [|x xs' IH].
+      - (* Base case: inits [] = [[]] *)
+        simpl. left. reflexivity.
+      - (* Inductive case: inits (x :: xs') = [] :: map (cons x) (inits xs') *)
+        rewrite inits_cons. left. reflexivity.
+    }
+    assert (H_zero_in: In 0 (map nonNegSum (inits xs))).
+    {
+      rewrite in_map_iff.
+      exists [].
+      split.
+      - simpl. reflexivity.
+      - exact H_empty_in.
+    }
+    (* Now use the fact that 0 is the maximum when all elements are <= 0 *)
+    unfold nonNegMaximum.
+    apply fold_right_max_returns_max with (m := 0).
+    - lia.
+    - intros y Hy. rewrite (H_all_zero y Hy). lia.
+    - exact H_zero_in.
+  }
+  symmetry. exact H_max_zero.
+Qed.
 
 (* Bridge between Z operations and ExtZ tropical semiring *)
 Definition Z_to_ExtZ (x : Z) : ExtZ :=
