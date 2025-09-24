@@ -535,6 +535,22 @@ Proof.
     + exact H_m.
 Qed.
 
+(* Helper lemma: nonNegPlus equals Z.max regardless of argument order *)
+Lemma nonNegPlus_max_equiv : forall x y : Z,
+  nonNegPlus x y = Z.max (x + y) 0.
+Proof.
+  intros x y.
+  unfold nonNegPlus.
+  (* Case analysis on whether 0 <= x + y *)
+  destruct (Z.leb_spec 0 (x + y)) as [H | H].
+  - (* Case: 0 <= x + y *)
+    (* nonNegPlus gives x + y, Z.max gives max of x + y and 0 = x + y *)
+    rewrite Z.max_l; [reflexivity | exact H].
+  - (* Case: x + y < 0 *)
+    (* nonNegPlus gives 0, Z.max gives max of x + y and 0 = 0 *)
+    rewrite Z.max_r; [reflexivity | lia].
+Qed.
+
 (* Helper lemma: Left-side correspondence between nonNegPlus and tropical operations *)
 Lemma left_side_correspondence : forall xs : list Z,
   forall n, fold_right (fun x y => (x ⊗ y) ⊕ 𝟏) 𝟏 (map Finite xs) = Finite n ->
@@ -572,12 +588,12 @@ Proof.
       injection H_eq as H_n.
       (* H_n : n = Z.max (x + m) 0 *)
       (* Goal: nonNegPlus x m = n *)
-      unfold nonNegPlus.
-      (* This correspondence is verified computationally *)
-      (* The tropical operations implement exactly the nonNegPlus algorithm *)
-      admit. (* Computational correspondence - complex notation issues *)
+      rewrite nonNegPlus_max_equiv.
+      (* Now we have: Z.max (x + m) 0 = n *)
+      (* And H_n gives us: x + m <|> 0 = n *)
+      exact H_n.
     + exact H_m.
-Admitted.
+Qed.
 
 (* Case 3: Mixed signs - use tropical Horner's rule connection *)
 Lemma maxsegsum_mixed_case : forall xs : list Z,
