@@ -508,65 +508,180 @@ Lemma maxsegsum_mixed_case : forall xs : list Z,
   nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
 Proof.
   intros xs H_mixed.
-  (* CLAUDE.md strategy: Use tropical semiring approach for mixed case *)
 
-  (* Key insight: In mixed case, nonNegSum xs >= 0 by definition (nonNegSum always returns >= 0) *)
-  (* This allows us to bridge to the tropical semiring framework *)
+  (* First, let's unfold the definitions to see what we're actually proving *)
+  unfold nonNegSum, nonNegMaximum.
 
-  (* Strategy from CLAUDE.md:
-     1. Recognize that nonNegPlus with zero-clamping doesn't form proper semiring
-     2. For mixed case: use tropical semiring Horner's rule where maximum subarray sum is guaranteed >= 0
-     3. Bridge to clamped version: show clamped and unclamped versions equivalent when result >= 0
-  *)
+  (* Goal becomes:
+     fold_right nonNegPlus 0 xs = fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) *)
 
-  (* Apply tropical_horners_rule from the library *)
+  (* Now apply tropical_horners_rule *)
   assert (H_tropical := tropical_horners_rule).
   unfold compose in H_tropical.
 
-  (* The challenge: bridge between tropical operations (Z.max/+) and clamped operations (nonNegSum/nonNegMaximum) *)
-  (* Key insight: since nonNegSum xs >= 0, the maximum subarray sum >= 0 *)
-  (* Therefore, where regular operations would give >= 0, clamped operations are equivalent *)
+  (* tropical_horners_rule states:
+     fold_right (fun x y => (x ⊗ y) ⊕ 𝟏) 𝟏 = fold_right ⊕ 𝟎 ∘ map (fold_right ⊗ 𝟏) ∘ inits
 
-  (* For now, use the insight that this correspondence holds in the mixed case *)
-  (* The detailed tropical semiring proof requires showing the correspondence between: *)
-  (* - tropical_add ↔ Z.max *)
-  (* - tropical_mul ↔ Z.add *)
-  (* - Finite operations ↔ nonNeg operations when results are non-negative *)
+     With tropical semiring: ⊗ = +, ⊕ = max, 𝟏 = 0, 𝟎 = -∞ (but we use 0 for finite values)
 
-  (* Alternative proof: Use the fact that nonNegSum implements Kadane's algorithm *)
-  (* In the mixed case, we'll show that nonNegSum xs gives the global maximum subarray sum *)
-  (* and that this equals the maximum of all prefix maximum subarray sums *)
+     This gives us:
+     fold_right (fun x y => max (x + y) 0) 0 = fold_right max 0 ∘ map (fold_right + 0) ∘ inits
 
-  (* Key insight: nonNegSum xs >= 0 always, and in mixed case, *)
-  (* the maximum subarray sum is >= 0 (otherwise it would be all non-positive) *)
+     But fold_right (fun x y => max (x + y) 0) 0 = fold_right nonNegPlus 0
+     And fold_right + 0 on non-negative results = fold_right nonNegPlus 0 when result >= 0
+  *)
 
-  (* Step 1: Show nonNegSum xs is in map nonNegSum (inits xs) *)
-  assert (H_in: In (nonNegSum xs) (map nonNegSum (inits xs))).
+  (* Key insight: The correspondence is almost exact! *)
+  (* tropical_horners_rule gives us:
+     fold_right nonNegPlus 0 = fold_right max 0 ∘ map (fold_right + 0) ∘ inits
+
+     But we need:
+     fold_right nonNegPlus 0 = fold_right max 0 ∘ map (fold_right nonNegPlus 0) ∘ inits
+
+     The difference is: fold_right + 0 vs fold_right nonNegPlus 0 inside the map
+  *)
+
+  (* Bridge: In mixed case, for prefixes whose sum will contribute to the maximum,
+     fold_right + 0 = fold_right nonNegPlus 0 because the final result is >= 0 *)
+
+  (* Step 1: Apply tropical_horners_rule to get the unclamped version *)
+  assert (H_tropical_applied: fold_right nonNegPlus 0 xs = fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs))).
   {
-    apply in_map.
-    (* xs is in inits xs - use the existing structure directly *)
-    clear H_mixed H_tropical. (* Clear context that interferes with induction *)
-    induction xs as [|x xs' IH].
-    - simpl. left. reflexivity.
-    - simpl. right. apply in_map. exact IH.
+    (* Direct application of tropical semiring insight *)
+    (* The key insight is that nonNegPlus operations correspond to tropical semiring operations *)
+    (* where ⊕ = max and ⊗ = + *)
+
+    (* We use the fact that tropical_horners_rule gives us:
+       fold_right (λx y. (x ⊗ y) ⊕ 1) 1 = fold_right ⊕ 0 ∘ map (fold_right ⊗ 1) ∘ inits
+
+       In our context:
+       - ⊕ = Z.max (tropical addition)
+       - ⊗ = Z.add (tropical multiplication)
+       - 1 (multiplicative identity) = 0
+       - 0 (additive identity) = negative infinity, but we use 0 for finite computations
+       - (x ⊗ y) ⊕ 1 = max(x + y, 0) = nonNegPlus x y
+    *)
+
+    (* Apply tropical_horners_rule directly *)
+    assert (H_rule := tropical_horners_rule).
+    unfold compose in H_rule.
+
+    (* We need some way of saying something like the following:
+    
+    assert (fold_right nonNegPlus 0 xs = fold_right
+    (fun x y : ExtZ => StructSemiring.add_op (StructSemiring.mul_op x y)
+    StructSemiring.mul_one) StructSemiring.mul_one).
+
+    unfortunately, this doesn't type-check but it's almost correct in that there's a natural injection of the integers into the extended integers.  
+    *)
+    
+    (* The rule gives us the exact correspondence we need *)
+    (* tropical_horners_rule states the equality for the tropical semiring *)
+    (* We need to instantiate it with our specific list xs and show the correspondence *)
+    admit. (* Direct application of tropical_horners_rule with proper interpretation *)
   }
 
-  (* Step 2: Show nonNegSum xs is the maximum *)
-  assert (H_max: forall y, In y (map nonNegSum (inits xs)) -> y <= nonNegSum xs).
+  (* Step 2: Show map (fold_right Z.add 0) (inits xs) = map (fold_right nonNegPlus 0) (inits xs) *)
+  (*         where it matters for the maximum *)
+  assert (H_map_equiv: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) =
+                       fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs))).
   {
-    (* This is the key insight: nonNegSum xs computes the global maximum subarray sum *)
-    (* Each prefix gives a suboptimal or equal result *)
-    (* This follows from Kadane's algorithm correctness *)
-    admit. (* Core insight: nonNegSum implements optimal subarray algorithm *)
+    (* Key insight: The maximum is achieved by some prefix with non-negative sum *)
+    (* For such prefixes, fold_right Z.add 0 = fold_right nonNegPlus 0 *)
+    (* For prefixes with negative sums, they don't affect the maximum anyway *)
+
+    (* Strategy: Show that max doesn't change if we replace negative values with 0 *)
+    assert (H_max_preserves_nonneg: forall zs : list Z,
+      fold_right Z.max 0 zs = fold_right Z.max 0 (map (fun z => Z.max 0 z) zs)).
+    {
+      (* This follows from the properties of max - negative values don't affect the maximum *)
+      admit. (* Complex lemma about max preservation - can be proven separately *)
+    }
+
+    (* Apply this to our case *)
+    rewrite H_max_preserves_nonneg.
+
+    (* Now show that map (Z.max 0) (map (fold_right Z.add 0) (inits xs)) =
+                    map (fold_right nonNegPlus 0) (inits xs) *)
+    (* This is map (λx. Z.max 0 x) (map (fold_right Z.add 0) (inits xs)) =
+                map (fold_right nonNegPlus 0) (inits xs) *)
+    (* Which is map (λprefix. Z.max 0 (fold_right Z.add 0 prefix)) (inits xs) =
+                map (fold_right nonNegPlus 0) (inits xs) *)
+    rewrite <- map_map.
+    admit.
+    (* apply map_ext.
+    intro prefix.
+
+    (* For each prefix, show Z.max 0 (fold_right Z.add 0 prefix) = fold_right nonNegPlus 0 prefix *)
+    assert (H_prefix_equiv: Z.max 0 (fold_right Z.add 0 prefix) = fold_right nonNegPlus 0 prefix).
+    {
+      (* This follows from the definition of nonNegPlus *)
+      induction prefix as [|x prefix' IH].
+      - simpl. rewrite Z.max_l by lia. reflexivity.
+      - simpl. unfold nonNegPlus.
+        destruct (Z.leb 0 (x + fold_right nonNegPlus 0 prefix')) eqn:Heq.
+        + (* Case: x + fold_right nonNegPlus 0 prefix' >= 0 *)
+          apply Z.leb_le in Heq.
+          (* We need to show: Z.max 0 (x + fold_right Z.add 0 prefix') = x + fold_right nonNegPlus 0 prefix' *)
+
+          (* Key insight: if x + nonNegSum prefix' >= 0, then we can relate to unclamped version *)
+          (* Since nonNegSum prefix' >= 0, if x + nonNegSum prefix' >= 0, then we likely have *)
+          (* a case where the prefix contributes positively *)
+
+          assert (H_nonneg_ge_sum: fold_right nonNegPlus 0 prefix' >= fold_right Z.add 0 prefix').
+          {
+            (* This follows from nonNegSum always being non-negative and >= regular sum when sum >= 0 *)
+            destruct (Z.le_dec 0 (fold_right Z.add 0 prefix')) as [H_prefix_nonneg | H_prefix_neg].
+            - (* fold_right Z.add 0 prefix' >= 0 *)
+              apply nonNegSum_ge_sum_when_sum_nonneg. exact H_prefix_nonneg.
+            - (* fold_right Z.add 0 prefix' < 0 *)
+              (* nonNegPlus always >= 0, so certainly >= negative sum *)
+              assert (H_nonneg_pos: fold_right nonNegPlus 0 prefix' >= 0).
+              { apply nonNegSum_nonneg. }
+              lia.
+          }
+
+          (* Now we can show x + nonNegSum prefix' >= 0 implies x + sum prefix' >= 0 for our case *)
+          (* Since x + nonNegSum >= 0 and nonNegSum >= sum, if x + sum < 0, then x < -sum <= -nonNegSum *)
+          (* This would contradict x + nonNegSum >= 0 *)
+          assert (H_unclamped_nonneg: x + fold_right Z.add 0 prefix' >= 0).
+          {
+            destruct (Z.le_dec 0 (x + fold_right Z.add 0 prefix')) as [H_ok | H_neg].
+            - exact H_ok.
+            - (* x + fold_right Z.add 0 prefix' < 0 *)
+              exfalso.
+              (* We have x + fold_right nonNegPlus 0 prefix' >= 0 from Heq *)
+              (* And fold_right nonNegPlus 0 prefix' >= fold_right Z.add 0 prefix' from H_nonneg_ge_sum *)
+              (* So x + fold_right Z.add 0 prefix' <= x + fold_right nonNegPlus 0 prefix' >= 0 *)
+              lia.
+          }
+
+          rewrite Z.max_r by exact H_unclamped_nonneg.
+          reflexivity.
+
+        + (* Case: x + fold_right nonNegPlus 0 prefix' < 0, so result is 0 *)
+          apply Z.leb_gt in Heq.
+          (* Show Z.max 0 (x + fold_right Z.add 0 prefix') = 0 *)
+          rewrite Z.max_l.
+          * reflexivity.
+          * (* Show x + fold_right Z.add 0 prefix' <= 0 *)
+            (* Since x + nonNegSum prefix' < 0 and nonNegSum >= sum, we have x + sum <= x + nonNegSum < 0 *)
+            assert (H_nonneg_ge_sum: fold_right nonNegPlus 0 prefix' >= fold_right Z.add 0 prefix').
+            {
+              destruct (Z.le_dec 0 (fold_right Z.add 0 prefix')) as [H_prefix_nonneg | H_prefix_neg].
+              - apply nonNegSum_ge_sum_when_sum_nonneg. exact H_prefix_nonneg.
+              - assert (H_nonneg_pos: fold_right nonNegPlus 0 prefix' >= 0).
+                { apply nonNegSum_nonneg. }
+                lia.
+            }
+            lia.
+    }
+    exact H_prefix_equiv. *)
   }
 
-  (* Apply characterization of nonNegMaximum *)
-  unfold nonNegMaximum.
-  symmetry.
-  apply fold_right_max_returns_max with (m := nonNegSum xs).
-  - apply nonNegSum_nonneg.
-  - exact H_max.
-  - exact H_in.
+  (* Combine the steps *)
+  rewrite H_tropical_applied.
+  exact H_map_equiv.
 Admitted.
 
 (* Main theorem: alternative proof of nonneg_tropical_fold_right_returns_max *)
