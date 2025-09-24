@@ -43,6 +43,16 @@ Definition maxSoFarAndPreviousSum_dual : (Z * Z) -> Z -> (Z * Z) := fun uv x => 
   | (u, v) => let w := (v <#> x) in (u <|> w, w)
 end.
 
+(* Case classification predicates *)
+Definition all_nonnegative (xs : list Z) : Prop :=
+  forall x, In x xs -> x >= 0.
+
+Definition all_nonpositive (xs : list Z) : Prop :=
+  forall x, In x xs -> x <= 0.
+
+Definition mixed_signs (xs : list Z) : Prop :=
+  ~(all_nonnegative xs) /\ ~(all_nonpositive xs).
+
 
 (* ===== PROPERTIES ===== *)
 Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
@@ -561,4 +571,14 @@ Proof.
     (* Goal: x * (f ls + fold_right Z.add 0 (map f lss')) = x * f ls + fold_right Z.add 0 (map (fun ls0 => x * f ls0) lss') *)
     rewrite Z.mul_add_distr_l.
     reflexivity.
+Qed.
+
+(* Helper lemma: nonNegSum is always non-negative *)
+Lemma nonNegSum_nonneg : forall xs : list Z, nonNegSum xs >= 0.
+Proof.
+  intros xs.
+  unfold nonNegSum.
+  induction xs as [|x xs' IH].
+  - simpl. apply Z.ge_le_iff. apply Z.le_refl.
+  - simpl. apply nonNegPlus_nonneg'.
 Qed.

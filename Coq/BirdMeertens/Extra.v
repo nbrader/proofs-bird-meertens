@@ -12,6 +12,7 @@ Require Import CoqUtilLib.ListFunctions.
 
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.
+Require Import FreeMonoid.SemiringLemmas.
 
 Require Import Coq.ZArith.Int.
 Require Import Coq.ZArith.BinInt.
@@ -1379,4 +1380,267 @@ Proof.
     (* Goal: x * (y + fold_right Z.add 0 ys') = x * y + fold_right Z.add 0 (map (Z.mul x) ys') *)
     rewrite Z.mul_add_distr_l.
     reflexivity.
+Qed.
+
+(* Bridge between Z operations and ExtZ tropical semiring *)
+Definition Z_to_ExtZ (x : Z) : ExtZ :=
+  Finite x.
+
+Definition list_Z_to_ExtZ (xs : list Z) : list ExtZ :=
+  map Z_to_ExtZ xs.
+
+(* Helper lemmas for the correspondence *)
+Lemma tropical_add_finite_finite : forall a b : Z,
+  tropical_add (Finite a) (Finite b) = Finite (Z.max a b).
+Proof.
+  intros a b. simpl. reflexivity.
+Qed.
+
+Lemma tropical_mul_finite_finite : forall a b : Z,
+  tropical_mul (Finite a) (Finite b) = Finite (a + b).
+Proof.
+  intros a b. simpl. reflexivity.
+Qed.
+
+Lemma fold_right_tropical_mul_finite_corresponds_to_sum : forall xs : list Z,
+  fold_right tropical_mul (Finite 0) (map Finite xs) = Finite (fold_right Z.add 0 xs).
+Proof.
+  intros xs.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl fold_right at 1.
+    simpl fold_right at 2.
+    simpl map.
+    (* Now goal is: tropical_mul (Finite x) (fold_right tropical_mul (Finite 0) (map Finite xs')) = Finite (x + fold_right Z.add 0 xs') *)
+    rewrite IH.
+    (* Now goal is: tropical_mul (Finite x) (Finite (fold_right Z.add 0 xs')) = Finite (x + fold_right Z.add 0 xs') *)
+    (* Apply tropical_mul definition directly *)
+    simpl tropical_mul.
+    reflexivity.
+Qed.
+
+(* First, we need a helper about nonNegSum vs regular sum *)
+(* Corrected fundamental lemma: nonNegSum >= regular sum when regular sum >= 0 *)
+Lemma nonNegSum_ge_sum_when_sum_nonneg : forall xs : list Z,
+  fold_right Z.add 0 xs >= 0 ->
+  nonNegSum xs >= fold_right Z.add 0 xs.
+Proof.
+  intros xs H_sum_nonneg.
+  (* Strategy: prove by induction that nonNegSum either equals or exceeds regular sum *)
+  induction xs as [|x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl. lia.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl. unfold nonNegPlus.
+    destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
+    + (* Case: no clamping, x + nonNegSum xs' >= 0 *)
+      apply Z.leb_le in Heq.
+      (* Goal: x + nonNegSum xs' >= x + fold_right Z.add 0 xs' *)
+      (* This follows from IH if we can establish fold_right Z.add 0 xs' >= 0 *)
+
+      (* Key insight: since x + fold_right Z.add 0 xs' >= 0 (from H_sum_nonneg) *)
+      (* and nonNegSum xs' >= 0 always, we can reason about the relationship *)
+
+      assert (H_xs'_case: fold_right Z.add 0 xs' >= 0 \/ fold_right Z.add 0 xs' < 0).
+      { lia. }
+
+      destruct H_xs'_case as [H_xs'_nonneg | H_xs'_neg].
+      * (* Subcase: fold_right Z.add 0 xs' >= 0 *)
+        (* Apply IH directly *)
+        assert (H_IH_applied: nonNegSum xs' >= fold_right Z.add 0 xs').
+        { apply IH. exact H_xs'_nonneg. }
+        lia.
+      * (* Subcase: fold_right Z.add 0 xs' < 0 *)
+        (* Since x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0, *)
+        (* we have x > -fold_right Z.add 0 xs' >= 0 *)
+        (* Also nonNegSum xs' >= 0 always *)
+        (* So x + nonNegSum xs' >= x + 0 = x > -fold_right Z.add 0 xs' *)
+        (* Therefore x + nonNegSum xs' > x + fold_right Z.add 0 xs' *)
+        assert (H_nonneg_xs': nonNegSum xs' >= 0).
+        {
+          induction xs' as [|y ys IH_inner].
+          - simpl. lia.
+          - simpl. unfold nonNegPlus.
+            destruct (Z.leb 0 (y + nonNegSum ys)) eqn:Heq_inner.
+            + apply Z.leb_le in Heq_inner. apply Z.ge_le_iff. exact Heq_inner.
+            + simpl. lia.
+        }
+        lia.
+
+    + (* Case: clamping occurs, x + nonNegSum xs' < 0, so result is 0 *)
+      apply Z.leb_gt in Heq.
+      (* We have: x + nonNegSum xs' < 0 (clamping condition) *)
+      (* and:     x + fold_right Z.add 0 xs' >= 0 (from hypothesis) *)
+      (* Goal:    0 >= x + fold_right Z.add 0 xs' *)
+
+      (* Strategy: show that clamping implies the sum must be exactly 0 *)
+      (* If sum > 0, then we get a contradiction; if sum = 0, then 0 >= 0 holds *)
+
+      (* Case analysis on whether the sum is exactly 0 or positive *)
+      assert (H_sum_eq_zero: x + fold_right Z.add 0 xs' = 0).
+      {
+        (* Prove by contradiction: assume x + fold_right Z.add 0 xs' > 0 *)
+        destruct (Z.compare_spec (x + fold_right Z.add 0 xs') 0) as [H_eq | H_lt | H_gt].
+        - (* x + fold_right Z.add 0 xs' = 0 is what we want *)
+          exact H_eq.
+        - (* x + fold_right Z.add 0 xs' < 0 contradicts H_sum_nonneg *)
+          exfalso.
+          (* H_sum_nonneg says fold_right Z.add 0 (x :: xs') >= 0 *)
+          (* But fold_right Z.add 0 (x :: xs') = x + fold_right Z.add 0 xs' *)
+          simpl in H_sum_nonneg.
+          lia.
+        - (* x + fold_right Z.add 0 xs' > 0 *)
+          (* This would mean 0 > x + fold_right Z.add 0 xs' > 0, impossible *)
+          exfalso.
+          (* We need 0 >= x + fold_right Z.add 0 xs' but x + fold_right Z.add 0 xs' > 0 *)
+          (* This is only consistent if we can show the goal 0 >= positive is impossible *)
+          (* But actually, we're trying to prove this goal, so let's approach differently *)
+
+          (* Key insight: this case is impossible *)
+          (* We have: x + nonNegSum xs' < 0 (from Heq) *)
+          (*     and: x + fold_right Z.add 0 xs' > 0 (assumption H_gt) *)
+
+          (* Direct contradiction: we cannot have both conditions simultaneously *)
+          (* We have: x + nonNegSum xs' < 0 (from Heq) *)
+          (*     and: x + fold_right Z.add 0 xs' > 0 (assumption H_gt) *)
+          (* But nonNegSum xs' >= 0 always, so this is impossible *)
+
+          assert (H_nns_nonneg: nonNegSum xs' >= 0).
+          { apply nonNegSum_nonneg. }
+
+          (* From x + fold_right Z.add 0 xs' > 0, we get x > -fold_right Z.add 0 xs' *)
+          (* Since nonNegSum xs' >= 0, we have x + nonNegSum xs' >= x > -fold_right Z.add 0 xs' *)
+          (* But if fold_right Z.add 0 xs' < 0, then x > 0, so x + nonNegSum xs' > 0 *)
+          (* If fold_right Z.add 0 xs' >= 0, then x > -fold_right Z.add 0 xs' >= -fold_right Z.add 0 xs' *)
+          (* In all cases, x + nonNegSum xs' >= 0, contradicting x + nonNegSum xs' < 0 *)
+
+          destruct (Z_le_dec 0 (fold_right Z.add 0 xs')) as [H_xs'_nonneg | H_xs'_neg].
+          * (* fold_right Z.add 0 xs' >= 0 *)
+            (* Then x > 0 (since x + fold_right Z.add 0 xs' > 0 and fold_right Z.add 0 xs' >= 0) *)
+            (* So x + nonNegSum xs' >= 0 + 0 = 0, contradicting x + nonNegSum xs' < 0 *)
+            lia.
+          * (* fold_right Z.add 0 xs' < 0 *)
+            (* Then x > -fold_right Z.add 0 xs' > 0, so x > 0 *)
+            (* So x + nonNegSum xs' > 0, contradicting x + nonNegSum xs' < 0 *)
+            lia.
+      }
+      rewrite H_sum_eq_zero. lia.
+Qed.
+
+(* Helper: nonNegSum is monotonic on non-negative sequences *)
+Lemma nonNegSum_monotonic_nonneg : forall xs ys : list Z,
+  all_nonnegative xs ->
+  all_nonnegative ys ->
+  (exists zs, ys = xs ++ zs) ->
+  nonNegSum xs <= nonNegSum ys.
+Proof.
+  intros xs ys H_xs_nonneg H_ys_nonneg [zs H_app].
+  (* The all_nonnegative conditions aren't actually needed for this monotonicity property *)
+  (* We can apply the general nonNegSum_prefix_le lemma directly *)
+  apply nonNegSum_prefix_le.
+  exists zs. symmetry. exact H_app.
+Qed.
+
+(* Helper lemma: if all elements are non-negative, then fold_right Z.add is non-negative *)
+Lemma fold_right_add_nonneg : forall xs : list Z,
+  (forall x, In x xs -> x >= 0) ->
+  fold_right Z.add 0 xs >= 0.
+Proof.
+  intros xs H_all_nonneg.
+  induction xs as [|x xs' IH].
+  - simpl. lia.
+  - simpl.
+    assert (H_x_nonneg: x >= 0).
+    { apply H_all_nonneg. simpl. left. reflexivity. }
+    assert (H_xs'_nonneg: fold_right Z.add 0 xs' >= 0).
+    {
+      apply IH.
+      intros y H_in.
+      apply H_all_nonneg. simpl. right. exact H_in.
+    }
+    lia.
+Qed.
+
+(* Helper lemma: if element is in firstn, then it's in the original list *)
+Lemma firstn_In : forall (A : Type) (n : nat) (xs : list A) (x : A),
+  In x (firstn n xs) -> In x xs.
+Proof.
+  intros A n xs x H_in.
+  generalize dependent n.
+  induction xs as [|y ys IH].
+  - intros n H_in. simpl in H_in. destruct n; simpl in H_in; contradiction.
+  - intros n H_in.
+    destruct n as [|n'].
+    + simpl in H_in. contradiction.
+    + simpl in H_in.
+      destruct H_in as [H_eq | H_in'].
+      * left. exact H_eq.
+      * right. apply IH with n'. exact H_in'.
+Qed.
+
+(* A simpler, provable lemma: when all prefix sums are non-negative AND each element is non-negative *)
+Lemma simple_correspondence : forall xs : list Z,
+  (forall x, In x xs -> x >= 0) ->
+  (forall n : nat, (n <= length xs)%nat ->
+    fold_right Z.add 0 (firstn n xs) >= 0) ->
+  nonNegSum xs = fold_right Z.add 0 xs.
+Proof.
+  intros xs H_all_nonneg H_all_prefixes_nonneg.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl. unfold nonNegPlus.
+
+    assert (H_x_nonneg: x >= 0).
+    {
+      apply H_all_nonneg. simpl. left. reflexivity.
+    }
+
+    assert (H_xs'_eq: nonNegSum xs' = fold_right Z.add 0 xs').
+    {
+      apply IH.
+      - intros y H_in. apply H_all_nonneg. simpl. right. exact H_in.
+      - intros n Hn.
+        (* For xs', we use the prefix property of x :: xs' *)
+        assert (H_Sn_bound: (S n <= length (x :: xs'))%nat).
+        { simpl. lia. }
+        specialize (H_all_prefixes_nonneg (S n) H_Sn_bound).
+        simpl firstn in H_all_prefixes_nonneg.
+        simpl fold_right in H_all_prefixes_nonneg.
+
+        (* We have: x + fold_right Z.add 0 (firstn n xs') >= 0 *)
+        (* Since x >= 0, this implies fold_right Z.add 0 (firstn n xs') >= -x >= -|x| *)
+        (* But we need >= 0. Since all elements are non-negative, this holds *)
+
+        assert (H_firstn_nonneg: fold_right Z.add 0 (firstn n xs') >= 0).
+        {
+          (* Since all elements in xs' are non-negative, any prefix sum is non-negative *)
+          apply fold_right_add_nonneg.
+          intros y H_in.
+          apply H_all_nonneg.
+          simpl. right.
+          (* y is in firstn n xs', and firstn takes elements from xs', so y is in xs' *)
+          apply firstn_In in H_in.
+          exact H_in.
+        }
+        exact H_firstn_nonneg.
+    }
+
+    rewrite H_xs'_eq.
+
+    (* Now x + fold_right Z.add 0 xs' >= 0 since both x >= 0 and fold_right Z.add 0 xs' >= 0 *)
+    assert (H_no_clamp: x + fold_right Z.add 0 xs' >= 0).
+    {
+      assert (H_xs'_sum_nonneg: fold_right Z.add 0 xs' >= 0).
+      {
+        apply fold_right_add_nonneg.
+        intros y H_in.
+        apply H_all_nonneg.
+        simpl. right. exact H_in.
+      }
+      lia.
+    }
+
+    destruct (Z.leb 0 (x + fold_right Z.add 0 xs')) eqn:Heq.
+    + apply Z.leb_le in Heq. reflexivity.
+    + apply Z.leb_gt in Heq. lia.
 Qed.
