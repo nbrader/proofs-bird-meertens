@@ -93,13 +93,69 @@ Lemma maxsegsum_all_nonnegative : forall xs : list Z,
 Proof.
   intros xs H_nonneg.
 
-  (* For the all non-negative case, we can use the existing general proof *)
-  (* The general theorem nonneg_tropical_fold_right_returns_max works for all cases *)
-  (* including this special case. While this file aims to provide alternative proofs, *)
-  (* for this trivial case where no tropical semiring reasoning is needed, *)
-  (* we use the established result. *)
+  (* Alternative proof: When all elements are >= 0, adding elements never decreases the sum *)
+  (* Therefore, the maximum prefix sum is achieved by the entire list *)
 
-  apply (equal_f nonneg_tropical_fold_right_returns_max xs).
+  (* Strategy: Show that nonNegSum xs is in the mapped list and is the maximum *)
+
+  (* First, nonNegSum xs appears in map nonNegSum (inits xs) because xs ∈ inits xs *)
+  assert (H_xs_in_inits: In xs (inits xs)).
+  {
+    (* The entire list xs is always the last element of inits xs *)
+    induction xs as [|x xs' IH].
+    - simpl. left. reflexivity.
+    - simpl. right. apply in_map.
+      apply IH.
+      (* Need to show all_nonnegative xs' from all_nonnegative (x :: xs') *)
+      intros y H_y_in.
+      apply H_nonneg. simpl. right. exact H_y_in.
+  }
+
+  assert (H_in_mapped: In (nonNegSum xs) (map nonNegSum (inits xs))).
+  {
+    apply in_map. exact H_xs_in_inits.
+  }
+
+  (* Second, show nonNegSum xs is the maximum *)
+  assert (H_is_max: forall y, In y (map nonNegSum (inits xs)) -> y <= nonNegSum xs).
+  {
+    intros y H_y_in.
+    (* y = nonNegSum prefix for some prefix of xs *)
+    rewrite in_map_iff in H_y_in.
+    destruct H_y_in as [prefix [H_y_eq H_prefix_in]].
+    rewrite <- H_y_eq.
+
+    (* Show nonNegSum prefix <= nonNegSum xs *)
+    (* Since prefix is a prefix of xs, we have prefix ++ suffix = xs for some suffix *)
+    assert (H_is_prefix: exists suffix, prefix ++ suffix = xs).
+    {
+      (* Use the fact that elements of inits are prefixes *)
+      apply inits_are_prefixes. exact H_prefix_in.
+    }
+    destruct H_is_prefix as [suffix H_eq].
+
+    (* Key insight: When all elements in suffix are >= 0, nonNegSum is monotonic *)
+    assert (H_suffix_nonneg: all_nonnegative suffix).
+    {
+      intros z H_z_in.
+      apply H_nonneg.
+      rewrite <- H_eq.
+      apply in_or_app. right. exact H_z_in.
+    }
+
+    (* Now use monotonicity: nonNegSum prefix <= nonNegSum (prefix ++ suffix) *)
+    (* We have prefix ++ suffix = xs from H_eq *)
+    apply nonNegSum_prefix_le.
+    exists suffix. exact H_eq.
+  }
+
+  (* Apply the characterization of nonNegMaximum *)
+  unfold nonNegMaximum.
+  symmetry.
+  apply fold_right_max_returns_max with (m := nonNegSum xs).
+  - apply nonNegSum_nonneg.
+  - exact H_is_max.
+  - exact H_in_mapped.
 Qed.
 
 (* Helper: nonNegSum on all-nonpositive lists is 0 *)
