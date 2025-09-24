@@ -1232,16 +1232,6 @@ Proof.
   - exact H_is_max.
 Qed.
 
-(* Helper lemma: nonNegSum is always non-negative *)
-Lemma nonNegSum_nonneg : forall xs : list Z, nonNegSum xs >= 0.
-Proof.
-  intros xs.
-  unfold nonNegSum.
-  induction xs as [|x xs' IH].
-  - simpl. apply Z.ge_le_iff. apply Z.le_refl.
-  - simpl. apply nonNegPlus_nonneg'.
-Qed.
-Print Assumptions nonNegSum_nonneg.
 
 (* Helper lemma: elements of inits are prefixes *)
 (* Helper lemma: elements of tails are suffixes *)
