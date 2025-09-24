@@ -17,11 +17,11 @@ def find_admitted_lemmas(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
 
-        # Look for "Admitted." and work backwards to find the theorem/lemma name
+        # Look for "Admitted." and "admit." and work backwards to find the theorem/lemma name
         for i, line in enumerate(lines):
-            if re.search(r'^\s*Admitted\s*\.\s*$', line):
+            if re.search(r'^\s*Admitted\s*\.\s*$', line) or re.search(r'^\s+admit\s*\.\s*(\(\*.*\*\))?\s*$', line):
                 # Work backwards to find the theorem/lemma declaration
-                for j in range(i-1, max(i-20, -1), -1):  # Look back up to 20 lines
+                for j in range(i-1, max(i-50, -1), -1):  # Look back up to 50 lines for admit tactics
                     decl_match = re.search(r'^\s*(Lemma|Theorem|Proposition|Corollary)\s+(\w+)', lines[j])
                     if decl_match:
                         keyword = decl_match.group(1)
@@ -43,7 +43,7 @@ def main():
         coq_dir / "MajorLemmas.v",
         coq_dir / "Lemmas.v",
         coq_dir / "Extra.v",
-        coq_dir / "Extras2.v"
+        coq_dir / "TropicalMaxSegSum.v"
     ]
 
     total_admitted = 0
