@@ -311,33 +311,15 @@ Qed.
 
 (* Case 3: Mixed signs - use tropical Horner's rule connection *)
 
-Lemma kadane_equivalence_via_optimal_prefix : forall xs : list Z,
-  mixed_signs xs ->
-  fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
-  fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
-Proof.
-  intros xs H_mixed.
-  assert (H_max_nonneg: fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) >= 0).
-  {
-    induction (map (fold_right Z.add 0) (inits xs)) as [|h t IH].
-    - simpl. lia.
-    - simpl.
-      enough (fold_right Z.max 0 t <= h <|> fold_right Z.max 0 t) by lia.
-      apply Z.le_max_r.
-  }
-  admit.
-Admitted.
-
 (* Key lemma: both approaches yield same maximum despite different intermediate values *)
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
   fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
 Proof.
-  intros xs H_mixed.
-  apply kadane_equivalence_via_optimal_prefix.
-  exact H_mixed.
-Qed.
+  admit.
+Admitted.
+
 Lemma maxsegsum_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   nonNegSum xs = nonNegMaximum (map nonNegSum (inits xs)).
