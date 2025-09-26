@@ -524,7 +524,10 @@ Proof.
     + (* Case: j < length l1 *)
       (* Use a general lemma about fold_right max containing all elements *)
       (* For now, we'll use the fact that this should be provable *)
-      admit. (* fold_right_max_ge_nth: requires standard library lemma *)
+      (* For a valid index j, fold_right Z.max 0 l1 >= nth j l1 0 *)
+      (* This is a standard property that max of a list >= any element *)
+      (* Would require proving that fold_right Z.max includes all elements *)
+      admit. (* Standard library lemma: fold_right_max_ge_nth *)
     + (* Case: j >= length l1 *)
       (* In this case, nth j l1 0 = 0 (default value) *)
       (* And fold_right Z.max 0 l1 >= 0 by definition *)
@@ -666,8 +669,23 @@ Proof.
   (* This requires careful handling of default values in nth_map *)
   (* For our specific use cases (fold_right nonNegPlus 0 and fold_right Z.add 0) *)
   (* both functions return 0 when applied to [], which makes this work *)
-  admit. (* Technical lemma: nth of map with default value handling *)
-Admitted.
+
+  (* The key insight is that for valid indices, the default value doesn't matter *)
+  (* We can use nth_indep to handle this *)
+  assert (H_len: (i < length (map f xs))%nat).
+  {
+    rewrite map_length. exact Hi.
+  }
+
+  (* For valid indices, we can convert between different default values *)
+  assert (H_eq_def: nth i (map f xs) 0 = nth i (map f xs) (f [])).
+  {
+    apply nth_indep. exact H_len.
+  }
+
+  rewrite H_eq_def.
+  apply nth_map. exact Hi.
+Qed.
 
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
@@ -795,10 +813,41 @@ Proof.
       destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds.
       * (* j < length (inits xs) *)
         (* Technical application of nth_map for fold_right Z.add *)
-        admit. (* nth_map application with index validation *)
+        (* Goal: nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
+        (* We use nth_map_fold_right to get: nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 (nth j (inits xs) []) *)
+        (* Then use H_j_eq_p: nth j (inits xs) [] = p *)
+        (* And H_p_max: fold_right Z.add 0 p = fold_right Z.max 0 regular_sums *)
+        rewrite (nth_map_fold_right (fold_right Z.add 0) (inits xs) j); [| apply Nat.ltb_lt; exact Hj_bounds].
+        rewrite H_j_eq_p. exact H_p_max.
       * (* j >= length (inits xs) *)
         (* Edge case: j out of bounds *)
-        admit. (* Edge case: nth_overflow application when j >= length *)
+        apply Nat.ltb_ge in Hj_bounds.
+        (* If j >= length, then nth j (inits xs) [] = [], so p = [] *)
+        assert (H_p_empty: p = []).
+        {
+          rewrite <- H_j_eq_p.
+          apply nth_overflow.
+          exact Hj_bounds.
+        }
+
+        (* If p = [], then fold_right Z.add 0 p = 0 *)
+        assert (H_p_zero: fold_right Z.add 0 p = 0).
+        {
+          rewrite H_p_empty. simpl. reflexivity.
+        }
+
+        (* Goal: nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
+        (* When j >= length, nth returns default 0 *)
+        assert (H_nth_out: nth j (map (fold_right Z.add 0) (inits xs)) 0 = 0).
+        {
+          apply nth_overflow.
+          rewrite map_length. exact Hj_bounds.
+        }
+        rewrite H_nth_out.
+        (* H_p_max: fold_right Z.add 0 p = fold_right Z.max 0 regular_sums *)
+        (* H_p_zero: fold_right Z.add 0 p = 0 *)
+        (* So: fold_right Z.max 0 regular_sums = 0 *)
+        rewrite <- H_p_max, H_p_zero. reflexivity.
     + (* Show nth j nonneg_sums 0 = nth j regular_sums 0 *)
       unfold nonneg_sums, regular_sums.
       (* Since nth j (inits xs) [] = p, we need to show nth j (map f (inits xs)) 0 = nth j (map g (inits xs)) 0 *)
@@ -809,21 +858,53 @@ Proof.
         (* We need to check if j is a valid index *)
         destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds.
         - (* j < length (inits xs) *)
-          admit. (* nth_map application for nonNegPlus *)
+          (* Apply our helper lemma for nonNegPlus case *)
+          (* Goal: nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 = fold_right nonNegPlus 0 p *)
+          rewrite (nth_map_fold_right (fold_right nonNegPlus 0) (inits xs) j); [| apply Nat.ltb_lt; exact Hj_bounds].
+          rewrite H_j_eq_p. reflexivity.
         - (* j >= length (inits xs) *)
-          admit. (* Edge case handling *)
+          (* Same analysis as in the first edge case *)
+          (* If j >= length, then nth j (inits xs) [] = [], so p = [] *)
+          apply Nat.ltb_ge in Hj_bounds.
+          assert (H_p_empty: p = []).
+          {
+            rewrite <- H_j_eq_p.
+            apply nth_overflow.
+            exact Hj_bounds.
+          }
+          (* When p = [], fold_right nonNegPlus 0 [] = 0 *)
+          rewrite H_p_empty. simpl.
+          (* nth j (map ...) 0 = 0 when j >= length *)
+          rewrite nth_overflow; [reflexivity | rewrite map_length; exact Hj_bounds].
       }
       assert (H_nth_regular : nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 p).
       {
         (* Same pattern as above *)
-        admit. (* Technical: nth_map applications for Z.add case *)
+        destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds2.
+        - (* j < length (inits xs) *)
+          (* Goal: nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 p *)
+          rewrite (nth_map_fold_right (fold_right Z.add 0) (inits xs) j); [| apply Nat.ltb_lt; exact Hj_bounds2].
+          rewrite H_j_eq_p. reflexivity.
+        - (* j >= length (inits xs) *)
+          (* Same pattern as the nonNegPlus case *)
+          apply Nat.ltb_ge in Hj_bounds2.
+          assert (H_p_empty: p = []).
+          {
+            rewrite <- H_j_eq_p.
+            apply nth_overflow.
+            exact Hj_bounds2.
+          }
+          (* When p = [], fold_right Z.add 0 [] = 0 *)
+          rewrite H_p_empty. simpl.
+          (* nth j (map ...) 0 = 0 when j >= length *)
+          rewrite nth_overflow; [reflexivity | rewrite map_length; exact Hj_bounds2].
       }
       rewrite H_nth_nonneg, H_nth_regular.
       (* Now we need fold_right nonNegPlus 0 p = fold_right Z.add 0 p *)
       apply nonNegPlus_agrees_with_add_on_prefix. exact H_p_nonneg.
 
   (* The rest follows from the properties established above *)
-Admitted.
+Qed.
 
 
 
