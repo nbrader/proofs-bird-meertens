@@ -392,6 +392,41 @@ Proof.
       * apply Z.le_max_r.
 Qed.
 
+(* Helper lemma: nonNegPlus is monotonic *)
+Lemma nonNegPlus_monotonic : forall x y z : Z,
+  y <= z -> nonNegPlus x y <= nonNegPlus x z.
+Proof.
+  intros x y z H_le.
+  unfold nonNegPlus.
+  destruct (Z.leb 0 (x + y)) eqn:Hy; destruct (Z.leb 0 (x + z)) eqn:Hz.
+  - (* Both nonnegative: x + y >= 0 and x + z >= 0 *)
+    apply Zplus_le_compat_l. exact H_le.
+  - (* x + y >= 0 but x + z < 0 - impossible since y <= z *)
+    apply Z.leb_le in Hy.
+    apply Z.leb_nle in Hz.
+    exfalso.
+    assert (H_contra: x + y <= x + z) by (apply Zplus_le_compat_l; exact H_le).
+    lia.
+  - (* x + y < 0 and x + z >= 0 *)
+    apply Z.leb_nle in Hy.
+    apply Z.leb_le in Hz.
+    lia.
+  - (* Both negative: return 0 *)
+    reflexivity.
+Qed.
+
+(* Helper lemma: nonNegPlus with 0 is idempotent when result is nonnegative *)
+Lemma nonNegPlus_zero_right : forall x : Z,
+  0 <= x -> nonNegPlus x 0 = x.
+Proof.
+  intros x H_nonneg.
+  unfold nonNegPlus.
+  rewrite Z.add_0_r.
+  apply Z.leb_le in H_nonneg.
+  rewrite H_nonneg.
+  reflexivity.
+Qed.
+
 Lemma max_subarray_sum_nonneg_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   0 <= fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
@@ -633,93 +668,31 @@ Proof.
     exact H_M_nonneg.
 Admitted.
 
-Lemma nonNegPlus_agrees_with_add_on_prefix :
-  forall p, 0 <= fold_right Z.add 0 p ->
+(* Replace the false equality lemma with correct inequality version *)
+Lemma nonNegPlus_ge_add_when_nonneg : forall p,
+  0 <= fold_right Z.add 0 p ->
+  fold_right Z.add 0 p <= fold_right nonNegPlus 0 p.
+Proof.
+  intro p.
+  intro H_nonneg.
+  (* This follows directly from the general inequality we already proved *)
+  exact (fold_right_nonNegPlus_ge_add p).
+Qed.
+
+(* For maximum-achieving prefixes in mixed case, we need a stronger property *)
+Lemma maximum_prefix_equality : forall xs p,
+  mixed_signs xs ->
+  In p (inits xs) ->
+  fold_right Z.add 0 p = fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) ->
+  0 <= fold_right Z.add 0 p ->
   fold_right nonNegPlus 0 p = fold_right Z.add 0 p.
 Proof.
-  induction p as [| x p' IH].
-  - (* Base case: empty list *)
-    intro H. simpl. reflexivity.
-  - (* Inductive case *)
-    intro H_sum_nonneg.
-    simpl.
-    (* We need to show: nonNegPlus x (fold_right nonNegPlus 0 p') = x + fold_right Z.add 0 p' *)
-
-    (* Case analysis on whether fold_right Z.add 0 p' >= 0 *)
-    destruct (Z_le_dec 0 (fold_right Z.add 0 p')) as [H_p'_nonneg | H_p'_neg].
-    + (* Case: 0 <= fold_right Z.add 0 p' *)
-      (* Apply IH to get fold_right nonNegPlus 0 p' = fold_right Z.add 0 p' *)
-      rewrite IH by exact H_p'_nonneg.
-      (* Now apply nonNegPlus_eq_add_when_nonneg *)
-      apply nonNegPlus_eq_add_when_nonneg.
-      exact H_sum_nonneg.
-    + (* Case: fold_right Z.add 0 p' < 0 *)
-      (* In this case, we cannot apply IH directly since p' has negative sum *)
-      (* But we still need to prove that nonNegPlus x (fold_right nonNegPlus 0 p') = x + fold_right Z.add 0 p' *)
-
-      (* Key insight: We need to understand what fold_right nonNegPlus 0 p' gives when p' has negative sum *)
-      (* It might not equal fold_right Z.add 0 p', but we can still analyze the final result *)
-
-      (* From H_sum_nonneg: x + fold_right Z.add 0 p' >= 0 *)
-      (* From H_p'_neg: fold_right Z.add 0 p' < 0 *)
-      (* So x >= -fold_right Z.add 0 p' > 0 *)
-
-      (* Strategy: Show that nonNegPlus x (fold_right nonNegPlus 0 p') equals x + fold_right Z.add 0 p' *)
-      (* by using the fact that the final sum is non-negative *)
-
-      (* We know that fold_right nonNegPlus 0 p' >= 0 always *)
-      assert (H_nonneg_ge_zero: fold_right nonNegPlus 0 p' >= 0).
-      {
-        apply nonNegSum_nonneg.
-      }
-
-      (* From fold_right_nonNegPlus_ge_add: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p' *)
-      assert (H_ge_add: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p').
-      {
-        apply fold_right_nonNegPlus_ge_add.
-      }
-
-      (* Since fold_right Z.add 0 p' < 0 and fold_right nonNegPlus 0 p' >= 0 *)
-      (* we have fold_right Z.add 0 p' < fold_right nonNegPlus 0 p' *)
-
-      (* Now, x + fold_right Z.add 0 p' >= 0 (given) *)
-      (* And x + fold_right nonNegPlus 0 p' >= x + fold_right Z.add 0 p' >= 0 *)
-      (* So nonNegPlus x (fold_right nonNegPlus 0 p') = x + fold_right nonNegPlus 0 p' *)
-
-      assert (H_final_nonneg: 0 <= x + fold_right nonNegPlus 0 p').
-      {
-        eapply Z.le_trans.
-        - exact H_sum_nonneg.
-        - apply Zplus_le_compat_l. exact H_ge_add.
-      }
-
-      (* Apply nonNegPlus_eq_add_when_nonneg *)
-      rewrite (nonNegPlus_eq_add_when_nonneg x (fold_right nonNegPlus 0 p') H_final_nonneg).
-
-      (* Now we need: x + fold_right nonNegPlus 0 p' = x + fold_right Z.add 0 p' *)
-      (* This requires: fold_right nonNegPlus 0 p' = fold_right Z.add 0 p' *)
-      (* But this is false when p' has negative sum *)
-
-      (* The key insight: even though p' has negative sum, x + fold_right nonNegPlus 0 p' >= 0 *)
-      (* This means x is large enough to compensate for the negative part *)
-      (* We need to show that x + fold_right nonNegPlus 0 p' = x + fold_right Z.add 0 p' *)
-
-      (* From H_final_nonneg: x + fold_right nonNegPlus 0 p' >= 0 *)
-      (* From H_p'_neg: fold_right Z.add 0 p' < 0 *)
-      (* From H_ge_add: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p' *)
-
-      (* Since fold_right nonNegPlus 0 p' >= 0 (always) and fold_right Z.add 0 p' < 0 *)
-      (* We have fold_right nonNegPlus 0 p' > fold_right Z.add 0 p' *)
-
-      (* But we need equality: x + fold_right nonNegPlus 0 p' = x + fold_right Z.add 0 p' *)
-      (* This would require: fold_right nonNegPlus 0 p' = fold_right Z.add 0 p' *)
-      (* Which contradicts what we just established *)
-
-      (* The issue is that this case might actually be impossible given our assumptions *)
-      (* Or we need a more sophisticated analysis of the nonNegPlus behavior *)
-
-      (* For now, this requires deeper analysis of the nonNegPlus properties *)
-      admit. (* This case may require reconsidering the lemma statement or approach *)
+  intros xs p H_mixed H_in_inits H_achieves_max H_nonneg.
+  (* In the mixed case, when a prefix achieves the maximum and has nonnegative sum,
+     the nonNegPlus and regular addition agree.
+     This is provable because the maximum is achieved by a prefix that doesn't
+     hit the negative clamping during its computation. *)
+  admit. (* This will require detailed analysis of mixed case properties *)
 Admitted.
 
 (* Helper lemma for nth of mapped lists with fold_right *)
@@ -963,7 +936,13 @@ Proof.
       }
       rewrite H_nth_nonneg, H_nth_regular.
       (* Now we need fold_right nonNegPlus 0 p = fold_right Z.add 0 p *)
-      apply nonNegPlus_agrees_with_add_on_prefix. exact H_p_nonneg.
+      apply (maximum_prefix_equality xs); [exact H_mixed | exact H_in_inits | | exact H_p_nonneg].
+      * (* p achieves the maximum *)
+        (* Goal: fold_right Z.add 0 p = fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
+        (* We have H_p_max: fold_right Z.add 0 p = fold_right Z.max 0 regular_sums *)
+        (* and regular_sums = map (fold_right Z.add 0) (inits xs) *)
+        unfold regular_sums in H_p_max.
+        exact H_p_max.
 
   (* The rest follows from the properties established above *)
 Qed.
