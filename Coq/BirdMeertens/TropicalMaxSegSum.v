@@ -374,14 +374,30 @@ Qed.
 Lemma nth_cons_inits :
   forall x xs j,
     (j < length (inits xs))%nat ->
-    nth j (map (cons x) (inits xs)) [] <>
+    nth j (map (cons x) (inits xs)) [] =
     x :: nth j (@inits Z xs) [].
 Proof.
   intros x xs j Hj.
-  pose proof (nth_map (list Z) (list Z) (cons x) (inits xs) [] j Hj).
+  pose proof (nth_map (list Z) (list Z) (cons x) (inits xs) [] j Hj) as H.
+  (* H: nth j (map (cons x) (inits xs)) [x] = x :: nth j (inits xs) [] *)
+  (* We need to show that nth j (map (cons x) (inits xs)) [] = x :: nth j (inits xs) [] *)
+  (* When j < length (inits xs), the default value shouldn't matter *)
+
+  (* Use the fact that when index is in bounds, default doesn't affect result *)
+  assert (H_len : (j < length (map (cons x) (inits xs)))%nat).
+  {
+    rewrite map_length. exact Hj.
+  }
+
+  (* Both sides equal the same value when index is valid *)
   rewrite <- H.
-  admit.
-Admitted.
+  (* Need to show nth j (map (cons x) (inits xs)) [] = nth j (map (cons x) (inits xs)) [x] *)
+
+  (* For valid indices, nth doesn't depend on default value *)
+  rewrite (nth_indep _ [] [x]).
+  - reflexivity.
+  - exact H_len.
+Qed.
 
 Lemma In_inits_gives_index : forall (xs : list Z) (p : list Z),
   In p (inits xs) ->
@@ -408,21 +424,21 @@ Proof.
       apply in_map_iff in H_in_tail.
       destruct H_in_tail as [p' [H_p_eq H_p'_in]].
       (* p = x :: p', and p' is in inits xs' *)
-      (* By IH applied to p', there exists j' such that nth j' (inits xs') [] = p' *)
-      apply (IH p') in H_p'_in.
-      destruct H_p'_in as [j' H_j'_eq].
+      (* Since p' is in (inits xs'), we can find its index using In_nth *)
+      pose proof (In_nth (inits xs') p' [] H_p'_in) as [j' [H_j'_bounds H_j'_eq]].
+      (* j' is an index such that nth j' (inits xs') [] = p' and j' < length (inits xs') *)
+
       (* The index of p in inits (x :: xs') is S j' *)
       exists (S j').
       (* Goal: nth (S j') (inits (x :: xs')) [] = p *)
       (* We have: H_p_eq: x :: p' = p and H_j'_eq: nth j' (inits xs') [] = p' *)
       simpl.
       (* After simpl: nth j' (map (cons x) (inits xs')) [] = p *)
-      (* Since the map_nth pattern matching is complex, let's prove this more directly *)
+
       transitivity (cons x (nth j' (inits xs') [])).
-      (* * apply nth_cons_inits.*)
-      * admit.
+      * apply nth_cons_inits. exact H_j'_bounds.
       * rewrite H_j'_eq. exact H_p_eq.
-Admitted.
+Qed.
 
 Lemma fold_right_nonNegPlus_ge_add : forall xs : list Z,
   fold_right Z.add 0 xs <= fold_right nonNegPlus 0 xs.
@@ -434,15 +450,25 @@ Proof.
   - (* Inductive case *)
     simpl.
     (* Need to show: x + fold_right Z.add 0 xs' <= nonNegPlus x (fold_right nonNegPlus 0 xs') *)
-    unfold nonNegPlus.
+    unfold nonNegPlus at 1.
+    (* We need to compare based on whether x + fold_right nonNegPlus 0 xs' >= 0 *)
     destruct (Z.leb 0 (x + fold_right nonNegPlus 0 xs')) eqn:E.
     + (* Case: x + fold_right nonNegPlus 0 xs' >= 0 *)
-      (* By IH: fold_right Z.add 0 xs' <= fold_right nonNegPlus 0 xs' *)
-      (* So x + fold_right Z.add 0 xs' <= x + fold_right nonNegPlus 0 xs' *)
-      admit. (* Technical details with Z.add_le_mono_l and IH *)
+      (* Goal becomes: x + fold_right Z.add 0 xs' <= x + fold_right nonNegPlus 0 xs' *)
+      apply Zplus_le_compat_l. exact IH.
     + (* Case: x + fold_right nonNegPlus 0 xs' < 0 *)
-      admit. (* Technical case involving Z.le_trans and monotonicity *)
-Admitted.
+      (* Goal becomes: x + fold_right Z.add 0 xs' <= 0 *)
+      apply Z.leb_nle in E.
+      (* From IH: fold_right Z.add 0 xs' <= fold_right nonNegPlus 0 xs' *)
+      (* So: x + fold_right Z.add 0 xs' <= x + fold_right nonNegPlus 0 xs' *)
+      (* And from E: x + fold_right nonNegPlus 0 xs' < 0 *)
+      assert (H_chain: x + fold_right Z.add 0 xs' <= x + fold_right nonNegPlus 0 xs').
+      {
+        apply Zplus_le_compat_l. exact IH.
+      }
+      (* Therefore: x + fold_right Z.add 0 xs' <= 0 *)
+      eapply Z.le_trans; [exact H_chain | lia].
+Qed.
 
 Lemma max_preserve_pointwise :
   forall (l1 l2 : list Z),
@@ -457,7 +483,54 @@ Proof.
      1. Use pointwise bounds to show max(l1) >= max(l2)
      2. Use index j where they agree and l2 achieves max to show max(l1) <= max(l2)
      3. Combine for equality *)
-  admit. (* Technical proof involving max monotonicity and element-max relationships *)
+
+  (* Key insight: Since l1[j] = l2[j] and l2[j] = max(l2), *)
+  (* and l1[i] >= l2[i] for all i, *)
+  (* we have max(l1) >= l1[j] = l2[j] = max(l2) *)
+  (* For equality, we need max(l1) <= max(l2), which requires max(l1) = l1[j] *)
+
+  (* Direct proof by showing both directions *)
+  rewrite <- H_max_at_j.
+  rewrite <- H_equal_at_j.
+
+  (* Goal: fold_right Z.max 0 l1 = nth j l1 0 *)
+  (* This means nth j l1 0 must be the maximum element of l1 *)
+
+  (* We'll prove this by showing:
+     1. max(l1) >= nth j l1 0 (always true for valid indices)
+     2. max(l1) <= nth j l1 0 (follows from pointwise property) *)
+
+  apply Z.le_antisymm.
+  - (* Show max(l1) <= nth j l1 0 *)
+    (* Use the pointwise property: for any element l1[i], we have l1[i] >= l2[i] *)
+    (* Since l2[j] = max(l2) and l1[j] = l2[j], we have l1[j] >= max(l2) *)
+    (* If max(l1) > l1[j], then max(l1) > max(l2) *)
+    (* But this would mean some l1[k] > max(l2) >= l2[k], which is consistent with pointwise *)
+
+    (* The key insight is that we need additional structure *)
+    (* This lemma might not be true in full generality *)
+
+    (* For the specific application, this holds because at the maximizing index *)
+    (* the agreement ensures that the maximum is preserved *)
+    admit. (* Complex proof requiring careful analysis of max properties *)
+
+  - (* Show max(l1) >= nth j l1 0 *)
+    (* This is always true if j is a valid index *)
+    (* We need to show that the maximum of a list is >= any of its elements *)
+    (* This requires j to be a valid index, or we use the default value 0 *)
+
+    (* Case analysis on whether j is a valid index *)
+    destruct (Nat.ltb j (length l1)) eqn:Hj_valid.
+    + (* Case: j < length l1 *)
+      (* Use a general lemma about fold_right max containing all elements *)
+      (* For now, we'll use the fact that this should be provable *)
+      admit. (* fold_right_max_ge_nth: requires standard library lemma *)
+    + (* Case: j >= length l1 *)
+      (* In this case, nth j l1 0 = 0 (default value) *)
+      (* And fold_right Z.max 0 l1 >= 0 by definition *)
+      rewrite nth_overflow.
+      * apply fold_right_max_ge_base.
+      * apply Nat.ltb_nlt in Hj_valid. lia.
 Admitted.
 
 Lemma exists_nonneg_maximizing_prefix : forall xs : list Z,
@@ -470,11 +543,47 @@ Proof.
   unfold M in H_M_nonneg.
 
   (* The maximum M is achieved by some prefix in the list *)
-  (* If that prefix had sum < 0, this contradicts M >= 0 *)
-  (* Key insight: if a maximizing prefix had an internal partial sum < 0,
-     removing the negative prefix increases the sum (contradiction) *)
+  (* Since M >= 0, there must be a prefix with sum = M >= 0 *)
 
-  admit. (* Proof using contradiction: any maximizing prefix with negative partial sum can be improved *)
+  (* Step 1: Show that M is achieved by some prefix *)
+  assert (H_M_achieved: exists p, In p (inits xs) /\ fold_right Z.add 0 p = M).
+  {
+    (* M is the maximum of (map (fold_right Z.add 0) (inits xs)) *)
+    (* So M is achieved by some element in this mapped list *)
+    unfold M.
+
+    (* Use the fact that the maximum of a non-empty list is achieved by some element *)
+    (* inits xs is never empty - it always contains at least [] *)
+    assert (H_inits_nonempty: inits xs <> []).
+    {
+      destruct xs as [|x xs'].
+      - simpl. discriminate.
+      - rewrite inits_cons. discriminate.
+    }
+
+    assert (H_mapped_nonempty: map (fold_right Z.add 0) (inits xs) <> []).
+    {
+      intro H_contra.
+      apply map_eq_nil in H_contra.
+      contradiction.
+    }
+
+    (* Now use a general fact about fold_right Z.max achieving its maximum *)
+    (* For a non-empty list, the maximum is achieved by some element *)
+    admit. (* Need lemma: fold_right_max_achieved *)
+  }
+
+  (* Step 2: Use the achieved prefix to construct our witness *)
+  destruct H_M_achieved as [p [H_p_in H_p_sum]].
+
+  (* p is our witness *)
+  exists p.
+  split; [exact H_p_in | split].
+  - (* fold_right Z.add 0 p = M *)
+    exact H_p_sum.
+  - (* 0 <= fold_right Z.add 0 p *)
+    rewrite H_p_sum.
+    exact H_M_nonneg.
 Admitted.
 
 Lemma nonNegPlus_agrees_with_add_on_prefix :
@@ -498,11 +607,54 @@ Proof.
       apply nonNegPlus_eq_add_when_nonneg.
       exact H_sum_nonneg.
     + (* Case: fold_right Z.add 0 p' < 0 *)
-      (* In this case, fold_right nonNegPlus 0 p' might be 0 due to clamping *)
-      (* But we know x + fold_right Z.add 0 p' >= 0, so the final result should work *)
+      (* In this case, we cannot apply IH directly since p' has negative sum *)
+      (* But we still need to prove that nonNegPlus x (fold_right nonNegPlus 0 p') = x + fold_right Z.add 0 p' *)
 
-      (* This case is actually complex - let me admit it for now and use a different approach *)
-      admit.
+      (* Key insight: We need to understand what fold_right nonNegPlus 0 p' gives when p' has negative sum *)
+      (* It might not equal fold_right Z.add 0 p', but we can still analyze the final result *)
+
+      (* From H_sum_nonneg: x + fold_right Z.add 0 p' >= 0 *)
+      (* From H_p'_neg: fold_right Z.add 0 p' < 0 *)
+      (* So x >= -fold_right Z.add 0 p' > 0 *)
+
+      (* Strategy: Show that nonNegPlus x (fold_right nonNegPlus 0 p') equals x + fold_right Z.add 0 p' *)
+      (* by using the fact that the final sum is non-negative *)
+
+      (* We know that fold_right nonNegPlus 0 p' >= 0 always *)
+      assert (H_nonneg_ge_zero: fold_right nonNegPlus 0 p' >= 0).
+      {
+        apply nonNegSum_nonneg.
+      }
+
+      (* From fold_right_nonNegPlus_ge_add: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p' *)
+      assert (H_ge_add: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p').
+      {
+        apply fold_right_nonNegPlus_ge_add.
+      }
+
+      (* Since fold_right Z.add 0 p' < 0 and fold_right nonNegPlus 0 p' >= 0 *)
+      (* we have fold_right Z.add 0 p' < fold_right nonNegPlus 0 p' *)
+
+      (* Now, x + fold_right Z.add 0 p' >= 0 (given) *)
+      (* And x + fold_right nonNegPlus 0 p' >= x + fold_right Z.add 0 p' >= 0 *)
+      (* So nonNegPlus x (fold_right nonNegPlus 0 p') = x + fold_right nonNegPlus 0 p' *)
+
+      assert (H_final_nonneg: 0 <= x + fold_right nonNegPlus 0 p').
+      {
+        eapply Z.le_trans.
+        - exact H_sum_nonneg.
+        - apply Zplus_le_compat_l. exact H_ge_add.
+      }
+
+      (* Apply nonNegPlus_eq_add_when_nonneg *)
+      rewrite (nonNegPlus_eq_add_when_nonneg x (fold_right nonNegPlus 0 p') H_final_nonneg).
+
+      (* Now we need: x + fold_right nonNegPlus 0 p' = x + fold_right Z.add 0 p' *)
+      (* This requires: fold_right nonNegPlus 0 p' = fold_right Z.add 0 p' *)
+      (* But this is false when p' has negative sum *)
+
+      (* The issue is that this lemma might need a different approach or additional assumptions *)
+      admit. (* Complex case requiring careful analysis of the relationship between nonNegPlus and Z.add *)
 Admitted.
 
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
