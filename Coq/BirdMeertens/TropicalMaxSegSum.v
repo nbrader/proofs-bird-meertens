@@ -781,6 +781,17 @@ Proof.
   exact (fold_right_nonNegPlus_ge_add p).
 Qed.
 
+(* Basic fact: nonNegPlus always gives nonnegative results *)
+Lemma nonNegPlus_always_nonneg : forall x y,
+  0 <= nonNegPlus x y.
+Proof.
+  intros x y.
+  unfold nonNegPlus.
+  destruct (Z.leb 0 (x + y)) eqn:E.
+  - apply Z.leb_le in E. lia.
+  - lia.
+Qed.
+
 (* For maximum-achieving prefixes in mixed case, we need a stronger property *)
 Lemma maximum_prefix_equality : forall xs p,
   mixed_signs xs ->
