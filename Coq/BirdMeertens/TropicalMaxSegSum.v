@@ -357,6 +357,73 @@ Proof.
   apply fold_right_max_ge_base.
 Qed.
 
+Lemma nth_map :
+  forall (A B : Type) (f : A -> B) (l : list A) (d : A) (n : nat),
+    (n < length l)%nat ->
+    nth n (map f l) (f d) = f (nth n l d).
+Proof.
+  intros A B f l.
+  induction l as [|a l IH]; intros d n Hlt.
+  - inversion Hlt.
+  - destruct n as [|n].
+    + simpl. reflexivity.
+    + simpl in Hlt. simpl.
+      apply IH. lia.
+Qed.
+
+Lemma nth_cons_inits :
+  forall x xs j,
+    (j < length (inits xs))%nat ->
+    nth j (map (cons x) (inits xs)) [] <>
+    x :: nth j (@inits Z xs) [].
+Proof.
+  intros x xs j Hj.
+  pose proof (nth_map (list Z) (list Z) (cons x) (inits xs) [] j Hj).
+  rewrite <- H.
+  admit.
+Admitted.
+
+Lemma In_inits_gives_index : forall (xs : list Z) (p : list Z),
+  In p (inits xs) ->
+  exists j, nth j (inits xs) [] = p.
+Proof.
+  intro xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    intros p H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_false].
+    + (* p = [] *)
+      exists O. simpl. exact H_eq.
+    + (* Contradiction: no other elements *)
+      contradiction.
+  - (* Inductive case: xs = x :: xs' *)
+    intros p H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_in_tail].
+    + (* p = [] *)
+      exists O. simpl. exact H_eq.
+    + (* p is in map (fun ys => x :: ys) (inits xs') *)
+      (* This means p = x :: p' for some p' in inits xs' *)
+      apply in_map_iff in H_in_tail.
+      destruct H_in_tail as [p' [H_p_eq H_p'_in]].
+      (* p = x :: p', and p' is in inits xs' *)
+      (* By IH applied to p', there exists j' such that nth j' (inits xs') [] = p' *)
+      apply (IH p') in H_p'_in.
+      destruct H_p'_in as [j' H_j'_eq].
+      (* The index of p in inits (x :: xs') is S j' *)
+      exists (S j').
+      (* Goal: nth (S j') (inits (x :: xs')) [] = p *)
+      (* We have: H_p_eq: x :: p' = p and H_j'_eq: nth j' (inits xs') [] = p' *)
+      simpl.
+      (* After simpl: nth j' (map (cons x) (inits xs')) [] = p *)
+      (* Since the map_nth pattern matching is complex, let's prove this more directly *)
+      transitivity (cons x (nth j' (inits xs') [])).
+      (* * apply nth_cons_inits.*)
+      * admit.
+      * rewrite H_j'_eq. exact H_p_eq.
+Admitted.
+
 Lemma fold_right_nonNegPlus_ge_add : forall xs : list Z,
   fold_right Z.add 0 xs <= fold_right nonNegPlus 0 xs.
 Proof.
@@ -489,7 +556,38 @@ Proof.
     destruct H_exists_prefix as [p [H_in_inits [H_p_max H_p_nonneg]]].
 
     (* Find the index j corresponding to prefix p *)
-    admit. (* Technical lemma: In p (inits xs) gives index j such that nth j (inits xs) = p *)
+    assert (H_index_exists : exists j, nth j (inits xs) [] = p).
+    {
+      apply In_inits_gives_index. exact H_in_inits.
+    }
+    destruct H_index_exists as [j H_j_eq_p].
+
+    (* Now we need to show the conditions for max_preserve_pointwise *)
+    exists j.
+    split.
+    + (* Show nth j regular_sums 0 = fold_right Z.max 0 regular_sums *)
+      unfold regular_sums.
+      (* This requires showing that p achieves the maximum *)
+      (* We have nth j (map (fold_right Z.add 0) (inits xs)) 0 should equal fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
+      (* We have H_p_max: fold_right Z.add 0 p = fold_right Z.max 0 regular_sums *)
+      admit. (* Technical: relating nth of mapped list to the maximum value *)
+    + (* Show nth j nonneg_sums 0 = nth j regular_sums 0 *)
+      unfold nonneg_sums, regular_sums.
+      (* Since nth j (inits xs) [] = p, we need to show nth j (map f (inits xs)) 0 = nth j (map g (inits xs)) 0 *)
+      (* This reduces to showing f p = g p when j is the index where nth j (inits xs) [] = p *)
+      assert (H_nth_nonneg : nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 = fold_right nonNegPlus 0 p).
+      {
+        (* Technical lemma: nth j (map f xs) d = f (nth j xs d') when index is valid *)
+        admit. (* map_nth lemma application *)
+      }
+      assert (H_nth_regular : nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 p).
+      {
+        (* Same technical lemma *)
+        admit. (* map_nth lemma application *)
+      }
+      rewrite H_nth_nonneg, H_nth_regular.
+      (* Now we need fold_right nonNegPlus 0 p = fold_right Z.add 0 p *)
+      apply nonNegPlus_agrees_with_add_on_prefix. exact H_p_nonneg.
 
   (* The rest follows from the properties established above *)
 Admitted.
