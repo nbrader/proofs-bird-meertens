@@ -347,6 +347,51 @@ Proof.
     + apply Z.le_max_r.
 Qed.
 
+Lemma fold_right_max_ge_nth : forall (xs : list Z) (base : Z) (i : nat),
+  (i < length xs)%nat ->
+  nth i xs base <= fold_right Z.max base xs.
+Proof.
+  intros xs base i Hi.
+  revert i Hi.
+  induction xs as [| x xs' IH]; intros i Hi.
+  - (* Empty list case - contradiction *)
+    simpl in Hi. lia.
+  - (* Non-empty list: xs = x :: xs' *)
+    simpl.
+    destruct i as [| i'].
+    + (* i = 0: nth 0 (x :: xs') base = x *)
+      simpl. apply Z.le_max_l.
+    + (* i = S i': nth (S i') (x :: xs') base = nth i' xs' base *)
+      simpl in Hi.
+      simpl.
+      (* Goal: nth i' xs' base <= Z.max x (fold_right Z.max base xs') *)
+      transitivity (fold_right Z.max base xs').
+      * apply IH. lia.
+      * apply Z.le_max_r.
+Qed.
+
+
+(* Helper lemma: if a value is in a list, fold_right Z.max is >= that value *)
+Lemma in_fold_right_max_le : forall (xs : list Z) (x : Z),
+  In x xs ->
+  x <= fold_right Z.max 0 xs.
+Proof.
+  intros xs x H_in.
+  induction xs as [| y xs' IH].
+  - (* Empty list case - contradiction *)
+    contradiction.
+  - (* Non-empty list: xs = y :: xs' *)
+    simpl in H_in.
+    destruct H_in as [H_eq | H_in_tail].
+    + (* x = y *)
+      subst. simpl. apply Z.le_max_l.
+    + (* x is in xs' *)
+      simpl.
+      transitivity (fold_right Z.max 0 xs').
+      * apply IH. exact H_in_tail.
+      * apply Z.le_max_r.
+Qed.
+
 Lemma max_subarray_sum_nonneg_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   0 <= fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
@@ -525,9 +570,8 @@ Proof.
       (* Use a general lemma about fold_right max containing all elements *)
       (* For now, we'll use the fact that this should be provable *)
       (* For a valid index j, fold_right Z.max 0 l1 >= nth j l1 0 *)
-      (* This is a standard property that max of a list >= any element *)
-      (* Would require proving that fold_right Z.max includes all elements *)
-      admit. (* Standard library lemma: fold_right_max_ge_nth *)
+      apply fold_right_max_ge_nth.
+      apply Nat.ltb_lt. exact Hj_valid.
     + (* Case: j >= length l1 *)
       (* In this case, nth j l1 0 = 0 (default value) *)
       (* And fold_right Z.max 0 l1 >= 0 by definition *)
@@ -571,9 +615,9 @@ Proof.
       contradiction.
     }
 
-    (* Now use a general fact about fold_right Z.max achieving its maximum *)
-    (* For a non-empty list, the maximum is achieved by some element *)
-    admit. (* Need lemma: fold_right_max_achieved *)
+    (* For now, let's admit this standard result about fold_right max *)
+    (* This requires proving that the maximum of a mapped list is achieved by some element *)
+    admit. (* fold_right_max_achieved for mapped lists - complex standard lemma *)
   }
 
   (* Step 2: Use the achieved prefix to construct our witness *)
@@ -656,8 +700,26 @@ Proof.
       (* This requires: fold_right nonNegPlus 0 p' = fold_right Z.add 0 p' *)
       (* But this is false when p' has negative sum *)
 
-      (* The issue is that this lemma might need a different approach or additional assumptions *)
-      admit. (* Complex case requiring careful analysis of the relationship between nonNegPlus and Z.add *)
+      (* The key insight: even though p' has negative sum, x + fold_right nonNegPlus 0 p' >= 0 *)
+      (* This means x is large enough to compensate for the negative part *)
+      (* We need to show that x + fold_right nonNegPlus 0 p' = x + fold_right Z.add 0 p' *)
+
+      (* From H_final_nonneg: x + fold_right nonNegPlus 0 p' >= 0 *)
+      (* From H_p'_neg: fold_right Z.add 0 p' < 0 *)
+      (* From H_ge_add: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p' *)
+
+      (* Since fold_right nonNegPlus 0 p' >= 0 (always) and fold_right Z.add 0 p' < 0 *)
+      (* We have fold_right nonNegPlus 0 p' > fold_right Z.add 0 p' *)
+
+      (* But we need equality: x + fold_right nonNegPlus 0 p' = x + fold_right Z.add 0 p' *)
+      (* This would require: fold_right nonNegPlus 0 p' = fold_right Z.add 0 p' *)
+      (* Which contradicts what we just established *)
+
+      (* The issue is that this case might actually be impossible given our assumptions *)
+      (* Or we need a more sophisticated analysis of the nonNegPlus behavior *)
+
+      (* For now, this requires deeper analysis of the nonNegPlus properties *)
+      admit. (* This case may require reconsidering the lemma statement or approach *)
 Admitted.
 
 (* Helper lemma for nth of mapped lists with fold_right *)
