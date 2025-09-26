@@ -312,12 +312,97 @@ Qed.
 (* Case 3: Mixed signs - use tropical Horner's rule connection *)
 
 (* Key lemma: both approaches yield same maximum despite different intermediate values *)
+Lemma nonNegPlus_eq_add_when_nonneg : forall x y : Z,
+  0 <= x + y -> nonNegPlus x y = x + y.
+Proof.
+  intros x y H.
+  unfold nonNegPlus.
+  destruct (Z.leb 0 (x + y)) eqn:E.
+  - reflexivity.
+  - (* This case is impossible given H *)
+    apply Z.leb_nle in E.
+    exfalso.
+    apply E.
+    exact H.
+Qed.
+
+Lemma fold_right_nonNegPlus_eq_add_when_sum_nonneg : forall xs : list Z,
+  0 <= fold_right Z.add 0 xs ->
+  fold_right nonNegPlus 0 xs = fold_right Z.add 0 xs.
+Proof.
+  induction xs as [| x xs' IH].
+  - (* Base case: empty list *)
+    intro H. simpl. reflexivity.
+  - (* Inductive case *)
+    intro H_sum_nonneg.
+    simpl.
+    (* We need to show: nonNegPlus x (fold_right nonNegPlus 0 xs') = x + fold_right Z.add 0 xs' *)
+
+    (* Case analysis on whether fold_right Z.add 0 xs' >= 0 *)
+    destruct (Z_le_dec 0 (fold_right Z.add 0 xs')) as [H_xs_nonneg | H_xs_neg].
+    + (* Case: 0 <= fold_right Z.add 0 xs' *)
+      (* Apply IH to get fold_right nonNegPlus 0 xs' = fold_right Z.add 0 xs' *)
+      rewrite IH by exact H_xs_nonneg.
+      (* Now apply our basic lemma *)
+      apply nonNegPlus_eq_add_when_nonneg.
+      exact H_sum_nonneg.
+    + (* Case: fold_right Z.add 0 xs' < 0 *)
+      (* In this case, fold_right nonNegPlus 0 xs' might be 0, but we still need the equality *)
+      (* Since H_sum_nonneg says x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0,
+         we must have x > |fold_right Z.add 0 xs'| *)
+
+      (* However, we need to be more careful about what fold_right nonNegPlus 0 xs' actually is *)
+      admit. (* This case needs more careful analysis *)
+Admitted.
+
+Lemma fold_right_max_ge_base : forall (xs : list Z) (base : Z),
+  base <= fold_right Z.max base xs.
+Proof.
+  intros xs base.
+  induction xs as [| x xs' IH].
+  - (* Base case: empty list *)
+    simpl. reflexivity.
+  - (* Inductive case *)
+    simpl.
+    (* fold_right Z.max base (x :: xs') = Z.max x (fold_right Z.max base xs') *)
+    (* We need base <= Z.max x (fold_right Z.max base xs') *)
+    (* By IH: base <= fold_right Z.max base xs' *)
+    (* Since fold_right Z.max base xs' <= Z.max x (fold_right Z.max base xs') *)
+    (* and base <= fold_right Z.max base xs', we get base <= Z.max x (...) *)
+    transitivity (fold_right Z.max base xs').
+    + exact IH.
+    + apply Z.le_max_r.
+Qed.
+
+Lemma max_subarray_sum_nonneg_in_mixed_case : forall xs : list Z,
+  mixed_signs xs ->
+  0 <= fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
+Proof.
+  intro xs.
+  intro H_mixed.
+  (* Since we're taking max with 0, the result is always >= 0 *)
+  apply fold_right_max_ge_base.
+Qed.
+
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
   fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
 Proof.
-  admit.
+  intros xs H_mixed.
+
+  (* The key insight: we need to show that for each prefix, if its sum achieves the maximum
+     and that maximum is >= 0, then nonNegPlus behaves like Z.add for that prefix *)
+
+  (* First establish that the maximum sum is >= 0 *)
+  assert (H_max_nonneg : 0 <= fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs))).
+  { apply max_subarray_sum_nonneg_in_mixed_case. exact H_mixed. }
+
+  (* Now we use the fact that for any two lists of equal length,
+     if max(0, max(list1)) = max(0, max(list2)), and this maximum is achieved
+     at the same position where list1[i] = list2[i], then max(list1) = max(list2) *)
+
+  admit. (* This proof needs more development *)
 Admitted.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
