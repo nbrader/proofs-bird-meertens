@@ -657,6 +657,18 @@ Proof.
       admit. (* Complex case requiring careful analysis of the relationship between nonNegPlus and Z.add *)
 Admitted.
 
+(* Helper lemma for nth of mapped lists with fold_right *)
+Lemma nth_map_fold_right : forall (f : list Z -> Z) (xs : list (list Z)) (i : nat),
+  (i < length xs)%nat ->
+  nth i (map f xs) 0 = f (nth i xs []).
+Proof.
+  intros f xs i Hi.
+  (* This requires careful handling of default values in nth_map *)
+  (* For our specific use cases (fold_right nonNegPlus 0 and fold_right Z.add 0) *)
+  (* both functions return 0 when applied to [], which makes this work *)
+  admit. (* Technical lemma: nth of map with default value handling *)
+Admitted.
+
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
@@ -696,7 +708,62 @@ Proof.
     (* This follows from the fact that nonNegPlus always gives results >= regular sums *)
     (* nth i (map (fold_right nonNegPlus 0) (inits xs)) 0 >= nth i (map (fold_right Z.add 0) (inits xs)) 0 *)
     (* This follows from fold_right_nonNegPlus_ge_add applied to each prefix in inits xs *)
-    admit. (* Technical lemma: pointwise application of fold_right_nonNegPlus_ge_add to mapped lists *)
+
+    (* Case analysis on whether i is a valid index *)
+    destruct (Nat.ltb i (length (inits xs))) eqn:Hi_valid.
+    + (* Case: i < length (inits xs) *)
+      (* Both mapped lists have the same length as inits xs *)
+      assert (H_len_nonneg: length (map (fold_right nonNegPlus 0) (inits xs)) = length (inits xs)).
+      { apply map_length. }
+      assert (H_len_regular: length (map (fold_right Z.add 0) (inits xs)) = length (inits xs)).
+      { apply map_length. }
+
+      (* Since i is valid, we can extract the prefix and apply fold_right_nonNegPlus_ge_add *)
+      (* The goal is: nth i (map (fold_right nonNegPlus 0) (inits xs)) 0 >= nth i (map (fold_right Z.add 0) (inits xs)) 0 *)
+
+      (* We know i < length (inits xs), so both mapped lists have valid elements at index i *)
+      assert (Hi_lt: (i < length (inits xs))%nat).
+      { apply Nat.ltb_lt. exact Hi_valid. }
+
+      (* Let's get the actual prefix at index i *)
+      set (prefix_i := nth i (inits xs) []).
+
+      (* The key insight: both sides are comparing the same prefix computed with different functions *)
+      (* nth i (map f xs) d should equal f (nth i xs d') when i < length xs *)
+      (* But we need to be careful about the default values *)
+
+      (* Since fold_right nonNegPlus 0 [] = 0 and fold_right Z.add 0 [] = 0 *)
+      (* and the defaults matter only when index is out of bounds, which it isn't here *)
+
+      (* Use the monotonicity of fold_right_nonNegPlus_ge_add on the same prefix *)
+      assert (H_eq_prefix_nonneg: nth i (map (fold_right nonNegPlus 0) (inits xs)) 0 = fold_right nonNegPlus 0 prefix_i).
+      {
+        unfold prefix_i.
+        apply nth_map_fold_right. exact Hi_lt.
+      }
+
+      assert (H_eq_prefix_regular: nth i (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 prefix_i).
+      {
+        unfold prefix_i.
+        apply nth_map_fold_right. exact Hi_lt.
+      }
+
+      (* The pointwise inequality follows from fold_right_nonNegPlus_ge_add applied to each prefix *)
+      (* Now that we have the equations relating nth to fold_right, we can apply the inequality *)
+      rewrite H_eq_prefix_nonneg, H_eq_prefix_regular.
+      (* Goal: fold_right nonNegPlus 0 prefix_i >= fold_right Z.add 0 prefix_i *)
+      (* This is the same as: fold_right Z.add 0 prefix_i <= fold_right nonNegPlus 0 prefix_i *)
+      (* which is exactly what fold_right_nonNegPlus_ge_add provides *)
+      (* Use lia to convert between <= and >= *)
+      assert (H_ineq: fold_right Z.add 0 prefix_i <= fold_right nonNegPlus 0 prefix_i).
+      { exact (fold_right_nonNegPlus_ge_add prefix_i). }
+      lia.
+    + (* Case: i >= length (inits xs) *)
+      (* Both nth return default value 0, so 0 >= 0 *)
+      rewrite nth_overflow, nth_overflow.
+      * lia.
+      * rewrite map_length. apply Nat.ltb_ge. exact Hi_valid.
+      * rewrite map_length. apply Nat.ltb_ge. exact Hi_valid.
 
   (* Prove existence of agreeing index: exists j where both lists agree and achieve the maximum *)
   - assert (H_exists_prefix : exists p, In p (inits xs) /\ fold_right Z.add 0 p = fold_right Z.max 0 regular_sums /\ 0 <= fold_right Z.add 0 p).
@@ -722,7 +789,16 @@ Proof.
       (* This requires showing that p achieves the maximum *)
       (* We have nth j (map (fold_right Z.add 0) (inits xs)) 0 should equal fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
       (* We have H_p_max: fold_right Z.add 0 p = fold_right Z.max 0 regular_sums *)
-      admit. (* Technical: relating nth of mapped list to the maximum value *)
+
+      (* Use the same pattern as in H_nth_regular to relate nth to p *)
+      unfold regular_sums in H_p_max.
+      destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds.
+      * (* j < length (inits xs) *)
+        (* Technical application of nth_map for fold_right Z.add *)
+        admit. (* nth_map application with index validation *)
+      * (* j >= length (inits xs) *)
+        (* Edge case: j out of bounds *)
+        admit. (* Edge case: nth_overflow application when j >= length *)
     + (* Show nth j nonneg_sums 0 = nth j regular_sums 0 *)
       unfold nonneg_sums, regular_sums.
       (* Since nth j (inits xs) [] = p, we need to show nth j (map f (inits xs)) 0 = nth j (map g (inits xs)) 0 *)
@@ -730,12 +806,17 @@ Proof.
       assert (H_nth_nonneg : nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 = fold_right nonNegPlus 0 p).
       {
         (* Technical lemma: nth j (map f xs) d = f (nth j xs d') when index is valid *)
-        admit. (* map_nth lemma application *)
+        (* We need to check if j is a valid index *)
+        destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds.
+        - (* j < length (inits xs) *)
+          admit. (* nth_map application for nonNegPlus *)
+        - (* j >= length (inits xs) *)
+          admit. (* Edge case handling *)
       }
       assert (H_nth_regular : nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 p).
       {
-        (* Same technical lemma *)
-        admit. (* map_nth lemma application *)
+        (* Same pattern as above *)
+        admit. (* Technical: nth_map applications for Z.add case *)
       }
       rewrite H_nth_nonneg, H_nth_regular.
       (* Now we need fold_right nonNegPlus 0 p = fold_right Z.add 0 p *)
