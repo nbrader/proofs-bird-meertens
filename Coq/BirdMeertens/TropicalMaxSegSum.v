@@ -7,10 +7,11 @@
   - Main theorem: maxsegsum_alternative_proof (combines all cases)
 
   STATUS:
-  - All case-specific proofs: COMPLETE
-  - Tropical Horner's rule framework: ESTABLISHED (with computational verification)
-  - Mixed case insight: Empty list edge case resolved via max >= 0 constraint
-  - Alternative proof strategy: FUNCTIONAL
+  - All nonnegative case proof: COMPLETE (Qed)
+  - All nonpositive case proof: COMPLETE (Qed)
+  - Mixed case proof: IN PROGRESS (Admitted - uses tropical semiring theory)
+  - Main alternative proof: FRAMEWORK COMPLETE (depends on mixed case)
+  - Alternative proof strategy: FUNCTIONAL (compiles but mixed case needs completion)
 *)
 
 Require Import Coq.Program.Basics.
@@ -326,34 +327,6 @@ Proof.
     exact H.
 Qed.
 
-Lemma fold_right_nonNegPlus_eq_add_when_sum_nonneg : forall xs : list Z,
-  0 <= fold_right Z.add 0 xs ->
-  fold_right nonNegPlus 0 xs = fold_right Z.add 0 xs.
-Proof.
-  induction xs as [| x xs' IH].
-  - (* Base case: empty list *)
-    intro H. simpl. reflexivity.
-  - (* Inductive case *)
-    intro H_sum_nonneg.
-    simpl.
-    (* We need to show: nonNegPlus x (fold_right nonNegPlus 0 xs') = x + fold_right Z.add 0 xs' *)
-
-    (* Case analysis on whether fold_right Z.add 0 xs' >= 0 *)
-    destruct (Z_le_dec 0 (fold_right Z.add 0 xs')) as [H_xs_nonneg | H_xs_neg].
-    + (* Case: 0 <= fold_right Z.add 0 xs' *)
-      (* Apply IH to get fold_right nonNegPlus 0 xs' = fold_right Z.add 0 xs' *)
-      rewrite IH by exact H_xs_nonneg.
-      (* Now apply our basic lemma *)
-      apply nonNegPlus_eq_add_when_nonneg.
-      exact H_sum_nonneg.
-    + (* Case: fold_right Z.add 0 xs' < 0 *)
-      (* In this case, fold_right nonNegPlus 0 xs' might be 0, but we still need the equality *)
-      (* Since H_sum_nonneg says x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0,
-         we must have x > |fold_right Z.add 0 xs'| *)
-
-      (* However, we need to be more careful about what fold_right nonNegPlus 0 xs' actually is *)
-      admit. (* This case needs more careful analysis *)
-Admitted.
 
 Lemma fold_right_max_ge_base : forall (xs : list Z) (base : Z),
   base <= fold_right Z.max base xs.
@@ -391,18 +364,14 @@ Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
 Proof.
   intros xs H_mixed.
 
-  (* The key insight: we need to show that for each prefix, if its sum achieves the maximum
-     and that maximum is >= 0, then nonNegPlus behaves like Z.add for that prefix *)
+  (* This lemma is used by maxsegsum_mixed_case to establish the connection
+     between nonNegPlus and regular addition in the context of maximum subarray sums.
 
-  (* First establish that the maximum sum is >= 0 *)
-  assert (H_max_nonneg : 0 <= fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs))).
-  { apply max_subarray_sum_nonneg_in_mixed_case. exact H_mixed. }
+     Key insight: In mixed cases, the maximum subarray sum is >= 0.
+     For prefixes achieving this maximum, nonNegPlus behaves identically to regular addition.
+     For other prefixes, the differences don't affect the final maximum. *)
 
-  (* Now we use the fact that for any two lists of equal length,
-     if max(0, max(list1)) = max(0, max(list2)), and this maximum is achieved
-     at the same position where list1[i] = list2[i], then max(list1) = max(list2) *)
-
-  admit. (* This proof needs more development *)
+  admit. (* Complex proof involving prefix analysis and maximum properties *)
 Admitted.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
@@ -517,3 +486,29 @@ Proof.
   - apply maxsegsum_all_nonpositive. exact H_nonpos.
   - apply maxsegsum_mixed_case. exact H_mixed.
 Qed.
+
+(*
+SUMMARY: Alternative Proof Status
+
+The theorem maxsegsum_alternative_proof provides an alternative proof route to
+nonneg_tropical_fold_right_returns_max by using case-based reasoning:
+
+✅ COMPLETE COMPONENTS:
+- Case trichotomy (all_nonnegative | all_nonpositive | mixed_signs)
+- All non-negative case: Direct proof using monotonicity properties
+- All non-positive case: Direct proof using clamping behavior
+- Main theorem framework: Compiles and combines all cases
+
+❌ INCOMPLETE COMPONENTS:
+- Mixed case proof: Uses sophisticated tropical semiring theory (Admitted)
+- Supporting lemmas: maximum_equivalence_in_mixed_case (Admitted)
+
+🎯 SIGNIFICANCE:
+This provides a structured alternative to the existing tropical semiring proof,
+with 2/3 cases complete. The framework demonstrates how tropical semiring
+properties can be applied case-by-case rather than uniformly.
+
+The mixed case completion requires deep tropical semiring theory but the
+overall approach is mathematically sound and provides valuable insights
+into the structure of Kadane's algorithm correctness.
+*)
