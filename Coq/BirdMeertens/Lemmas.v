@@ -421,16 +421,13 @@ Lemma max_distrib_max : forall a b c,
   Z.max (Z.max a b) c = Z.max (Z.max a c) (Z.max b c).
 Proof.
   intros a b c.
-  (* both sides are just the max of {a,b,c}; normalise by assoc/comm rewrites *)
-  replace (a <|> c <|> (b <|> c)) with (a <|> b <|> (c <|> c)).
-  - rewrite Z.max_idempotent.
-    reflexivity.
-  - replace (a <|> c <|> (b <|> c)) with (a <|> (b <|> c) <|> c).
-    + rewrite Z.max_assoc. rewrite Z.max_assoc. reflexivity.
-    + replace ((a <|> (b <|> c)) <|> c) with (a <|> ((b <|> c) <|> c)) by (apply Z.max_assoc).
-      replace ((b <|> c) <|> c) with (c <|> (b <|> c)) by (apply Z.max_comm).
-      rewrite Z.max_assoc.
-      reflexivity.
+  rewrite <- Z.max_assoc.
+  rewrite (Z.max_comm b c).
+  rewrite Z.max_assoc.
+  rewrite Z.max_assoc.
+  replace ((a <|> c) <|> c) with (a <|> (c <|> c)) by (apply Z.max_assoc).
+  rewrite Z.max_idempotent.
+  reflexivity.
 Qed.
 
 Lemma fold_left_max_init_distrib : forall sl a b,
