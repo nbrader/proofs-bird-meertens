@@ -280,15 +280,6 @@ Proof.
   - exact H_xs_mapped.
 Qed.
 
-(* 3. nonNegPlus_comm - used in form7_eq_form8 *)
-Lemma nonNegPlus_comm : forall x y : Z, nonNegPlus x y = nonNegPlus y x.
-Proof.
-  intros x y.
-  unfold nonNegPlus.
-  rewrite Z.add_comm.
-  reflexivity.
-Qed.
-
 (* 4. fold_scan_fusion_pair - used in form7_eq_form8 *)
 Lemma fold_scan_fusion_pair :
   forall (xs : list Z),
