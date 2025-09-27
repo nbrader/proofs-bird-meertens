@@ -64,34 +64,63 @@ Proof.
   rewrite Z.add_comm; reflexivity.
 Qed.
 
-(* Lemma nonNegPlus_monotone_r : forall x a b : Z,
+Lemma nonNegPlus_monotone_r : forall x a b : Z,
   a <= b -> nonNegPlus x a <= nonNegPlus x b.
 Proof.
-  intros. unfold nonNegPlus.
-  apply Z.max_le_compat; [apply Z.le_refl | apply Z.add_le_mono_r; assumption].
-Qed. *)
+  intros x a b H.
+  unfold nonNegPlus.
+  apply Z.max_le_compat.
+  - apply Z.le_refl.
+  - apply Z.add_le_mono_l.
+    exact H.
+Qed.
 
-(* Lemma nonNegPlus_monotone_l : forall a b x : Z,
+Lemma nonNegPlus_monotone_l : forall a b x : Z,
   a <= b -> nonNegPlus a x <= nonNegPlus b x.
 Proof.
-  intros. unfold nonNegPlus.
-  apply Z.max_le_compat; [apply Z.le_refl | apply Z.add_le_mono_l; assumption].
-Qed. *)
+  intros x a b H.
+  unfold nonNegPlus.
+  apply Z.max_le_compat.
+  - apply Z.le_refl.
+  - apply Z.add_le_mono_r.
+    exact H.
+Qed.
 
 (* Z.max basic algebraic laws (these already exist in ZArith but naming them here is convenient) *)
 
 Lemma Zmax_comm : forall a b, Z.max a b = Z.max b a.
-Proof. intros; apply Z.max_comm. Qed.
+Proof.
+  intros; apply Z.max_comm.
+Qed.
 
-(* Lemma Zmax_assoc : forall a b c, Z.max (Z.max a b) c = Z.max a (Z.max b c).
-Proof. intros; apply Z.max_assoc. Qed. *)
+Lemma Zmax_assoc : forall a b c, Z.max (Z.max a b) c = Z.max a (Z.max b c).
+Proof.
+  intros.
+  rewrite Z.max_assoc.
+  reflexivity.
+Qed.
 
-(* Lemma Zmax_add_distr_r : forall a b c : Z,
+Lemma Zmax_add_distr_r : forall a b c : Z,
   Z.max a b + c = Z.max (a + c) (b + c).
 Proof.
   intros. (* standard fact: addition distributes over max on integers *)
-  apply Z.max_spec; lia.  (* if you prefer a direct proof, one can use Z.max_case_strong *)
-Qed. *)
+  pose proof (Z.max_spec a b).
+  destruct H.
+  - destruct H.
+    rewrite H0.
+    symmetry.
+    apply Z.max_r.
+    apply Z.add_le_mono_r.
+    apply Z.le_lteq.
+    left.
+    exact H.
+  - destruct H.
+    rewrite H0.
+    symmetry.
+    apply Z.max_l.
+    apply Z.add_le_mono_r.
+    exact H.
+Qed.
 
 (* Idempotence *)
 Lemma Zmax_idem : forall a, Z.max a a = a.
