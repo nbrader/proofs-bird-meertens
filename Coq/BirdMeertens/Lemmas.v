@@ -6,9 +6,6 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Require Import BirdMeertens.ListFunctions.
-Require Import BirdMeertens.FunctionLemmas.
-Require Import BirdMeertens.TailsMonoid.
 Require Import CoqUtilLib.ListFunctions.
 
 Require Import FreeMonoid.StructMonoid.
@@ -25,8 +22,11 @@ Open Scope Z_scope.
 (* ===== CORE DEFINITIONS ===== *)
 Notation "x <|> y" := (Z.max x y) (at level 50, left associativity).
 
-Definition nonNegPlus (x y : Z) : Z :=
-  if Z.leb 0 (x + y) then x + y else 0.
+(* Original conditional definition (backup):
+   Definition nonNegPlus (x y : Z) : Z := if Z.leb 0 (x + y) then x + y else 0. *)
+
+(* New Z.max-based definition for cleaner proofs *)
+Definition nonNegPlus (x y : Z) : Z := Z.max 0 (x + y).
 
 Notation "x <#> y" := (nonNegPlus x y) (at level 40, left associativity).
 
@@ -59,9 +59,9 @@ Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
 Proof.
   intros x y.
   unfold nonNegPlus.
-  destruct (Z.leb 0 (x + y)) eqn:H.
-  - apply Z.leb_le in H. apply Z.le_ge. exact H.
-  - apply Z.le_ge. apply Z.le_refl.
+  (* With Z.max definition, the result is always >= 0 since we take max with 0 *)
+  apply Z.le_ge.
+  apply Z.le_max_l.
 Qed.
 
 Lemma nonNegSum_dual_nonneg : forall xs : list Z, nonNegSum_dual xs >= 0.
@@ -113,12 +113,47 @@ Lemma tropical_horner_eq_nonNegPlus : forall x y : Z,
   (x <#> y <|> 0) = x <#> y.
 Proof.
   intros x y.
-  unfold nonNegPlus.
-  destruct (Z.leb 0 (x + y)) eqn:H.
-  - apply Z.leb_le in H.
-    rewrite Z.max_l; [reflexivity | exact H].
-  - apply Z.leb_gt in H.
-    rewrite Z.max_r; [reflexivity | apply Z.le_refl].
+  unfold nonNegPlus, "_ <|> _".
+  (* Goal: Z.max (Z.max 0 (x + y)) 0 = Z.max 0 (x + y) *)
+  (* Since Z.max 0 (x + y) >= 0, we have max(Z.max 0 (x + y), 0) = Z.max 0 (x + y) *)
+  apply Z.max_l.
+  apply Z.le_max_l.
+Qed.
+
+Lemma max_lowerbound_l : forall (x a b lb : Z), (a <= b) -> ((lb <=? x + a) = true) -> ((lb <=? x + b) = true) -> (lb <|> (x + a) <= lb <|> (x + b)).
+Proof.
+  intros x a b lb H_le Ha Hb.
+  apply Z.leb_le in Ha.
+  apply Z.leb_le in Hb.
+  replace (lb <|> (x + a)) with (x + a) by (symmetry; apply Z.max_r; exact Ha).
+  replace (lb <|> (x + b)) with (x + b) by (symmetry; apply Z.max_r; exact Hb).
+  apply Z.add_le_mono_l. exact H_le.
+Qed.
+
+Lemma max_lowerbound_r : forall (x a b lb : Z), (a <= b) -> ((lb <=? a + x) = true) -> ((lb <=? b + x) = true) -> (lb <|> (a + x) <= lb <|> (b + x)).
+Proof.
+  intros x a b lb H_le Ha Hb.
+  apply Z.leb_le in Ha.
+  apply Z.leb_le in Hb.
+  replace (lb <|> (a + x)) with (a + x) by (symmetry; apply Z.max_r; exact Ha).
+  replace (lb <|> (b + x)) with (b + x) by (symmetry; apply Z.max_r; exact Hb).
+  apply Z.add_le_mono_r. exact H_le.
+Qed.
+
+Lemma max_ineq1_l : forall (x a b lb : Z), (a <= b) -> ((lb <=? x + a) = false) -> (lb <|> (x + a) <= lb <|> (x + b)).
+Proof.
+  intros x a b lb H_le Ha.
+  apply Z.leb_gt in Ha.
+  replace (lb <|> (x + a)) with lb by (symmetry; apply Z.max_l; apply Z.le_lteq; left; exact Ha).
+  apply Z.le_max_l.
+Qed.
+
+Lemma max_ineq1_r : forall (x a b lb : Z), (a <= b) -> ((lb <=? a + x) = false) -> (lb <|> (a + x) <= lb <|> (b + x)).
+Proof.
+  intros x a b lb H_le Ha.
+  apply Z.leb_gt in Ha.
+  replace (lb <|> (a + x)) with lb by (symmetry; apply Z.max_l; apply Z.le_lteq; left; exact Ha).
+  apply Z.le_max_l.
 Qed.
 
 Lemma fold_left_monotonic_nonNegPlus : forall (xs : list Z) (a b : Z),
@@ -131,15 +166,16 @@ Proof.
   - apply IH.
     unfold nonNegPlus.
     destruct (Z.leb 0 (a + x)) eqn:Ha, (Z.leb 0 (b + x)) eqn:Hb.
-    + apply Z.add_le_mono_r. exact H_le.
+    + apply (max_lowerbound_r x a b 0 H_le Ha Hb).
     + exfalso.
-      apply Z.leb_le in Ha. apply Z.leb_gt in Hb.
+      apply Z.leb_le in Ha.
+      apply Z.leb_gt in Hb.
       assert (H_contra: a + x <= b + x) by (apply Z.add_le_mono_r; exact H_le).
       assert (H_ge_lt: 0 <= b + x) by (apply Z.le_trans with (m := a + x); [exact Ha | exact H_contra]).
       apply Z.lt_irrefl with (x := 0).
       apply Z.le_lt_trans with (m := b + x); [exact H_ge_lt | exact Hb].
-    + apply Z.leb_le in Hb. exact Hb.
-    + apply Z.le_refl.
+    + apply (max_ineq1_r x a b 0 H_le Ha).
+    + apply (max_ineq1_r x a b 0 H_le Ha).
 Qed.
 
 (* ===== SUFFIX/PREFIX PROPERTIES ===== *)
@@ -205,11 +241,11 @@ Proof.
         (* The 'if' evaluates to the 'then' branch. *)
         (* The goal becomes 0 <= h + nonNegSum t, which is true by our assumption for this case. *)
         apply Z.leb_le in H_leb.
-        exact H_leb.
+        apply Z.le_max_l.
       + (* Case 2: The condition is false. *)
         (* The 'if' evaluates to the 'else' branch, which is 0. *)
         (* The goal becomes 0 <= 0, which is trivially true. *)
-        reflexivity.
+        apply Z.le_max_l.
   }
 
   (* Helper 2: The nonNegPlus operation is monotonic in its second argument. *)
@@ -219,8 +255,7 @@ Proof.
     unfold nonNegPlus.
     destruct (Z.leb 0 (x + a)) eqn:Ha, (Z.leb 0 (x + b)) eqn:Hb.
     - (* Case 1: x+a >= 0 and x+b >= 0. *)
-      apply Z.add_le_mono_l.
-      exact H_le.
+      apply (max_lowerbound_l x a b 0 H_le Ha Hb).
     - (* Case 2: x+a >= 0 and x+b < 0. This case is impossible. *)
       exfalso.
       apply Z.leb_le in Ha.
@@ -230,10 +265,9 @@ Proof.
       apply Z.lt_irrefl with (x := 0).
       apply Z.le_lt_trans with (m := x + b); [exact H_xb_ge_0 | exact Hb].
     - (* Case 3: x+a < 0 and x+b >= 0. *)
-      apply Z.leb_le in Hb.
-      exact Hb.
+      apply (max_ineq1_l x a b 0 H_le Ha).
     - (* Case 4: x+a < 0 and x+b < 0. *)
-      reflexivity.
+      apply (max_ineq1_l x a b 0 H_le Ha).
   }
 
   (* Main proof by induction on the prefix list xs. *)

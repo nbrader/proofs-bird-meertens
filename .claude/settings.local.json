@@ -8,7 +8,8 @@
       "Bash(find:*)",
       "Bash(awk:*)",
       "Bash(coqc:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

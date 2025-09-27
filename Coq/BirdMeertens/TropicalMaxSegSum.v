@@ -156,7 +156,11 @@ Proof.
       rewrite Hx_zero, Hxs'_zero. simpl. reflexivity.
     + (* Case: x + nonNegSum xs' < 0 *)
       (* nonNegPlus returns 0 in this case *)
-      reflexivity.
+      apply Z.max_l.
+      apply Z.leb_gt in Heq.
+      apply Z.le_lteq.
+      left.
+      exact Heq.
 Qed.
 
 (* Case 2: All non-positive - both sides equal 0 due to clamping behavior *)
@@ -253,19 +257,34 @@ Proof.
 Qed.
 
 (* Helper lemma: nonNegPlus equals Z.max regardless of argument order *)
+(* Equivalence between new Z.max definition and old conditional definition *)
 Lemma nonNegPlus_max_equiv : forall x y : Z,
-  nonNegPlus x y = Z.max (x + y) 0.
+  nonNegPlus x y = (if Z.leb 0 (x + y) then x + y else 0).
 Proof.
   intros x y.
   unfold nonNegPlus.
   (* Case analysis on whether 0 <= x + y *)
   destruct (Z.leb_spec 0 (x + y)) as [H | H].
   - (* Case: 0 <= x + y *)
-    (* nonNegPlus gives x + y, Z.max gives max of x + y and 0 = x + y *)
-    rewrite Z.max_l; [reflexivity | exact H].
+    (* Z.max gives max of 0 and x + y = x + y, conditional gives x + y *)
+    apply Z.max_r.
+    exact H.
   - (* Case: x + y < 0 *)
-    (* nonNegPlus gives 0, Z.max gives max of x + y and 0 = 0 *)
-    rewrite Z.max_r; [reflexivity | lia].
+    (* Z.max gives max of 0 and x + y = 0, conditional gives 0 *)
+    apply Z.max_l.
+    apply Z.le_lteq.
+    left.
+    exact H.
+Qed.
+
+(* Helper lemma: nonNegPlus equals Z.max regardless of argument order *)
+(* Equivalence between new Z.max definition and old conditional definition *)
+Lemma nonNegPlus_max_equiv' : forall x y : Z,
+  nonNegPlus x y = 0 <|> (x + y).
+Proof.
+  intros.
+  unfold nonNegPlus.
+  reflexivity.
 Qed.
 
 (* Helper lemma: Left-side correspondence between nonNegPlus and tropical operations *)
@@ -305,9 +324,10 @@ Proof.
       injection H_eq as H_n.
       (* H_n : n = Z.max (x + m) 0 *)
       (* Goal: nonNegPlus x m = n *)
-      rewrite nonNegPlus_max_equiv.
+      rewrite nonNegPlus_max_equiv'.
       (* Now we have: Z.max (x + m) 0 = n *)
       (* And H_n gives us: x + m <|> 0 = n *)
+      rewrite Z.max_comm.
       exact H_n.
     + exact H_m.
 Qed.
@@ -321,7 +341,8 @@ Proof.
   intros x y H.
   unfold nonNegPlus.
   destruct (Z.leb 0 (x + y)) eqn:E.
-  - reflexivity.
+  - apply Z.max_r.
+    exact H.
   - (* This case is impossible given H *)
     apply Z.leb_nle in E.
     exfalso.
@@ -402,7 +423,7 @@ Proof.
   unfold nonNegPlus.
   destruct (Z.leb 0 (x + y)) eqn:Hy; destruct (Z.leb 0 (x + z)) eqn:Hz.
   - (* Both nonnegative: x + y >= 0 and x + z >= 0 *)
-    apply Zplus_le_compat_l. exact H_le.
+    apply max_lowerbound_l; auto.
   - (* x + y >= 0 but x + z < 0 - impossible since y <= z *)
     apply Z.leb_le in Hy.
     apply Z.leb_nle in Hz.
@@ -414,7 +435,7 @@ Proof.
     apply Z.leb_le in Hz.
     lia.
   - (* Both negative: return 0 *)
-    reflexivity.
+    apply max_ineq1_l; auto.
 Qed.
 
 (* Helper lemma: nonNegPlus with 0 is idempotent when result is nonnegative *)
@@ -424,9 +445,7 @@ Proof.
   intros x H_nonneg.
   unfold nonNegPlus.
   rewrite Z.add_0_r.
-  apply Z.leb_le in H_nonneg.
-  rewrite H_nonneg.
-  reflexivity.
+  apply Z.max_r; auto.
 Qed.
 
 Lemma max_subarray_sum_nonneg_in_mixed_case : forall xs : list Z,
@@ -537,7 +556,10 @@ Proof.
     destruct (Z.leb 0 (x + fold_right nonNegPlus 0 xs')) eqn:E.
     + (* Case: x + fold_right nonNegPlus 0 xs' >= 0 *)
       (* Goal becomes: x + fold_right Z.add 0 xs' <= x + fold_right nonNegPlus 0 xs' *)
-      apply Zplus_le_compat_l. exact IH.
+      apply Z.leb_le in E.
+      replace (0 <|> (x + fold_right nonNegPlus 0 xs')) with ((x + fold_right nonNegPlus 0 xs')) by (symmetry; apply Z.max_r; exact E).
+      apply Z.add_le_mono_l.
+      exact IH.
     + (* Case: x + fold_right nonNegPlus 0 xs' < 0 *)
       (* Goal becomes: x + fold_right Z.add 0 xs' <= 0 *)
       apply Z.leb_nle in E.
@@ -883,6 +905,7 @@ Proof.
     unfold nonNegPlus.
     destruct (Z.leb 0 (x + fold_right Z.add 0 p')) eqn:Hcond.
     + (* Case: 0 <= x + fold_right Z.add 0 p' *)
+      replace (0 <|> (x + fold_right Z.add 0 p')) with (x + fold_right Z.add 0 p') by (symmetry; apply Z.max_r; exact H_step_nonneg).
       reflexivity.
     + (* Case: x + fold_right Z.add 0 p' < 0 *)
       (* This contradicts H_step_nonneg *)

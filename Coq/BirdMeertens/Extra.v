@@ -299,72 +299,7 @@ Proof.
   unfold distributes_over_max.
   intros s t x.
   unfold nonNegPlus.
-  rewrite max_add_distributes.
-  (* Case analysis on whether each sum is non-negative *)
-  destruct (Z.leb 0 (s + x)) eqn:Hs, (Z.leb 0 (t + x)) eqn:Ht.
-  
-  (* Case 1: both s+x >= 0 and t+x >= 0 *)
-  - (* Then max(s+x, t+x) >= 0, so nonNegPlus of max is the max itself *)
-    (* And max(s+x, 0) = s+x and max(t+x, 0) = t+x *)
-    simpl.
-    assert (H_max_nonneg: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_le in Hs. apply Z.le_trans with (m := s + x).
-      exact Hs. apply Z.le_max_l. }
-    rewrite H_max_nonneg.
-    reflexivity.
-  
-  (* Case 2: s+x >= 0 but t+x < 0 *)  
-  - simpl.
-    (* max(s+x, t+x) = s+x since s+x >= 0 > t+x *)
-    assert (H_max_pos: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_le in Hs. rewrite Z.leb_gt in Ht.
-      apply Z.le_trans with (m := s + x). exact Hs.
-      apply Z.le_max_l. }
-    rewrite H_max_pos.
-    (* Now goal is: Z.max (s + x) (t + x) = (s + x) <|> 0 *)
-    (* Since s+x >= 0 and t+x < 0, we have Z.max (s+x) (t+x) = s+x *)
-    (* And s+x <|> 0 = Z.max (s+x) 0 = s+x since s+x >= 0 *)
-    rewrite Z.leb_le in Hs. rewrite Z.leb_gt in Ht.
-    assert (H_sx_ge_tx: s + x >= t + x). {
-      apply Z.ge_le_iff.
-      apply Z.le_trans with (m := 0).
-      - apply Z.lt_le_incl. exact Ht.
-      - exact Hs.
-    }
-    rewrite Z.max_l.
-    + rewrite Z.max_l; [reflexivity | exact Hs].
-    + apply Z.ge_le. exact H_sx_ge_tx.
-  
-  (* Case 3: s+x < 0 but t+x >= 0 *)
-  - simpl.
-    assert (H_max_pos: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-      apply Z.le_trans with (m := t + x). exact Ht.
-      apply Z.le_max_r. }
-    rewrite H_max_pos.
-    (* Now goal is: Z.max (s + x) (t + x) = 0 <|> (t + x) *)
-    (* Since s+x < 0 and t+x >= 0, we have Z.max (s+x) (t+x) = t+x *)
-    (* And 0 <|> t+x = Z.max 0 (t+x) = t+x since t+x >= 0 *)
-    rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-    assert (H_tx_ge_sx: t + x >= s + x). {
-      apply Z.ge_le_iff.
-      apply Z.le_trans with (m := 0).
-      - apply Z.lt_le_incl. exact Hs.
-      - exact Ht.
-    }
-    rewrite Z.max_r.
-    + rewrite Z.max_r; [reflexivity | exact Ht].
-    + apply Z.ge_le. exact H_tx_ge_sx.
-  
-  (* Case 4: both s+x < 0 and t+x < 0 *)
-  - (* Then max(s+x, t+x) < 0, so result is 0 *)
-    (* And max(0, 0) = 0 *)
-    simpl.
-    assert (H_max_neg: Z.leb 0 (Z.max (s + x) (t + x)) = false).
-    { apply Z.leb_gt. rewrite Z.leb_gt in Hs. rewrite Z.leb_gt in Ht.
-      apply Z.max_lub_lt; assumption. }
-    rewrite H_max_neg.
-    reflexivity.
+  lia.
 Qed.
 
 (* First, let me establish what inits actually does step by step *)
@@ -473,11 +408,7 @@ Proof.
   intros x.
   unfold nonNegPlus.
   rewrite Z.add_0_r.
-  destruct (Z.leb 0 x) eqn:H.
-  - apply Z.leb_le in H.
-    rewrite Z.max_l; [reflexivity | exact H].
-  - apply Z.leb_gt in H.
-    rewrite Z.max_r; [reflexivity | apply Z.lt_le_incl; exact H].
+  apply Z.max_comm.
 Qed.
 
 Lemma nonNegPlus_zero_left : forall x : Z, nonNegPlus 0 x = Z.max x 0.
@@ -485,11 +416,7 @@ Proof.
   intros x.
   unfold nonNegPlus.
   rewrite Z.add_0_l.
-  destruct (Z.leb 0 x) eqn:H.
-  - apply Z.leb_le in H.
-    rewrite Z.max_l; [reflexivity | exact H].
-  - apply Z.leb_gt in H.
-    rewrite Z.max_r; [reflexivity | apply Z.lt_le_incl; exact H].
+  apply Z.max_comm.
 Qed.
 
 (* Simple test lemma to demonstrate proper workflow *)
@@ -873,10 +800,12 @@ Proof.
   intros v x Hv.
   unfold nonNegPlus.
   destruct (Z.leb 0 (v + x)) eqn:H1; destruct (Z.leb 0 (x + v)) eqn:H2.
-  - apply Z.add_comm.
+  - rewrite Z.add_comm.
+    reflexivity.
   - apply Z.leb_le in H1. apply Z.leb_gt in H2. exfalso. apply (Z.lt_irrefl (v + x)). apply Z.lt_le_trans with (m := 0). rewrite Z.add_comm. exact H2. exact H1.
   - apply Z.leb_gt in H1. apply Z.leb_le in H2. exfalso. apply (Z.lt_irrefl (x + v)). apply Z.lt_le_trans with (m := 0). rewrite <- Z.add_comm. exact H1. exact H2.
-  - reflexivity.
+  - rewrite Z.add_comm.
+    reflexivity.
 Qed.
 
 (* Conversion theorem: scan_left nonNegPlus to scan_right nonNegPlus with reversal *)
@@ -1296,13 +1225,7 @@ Proof.
   destruct (Z.leb 0 (s + x)) eqn:Hs, (Z.leb 0 (t + x)) eqn:Ht.
   
   (* Case 1: s+x >= 0 and t+x >= 0 *)
-  - simpl.
-    (* Since both are non-negative, max is also non-negative *)
-    assert (H_max_nonneg: Z.leb 0 (Z.max (s + x) (t + x)) = true).
-    { apply Z.leb_le. rewrite Z.leb_le in Hs. 
-      apply Z.le_trans with (m := s + x). exact Hs. apply Z.le_max_l. }
-    rewrite H_max_nonneg.
-    reflexivity.
+  - lia.
   
   (* Case 2: s+x >= 0 but t+x < 0 *)
   - simpl.
@@ -1310,7 +1233,6 @@ Proof.
     assert (H_max_pos: Z.leb 0 (Z.max (s + x) (t + x)) = true).
     { apply Z.leb_le. rewrite Z.leb_le in Hs.
       apply Z.le_trans with (m := s + x). exact Hs. apply Z.le_max_l. }
-    rewrite H_max_pos.
     (* The RHS becomes: if (Z.leb 0 (t + x)) then ... else if (Z.leb (s+x) (t+x)) then t+x else s+x *)
     (* Since t+x < 0, the first condition is false, so we get: if (Z.leb (s+x) (t+x)) then t+x else s+x *)
     (* Since s+x >= 0 > t+x, Z.leb (s+x) (t+x) = false, so we get s+x *)
@@ -1325,35 +1247,46 @@ Proof.
     assert (H_leb_false: Z.leb (s + x) (t + x) = false).
     { apply Z.leb_gt. apply Z.lt_le_trans with (m := 0). exact Ht. exact Hs. }
     rewrite H_leb_false.
-    rewrite Z.max_l; [reflexivity | apply Z.ge_le; exact H_ge].
-  
+    replace (0 <|> (s + x <|> (t + x))) with (s + x <|> (t + x)) by (apply Z.leb_le in H_max_pos; symmetry; apply Z.max_r; exact H_max_pos).
+    apply Z.max_l.
+    apply Z.ge_le_iff in H_ge.
+    exact H_ge.
+
   (* Case 3: s+x < 0 but t+x >= 0 *)
   - simpl.
     (* Since t+x >= 0 > s+x, max(s+x, t+x) = t+x >= 0 *)
     assert (H_max_pos: Z.leb 0 (Z.max (s + x) (t + x)) = true).
     { apply Z.leb_le. rewrite Z.leb_le in Ht.
       apply Z.le_trans with (m := t + x). exact Ht. apply Z.le_max_r. }
-    rewrite H_max_pos.
-    (* The RHS becomes: if (Z.leb 0 (t + x)) then t+x else 0 *)
-    (* Since t+x >= 0, this gives t+x *)
-    simpl. 
-    rewrite Z.leb_gt in Hs. rewrite Z.leb_le in Ht.
-    assert (H_ge: t + x >= s + x). {
-      apply Z.ge_le_iff.
-      apply Z.le_trans with (m := 0).
-      - apply Z.lt_le_incl. exact Hs.
-      - exact Ht.
-    }
-    rewrite Z.max_r; [reflexivity | apply Z.ge_le; exact H_ge].
-  
+      
+    replace (s + x <|> (t + x)) with (t + x).
+    + apply Z.leb_le in Ht.
+      apply Z.max_r.
+      exact Ht.
+    + assert (s + x <= t + x).
+      {
+        apply Z.leb_le in Ht.
+        apply Z.leb_gt in Hs.
+        apply Z.le_lteq.
+        left.
+        apply (Z.lt_le_trans (s + x) 0 (t + x)); auto.
+      }
+      symmetry.
+      apply Z.max_r.
+      exact H.
   (* Case 4: both s+x < 0 and t+x < 0 *)
   - simpl.
     (* Both negative, so max is also negative *)
     assert (H_max_neg: Z.leb 0 (Z.max (s + x) (t + x)) = false).
     { apply Z.leb_gt. rewrite Z.leb_gt in Hs, Ht.
       apply Z.max_lub_lt; assumption. }
-    rewrite H_max_neg.
-    reflexivity.
+    apply Z.leb_gt in Ht.
+    apply Z.leb_gt in Hs.
+    apply Z.leb_gt in H_max_neg.
+    apply Z.max_l.
+    apply Z.le_lteq.
+    left.
+    exact H_max_neg.
 Qed.
 
 (* Helper lemma: nonNegPlus with 0 gives max-like behavior *)
@@ -1362,9 +1295,25 @@ Lemma nonNegPlus_max_zero : forall x y,
 Proof.
   intros x y.
   unfold nonNegPlus.
+  (* nonNegPlus x y = Z.max 0 (x + y), so LHS = Z.max (Z.max 0 (x + y)) 0 *)
+  (* We need to show Z.max (Z.max 0 (x + y)) 0 = Z.max (if Z.leb 0 (x + y) then x + y else 0) 0 *)
+  (* Since Z.max a 0 = a when a >= 0, and Z.max 0 (x + y) >= 0 always *)
+  assert (H_nonneg: Z.max 0 (x + y) >= 0).
+  { apply Z.ge_le_iff. apply Z.le_max_l. }
+  rewrite Z.max_l; [| apply Z.ge_le; assumption].
+  (* Now we have Z.max 0 (x + y) = Z.max (if Z.leb 0 (x + y) then x + y else 0) 0 *)
   destruct (Z.leb 0 (x + y)) eqn:H.
-  - simpl. rewrite Z.max_l; [reflexivity | rewrite Z.leb_le in H; assumption].
-  - simpl. rewrite Z.max_r; [reflexivity | reflexivity].
+  - (* Case: 0 <= x + y, so the conditional equals x + y *)
+    simpl.
+    (* Goal: Z.max 0 (x + y) = Z.max (x + y) 0 *)
+    apply Z.max_comm.
+  - (* Case: x + y < 0, so the conditional equals 0 *)
+    simpl.
+    (* Goal: Z.max 0 (x + y) = Z.max 0 0 *)
+    rewrite Z.max_id.
+    rewrite Z.max_l.
+    + reflexivity.
+    + apply Z.leb_gt in H. apply Z.lt_le_incl. assumption.
 Qed.
 
 (* Helper lemma for distributivity of multiplication over fold_right addition - unused *)
@@ -1461,9 +1410,8 @@ Proof.
           induction xs' as [|y ys IH_inner].
           - simpl. lia.
           - simpl. unfold nonNegPlus.
-            destruct (Z.leb 0 (y + nonNegSum ys)) eqn:Heq_inner.
-            + apply Z.leb_le in Heq_inner. apply Z.ge_le_iff. exact Heq_inner.
-            + simpl. lia.
+            (* Since nonNegPlus y (nonNegSum ys) = Z.max 0 (y + nonNegSum ys) >= 0 *)
+            apply Z.ge_le_iff. apply Z.le_max_l.
         }
         lia.
 
@@ -1640,7 +1588,9 @@ Proof.
       lia.
     }
 
-    destruct (Z.leb 0 (x + fold_right Z.add 0 xs')) eqn:Heq.
-    + apply Z.leb_le in Heq. reflexivity.
-    + apply Z.leb_gt in Heq. lia.
+    (* We need to show nonNegPlus x (fold_right Z.add 0 xs') = x + fold_right Z.add 0 xs' *)
+    (* Since nonNegPlus x y = Z.max 0 (x + y), we need Z.max 0 (x + fold_right Z.add 0 xs') = x + fold_right Z.add 0 xs' *)
+    (* This holds when x + fold_right Z.add 0 xs' >= 0, which we established in H_no_clamp *)
+    apply Z.max_r.
+    apply Z.ge_le. exact H_no_clamp.
 Qed.
