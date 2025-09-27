@@ -62,15 +62,14 @@ Proof.
   rewrite Z.add_comm; reflexivity.
 Qed.
 
-Lemma nonNegPlus_monotone_r : forall x a b : Z,
-  a <= b -> x <#> a <= x <#> b.
+Lemma nonNegPlus_monotone_r : forall x y z : Z,
+  y <= z -> x <#> y <= x <#> z.
 Proof.
-  intros x a b H.
+  intros x y z H_le.
   unfold nonNegPlus.
-  apply Z.max_le_compat.
-  - apply Z.le_refl.
-  - apply Z.add_le_mono_l.
-    exact H.
+  apply Z.max_le_compat_l.
+  apply Z.add_le_mono_l.
+  exact H_le.
 Qed.
 
 Lemma nonNegPlus_monotone_l : forall a b x : Z,
