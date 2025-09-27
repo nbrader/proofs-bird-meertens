@@ -725,7 +725,9 @@ Proof.
       (* And fold_right Z.max 0 l1 >= 0 by definition *)
       rewrite nth_overflow.
       * apply fold_right_max_ge_base.
-      * apply Nat.ltb_nlt in Hj_valid. lia.
+      * apply Nat.ltb_nlt in Hj_valid.
+        (* Goal: length l1 <= j from ~ j < length l1 *)
+        apply Nat.nlt_ge. exact Hj_valid.
 Qed.
 
 
@@ -736,7 +738,9 @@ Proof.
   intro l.
   induction l as [|x xs IH].
   - (* Base case: empty list *)
-    intro H_pos. simpl in H_pos. lia.
+    intro H_pos. simpl in H_pos.
+    (* H_pos is now 0 > 0, which is impossible *)
+    exfalso. apply Z.lt_irrefl with (x := 0). apply Z.gt_lt. exact H_pos.
   - (* Inductive case: x :: xs *)
     intro H_pos.
     (* Goal: In (fold_right Z.max 0 (x :: xs)) (x :: xs) *)
@@ -756,7 +760,9 @@ Proof.
     + (* Case: x < fold_right Z.max 0 xs, so x <|> fold_right... = fold_right... *)
       apply Z.leb_nle in Hcmp.
       assert (H_max_is_fold: x <|> fold_right Z.max 0 xs = fold_right Z.max 0 xs).
-      { apply Z.max_r. lia. }
+      { apply Z.max_r.
+        (* Need fold_right Z.max 0 xs >= x from ~ fold_right Z.max 0 xs <= x *)
+        apply Z.lt_le_incl. apply Z.nle_gt. exact Hcmp. }
       (* Goal is: In (x <|> fold_right Z.max 0 xs) (x :: xs) *)
       (* And we know x <|> fold_right Z.max 0 xs = fold_right Z.max 0 xs *)
       (* So we need: In (fold_right Z.max 0 xs) (x :: xs) *)
