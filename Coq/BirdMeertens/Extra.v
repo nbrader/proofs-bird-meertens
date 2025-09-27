@@ -1499,7 +1499,7 @@ Proof.
           (* But nonNegSum xs' >= 0 always, so this is impossible *)
 
           assert (H_nns_nonneg: nonNegSum xs' >= 0).
-          { apply nonNegSum_nonneg. }
+          { apply Z.ge_le_iff. apply nonNegSum_nonneg. }
 
           (* From x + fold_right Z.add 0 xs' > 0, we get x > -fold_right Z.add 0 xs' *)
           (* Since nonNegSum xs' >= 0, we have x + nonNegSum xs' >= x > -fold_right Z.add 0 xs' *)

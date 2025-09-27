@@ -121,7 +121,7 @@ Proof.
   unfold nonNegMaximum.
   symmetry.
   apply fold_right_max_returns_max with (m := nonNegSum xs).
-  - apply nonNegSum_nonneg.
+  - apply Z.ge_le_iff. apply nonNegSum_nonneg.
   - exact H_is_max.
   - exact H_in_mapped.
 Qed.
@@ -1241,7 +1241,7 @@ Proof.
     (* We'll prove by showing both sides compute the same maximum subarray sum *)
     assert (H_nonneg_result: fold_right nonNegPlus 0 xs >= 0).
     {
-      apply nonNegSum_nonneg.
+      apply Z.ge_le_iff. apply nonNegSum_nonneg.
     }
 
     (* The tropical operation with finite inputs produces a Finite result *)

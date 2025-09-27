@@ -55,17 +55,15 @@ Definition mixed_signs (xs : list Z) : Prop :=
 
 
 (* ===== PROPERTIES ===== *)
-(* nonNegPlus = max 0 (x + y) *)
-
 Lemma nonNegPlus_comm : forall x y : Z,
-  nonNegPlus x y = nonNegPlus y x.
+  x <#> y = y <#> x.
 Proof.
   intros; unfold nonNegPlus; unfold "_ <|> _"; (* or just unfold nonNegPlus *)
   rewrite Z.add_comm; reflexivity.
 Qed.
 
 Lemma nonNegPlus_monotone_r : forall x a b : Z,
-  a <= b -> nonNegPlus x a <= nonNegPlus x b.
+  a <= b -> x <#> a <= x <#> b.
 Proof.
   intros x a b H.
   unfold nonNegPlus.
@@ -126,8 +124,15 @@ Qed.
 Lemma Zmax_idem : forall a, Z.max a a = a.
 Proof. intros; apply Z.max_idempotent. Qed.
 
+Lemma nonNegPlus_nonneg : forall x y : Z, 0 <= x <#> y.
+Proof.
+  intros x y.
+  unfold nonNegPlus.
+  (* With Z.max definition, the result is always >= 0 since we take max with 0 *)
+  apply Z.le_max_l.
+Qed.
 
-Lemma nonNegPlus_nonneg' : forall x y : Z, nonNegPlus x y >= 0.
+Lemma nonNegPlus_nonneg' : forall x y : Z, x <#> y >= 0.
 Proof.
   intros x y.
   unfold nonNegPlus.
@@ -141,7 +146,7 @@ Proof.
   intros xs.
   unfold nonNegSum_dual.
   (* Use the general fold_left property with nonNegPlus *)
-  assert (H: forall acc, acc >= 0 -> fold_left (fun acc x => nonNegPlus acc x) xs acc >= 0).
+  assert (H: forall acc, acc >= 0 -> fold_left nonNegPlus xs acc >= 0).
   {
     intro acc. generalize dependent acc.
     induction xs as [|x xs' IH]; simpl; intros acc H_acc.
@@ -168,6 +173,16 @@ Proof.
     apply Z.le_trans with (m := fold_right Z.max 0 xs).
     + exact IH.
     + apply Z.le_max_r.
+Qed.
+
+(* Helper lemma: nonNegSum is always non-negative *)
+Lemma nonNegSum_nonneg : forall xs : list Z, 0 <= nonNegSum xs.
+Proof.
+  intros xs.
+  unfold nonNegSum.
+  induction xs as [|x xs' IH].
+  - simpl. apply Z.le_refl.
+  - simpl. apply nonNegPlus_nonneg.
 Qed.
 
 Lemma fold_max_app : forall (l1 l2 : list Z),
@@ -287,46 +302,6 @@ Lemma nonNegSum_prefix_le : forall (xs ys : list Z),
 Proof.
   (* First, we prove two helper lemmas inside this proof. *)
 
-  (* Helper 1: nonNegSum always produces a non-negative result. *)
-  assert (nonNegSum_nonneg : forall l : list Z, 0 <= nonNegSum l).
-  {
-    intros l.
-    induction l as [|h t IH]; simpl.
-    - (* Base case: nonNegSum [] = 0. *)
-      reflexivity.
-    - (* Inductive step: nonNegSum (h :: t) = h <#> nonNegSum t. *)
-      unfold nonNegPlus.
-      (* We perform case analysis on the condition of the 'if' statement. *)
-      destruct (Z.leb 0 (h + nonNegSum t)) eqn:H_leb.
-      + (* Case 1: The condition is true, so h + nonNegSum t >= 0. *)
-        (* The 'if' evaluates to the 'then' branch. *)
-        (* The goal becomes 0 <= h + nonNegSum t, which is true by our assumption for this case. *)
-        apply Z.leb_le in H_leb.
-        apply Z.le_max_l.
-      + (* Case 2: The condition is false. *)
-        (* The 'if' evaluates to the 'else' branch, which is 0. *)
-        (* The goal becomes 0 <= 0, which is trivially true. *)
-        apply Z.le_max_l.
-  }
-
-  (* Helper 2: The nonNegPlus operation is monotonic in its second argument. *)
-  assert (nonNegPlus_monotonic_right : forall x a b, a <= b -> nonNegPlus x a <= nonNegPlus x b).
-  {
-    intros x a b H_le.
-    unfold nonNegPlus.
-    (* Goal: Z.max 0 (x + a) <= Z.max 0 (x + b) *)
-
-    (* 1. Since a <= b, we know x + a <= x + b by monotonicity of addition. *)
-    assert (H_add_mono: x + a <= x + b) by (apply Z.add_le_mono_l; assumption).
-
-    (* 2. Z.max is monotonic. If u <= v, then (Z.max z u) <= (Z.max z v). *)
-    (* We can apply this property directly to our goal. *)
-    apply Z.max_le_compat_l.
-    
-    (* The only remaining subgoal is to prove x + a <= x + b, which we already know. *)
-    exact H_add_mono.
-  }
-
   (* Main proof by induction on the prefix list xs. *)
   intros xs.
   induction xs as [|x xs' IH].
@@ -343,7 +318,7 @@ Proof.
     + (* ys = y :: ys'. *)
       inversion H_eq; subst.
       simpl.
-      apply nonNegPlus_monotonic_right.
+      apply nonNegPlus_monotone_r.
       apply IH.
       exists zs.
       reflexivity.
@@ -585,14 +560,4 @@ Proof.
     (* Goal: x * (f ls + fold_right Z.add 0 (map f lss')) = x * f ls + fold_right Z.add 0 (map (fun ls0 => x * f ls0) lss') *)
     rewrite Z.mul_add_distr_l.
     reflexivity.
-Qed.
-
-(* Helper lemma: nonNegSum is always non-negative *)
-Lemma nonNegSum_nonneg : forall xs : list Z, nonNegSum xs >= 0.
-Proof.
-  intros xs.
-  unfold nonNegSum.
-  induction xs as [|x xs' IH].
-  - simpl. apply Z.ge_le_iff. apply Z.le_refl.
-  - simpl. apply nonNegPlus_nonneg'.
 Qed.
