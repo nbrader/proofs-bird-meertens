@@ -185,7 +185,6 @@ Lemma tropical_horner_eq_nonNegPlus : forall x y : Z,
   (x <#> y <|> 0) = x <#> y.
 Proof.
   intros x y.
-  unfold nonNegPlus, "_ <|> _".
   (* Goal: Z.max (Z.max 0 (x + y)) 0 = Z.max 0 (x + y) *)
   (* Since Z.max 0 (x + y) >= 0, we have max(Z.max 0 (x + y), 0) = Z.max 0 (x + y) *)
   apply Z.max_l.
