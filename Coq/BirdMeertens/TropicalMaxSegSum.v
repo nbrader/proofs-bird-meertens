@@ -672,6 +672,47 @@ Proof.
       * apply Nat.ltb_nlt in Hj_valid. lia.
 Qed.
 
+
+(* Helper lemma: If fold_right Z.max returns a positive value, that value must be in the list *)
+Lemma fold_right_max_membership : forall l : list Z,
+  fold_right Z.max 0 l > 0 -> In (fold_right Z.max 0 l) l.
+Proof.
+  intro l.
+  induction l as [|x xs IH].
+  - (* Base case: empty list *)
+    intro H_pos. simpl in H_pos. lia.
+  - (* Inductive case: x :: xs *)
+    intro H_pos.
+    (* Goal: In (fold_right Z.max 0 (x :: xs)) (x :: xs) *)
+    simpl.
+    (* Goal becomes: In (x <|> fold_right Z.max 0 xs) (x :: xs) *)
+
+    destruct (Z.leb (fold_right Z.max 0 xs) x) eqn:Hcmp.
+    + (* Case: fold_right Z.max 0 xs <= x, so x <|> fold_right... = x *)
+      apply Z.leb_le in Hcmp.
+      assert (H_max_is_x: x <|> fold_right Z.max 0 xs = x).
+      { apply Z.max_l. exact Hcmp. }
+      (* Now goal is: In (x <|> fold_right Z.max 0 xs) (x :: xs) *)
+      (* And we know x <|> fold_right Z.max 0 xs = x *)
+      (* So we need: In x (x :: xs) *)
+      rewrite H_max_is_x.
+      left. reflexivity.
+    + (* Case: x < fold_right Z.max 0 xs, so x <|> fold_right... = fold_right... *)
+      apply Z.leb_nle in Hcmp.
+      assert (H_max_is_fold: x <|> fold_right Z.max 0 xs = fold_right Z.max 0 xs).
+      { apply Z.max_r. lia. }
+      (* Goal is: In (x <|> fold_right Z.max 0 xs) (x :: xs) *)
+      (* And we know x <|> fold_right Z.max 0 xs = fold_right Z.max 0 xs *)
+      (* So we need: In (fold_right Z.max 0 xs) (x :: xs) *)
+      rewrite H_max_is_fold.
+      right.
+      apply IH.
+      (* Need: fold_right Z.max 0 xs > 0 *)
+      (* From H_pos: x <|> fold_right Z.max 0 xs > 0 *)
+      (* From H_max_is_fold: x <|> fold_right Z.max 0 xs = fold_right Z.max 0 xs *)
+      rewrite <- H_max_is_fold. exact H_pos.
+Qed.
+
 Lemma exists_nonneg_maximizing_prefix : forall xs : list Z,
   mixed_signs xs ->
   let M := fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) in
@@ -687,45 +728,10 @@ Proof.
   (* Step 1: Show that M is achieved by some prefix *)
   assert (H_M_achieved: exists p, In p (inits xs) /\ fold_right Z.add 0 p = M).
   {
-    (* M is the maximum of (map (fold_right Z.add 0) (inits xs)) *)
-    (* So M is achieved by some element in this mapped list *)
-    unfold M.
+    (* Use a more direct approach: if M >= 0, then either M = 0 (achieved by [])
+       or M > 0 and is achieved by some prefix with positive sum *)
 
-    (* Use the fact that the maximum of a non-empty list is achieved by some element *)
-    (* inits xs is never empty - it always contains at least [] *)
-    assert (H_inits_nonempty: inits xs <> []).
-    {
-      destruct xs as [|x xs'].
-      - simpl. discriminate.
-      - rewrite inits_cons. discriminate.
-    }
-
-    assert (H_mapped_nonempty: map (fold_right Z.add 0) (inits xs) <> []).
-    {
-      intro H_contra.
-      apply map_eq_nil in H_contra.
-      contradiction.
-    }
-
-    (* Since the list is non-empty, we can use a more direct approach *)
-    (* The maximum of fold_right Z.max 0 (map f l) for non-empty l must equal f x for some x in l *)
-
-    (* We use the principle that the maximum of a finite non-empty list equals one of its elements *)
-    (* Let's prove this by finding an element that achieves the maximum *)
-
-    (* Since inits xs is non-empty, map (fold_right Z.add 0) (inits xs) is also non-empty *)
-    (* We can use the fact that every finite list has a maximum element *)
-
-    (* The key insight: fold_right Z.max 0 l finds the maximum element in l *)
-    (* So there must exist some element in l that equals this maximum *)
-
-    (* Use a different approach: the maximum is achieved when it equals one of the elements *)
-    (* or when no element exceeds the base value (0 in our case) *)
-
-    (* Key insight: In our specific context, we know M >= 0, so there exists some prefix
-       with nonnegative sum, which means that prefix's value is preserved in the maximum *)
-
-    (* Use the fact that inits xs contains [], which maps to fold_right Z.add 0 [] = 0 *)
+    (* First establish that [] is always in inits xs *)
     assert (H_empty_in: In [] (inits xs)).
     {
       destruct xs as [|x xs'].
@@ -733,30 +739,41 @@ Proof.
       - rewrite inits_cons. left. reflexivity.
     }
 
+    (* And fold_right Z.add 0 [] = 0 *)
+    assert (H_zero_val: fold_right Z.add 0 [] = 0) by (simpl; reflexivity).
+
+    (* So 0 is in the mapped list *)
     assert (H_zero_in: In 0 (map (fold_right Z.add 0) (inits xs))).
     {
-      apply in_map with (f := fold_right Z.add 0) in H_empty_in.
-      simpl in H_empty_in.
-      exact H_empty_in.
+      apply in_map_iff.
+      exists []. split; [exact H_zero_val | exact H_empty_in].
     }
 
-    (* Now we know 0 is in the list, and M >= 0, so if M = 0, we're done *)
-    (* If M > 0, then some element in the list equals M *)
+    (* Since the empty list has sum 0, either M = 0 or M comes from some prefix *)
     destruct (Z.eq_dec M 0) as [H_M_zero | H_M_nonzero].
     + (* Case: M = 0 *)
-      exists []. split.
-      * exact H_empty_in.
-      * simpl. symmetry. exact H_M_zero.
-    + (* Case: M ≠ 0, so M > 0 since we know M >= 0 *)
+      exists []. split; [exact H_empty_in | simpl; symmetry; exact H_M_zero].
+    + (* Case: M ≠ 0, so M > 0 since M >= 0 *)
       assert (H_M_pos: M > 0) by lia.
 
-      (* Since M > 0 and M is the maximum of a list containing 0,
-         M must equal some positive element in the list *)
+      (* Since M is the fold_right Z.max 0 of the mapped prefix sums,
+         and M > 0, M must equal some prefix sum by the definition of max *)
+      unfold M in H_M_pos.
 
-      (* Use the fundamental property: if M is the maximum of a finite list,
-         then M equals some element in that list (when M > base) *)
+      (* Use the fundamental property: fold_right Z.max 0 returns either 0 or a value from the list *)
+      (* Since M > 0, it cannot be 0, so it must be from the list *)
+      assert (H_M_in_list: In M (map (fold_right Z.add 0) (inits xs))).
+      {
+        (* Apply our helper lemma: since M > 0, it must be in the mapped list *)
+        unfold M in H_M_pos.
+        apply fold_right_max_membership.
+        exact H_M_pos.
+      }
 
-      admit. (* Use standard lemma about maximum being achieved in finite lists *)
+      (* M is in the mapped list *)
+      apply in_map_iff in H_M_in_list.
+      destruct H_M_in_list as [p [H_p_sum H_p_in]].
+      exists p. split; [exact H_p_in | exact H_p_sum].
   }
 
   (* Step 2: Use the achieved prefix to construct our witness *)
@@ -770,7 +787,7 @@ Proof.
   - (* 0 <= fold_right Z.add 0 p *)
     rewrite H_p_sum.
     exact H_M_nonneg.
-Admitted.
+Qed.
 
 (* Replace the false equality lemma with correct inequality version *)
 Lemma nonNegPlus_ge_add_when_nonneg : forall p,
@@ -838,9 +855,40 @@ Proof.
        and why their computation paths preserve the equality at each step. The general claim
        "sum >= 0 → nonNegSum = sum" is false, so we need a more nuanced approach. *)
 
-    admit. (* Requires proving equality through maximum-achieving prefix structure,
-              not through the false general claim about nonnegative sums *)
-Admitted.
+    (* Key insight from computational analysis: Maximum-achieving prefixes have the special
+       property that their computation path never hits negative intermediate results.
+       This means nonNegPlus acts like regular addition throughout the computation. *)
+
+    (* For now, assume the inductive hypothesis applies to p' *)
+    (* This requires a more sophisticated analysis of maximum-achieving prefix structure *)
+    assert (H_IH : fold_right nonNegPlus 0 p' = fold_right Z.add 0 p').
+    {
+      (* This would require proving that p' also has the maximum-achieving property
+         within the appropriate context. This is a complex structural argument. *)
+      admit.
+    }
+
+    (* Now we can complete the proof *)
+    rewrite H_IH.
+
+    (* Show that 0 <= x + fold_right Z.add 0 p' *)
+    assert (H_step_nonneg : 0 <= x + fold_right Z.add 0 p').
+    {
+      (* This follows from the fact that x :: p' achieves the maximum and has nonnegative sum *)
+      simpl in H_nonneg.
+      exact H_nonneg.
+    }
+
+    (* Since 0 <= x + fold_right Z.add 0 p', nonNegPlus evaluates to x + fold_right Z.add 0 p' *)
+    unfold nonNegPlus.
+    destruct (Z.leb 0 (x + fold_right Z.add 0 p')) eqn:Hcond.
+    + (* Case: 0 <= x + fold_right Z.add 0 p' *)
+      reflexivity.
+    + (* Case: x + fold_right Z.add 0 p' < 0 *)
+      (* This contradicts H_step_nonneg *)
+      apply Z.leb_nle in Hcond.
+      lia.
+Admitted. (* TODO: Complete the proof that p' inherits the maximum-achieving property *)
 
 (* Helper lemma for nth of mapped lists with fold_right *)
 Lemma nth_map_fold_right : forall (f : list Z -> Z) (xs : list (list Z)) (i : nat),
@@ -1046,12 +1094,48 @@ Proof.
       (* So we need max(regular_sums) = max(nonneg_sums) *)
       (* But this is exactly what we're trying to prove! We need to use the structure differently. *)
 
-      (* Actually, let's use a direct argument: nonneg_sums[j] must be the maximum because: *)
-      (* 1. nonneg_sums[j] = regular_sums[j] = max(regular_sums) *)
-      (* 2. For any other i: nonneg_sums[i] >= regular_sums[i] <= max(regular_sums) = nonneg_sums[j] *)
-      (* 3. So nonneg_sums[j] >= nonneg_sums[i] for all i *)
+      (* Direct argument using the maximum preservation property: *)
+      (* We know: nonneg_sums[j] = regular_sums[j] = max(regular_sums) *)
+      (* We need to show: nonneg_sums[j] = max(nonneg_sums) *)
 
-      admit. (* This requires a more sophisticated argument about maxima preservation *)
+      (* Key insight: Since nonneg_sums[i] >= regular_sums[i] for all i, *)
+      (* and nonneg_sums[j] = regular_sums[j] = max(regular_sums), *)
+      (* we have max(nonneg_sums) >= max(regular_sums) = nonneg_sums[j] *)
+
+      (* For the reverse inequality: for any i, nonneg_sums[i] >= regular_sums[i] *)
+      (* But regular_sums[i] <= max(regular_sums) = nonneg_sums[j] *)
+      (* However, this doesn't directly give us nonneg_sums[i] <= nonneg_sums[j] *)
+
+      (* We need to show: nth j nonneg_sums 0 = fold_right Z.max 0 nonneg_sums *)
+      (* We know: nth j nonneg_sums 0 = nth j regular_sums 0 = max(regular_sums) *)
+      (* We want to show: max(regular_sums) = max(nonneg_sums) *)
+
+      (* Key insight: Since nonneg_sums[i] >= regular_sums[i] for all i, *)
+      (* and there exists j where nonneg_sums[j] = regular_sums[j] = max(regular_sums), *)
+      (* then max(nonneg_sums) = max(regular_sums) *)
+
+      (* Step 1: Show max(nonneg_sums) >= max(regular_sums) *)
+      (* This follows because nonneg_sums[i] >= regular_sums[i] for all i *)
+
+      (* Step 2: Show max(nonneg_sums) <= max(regular_sums) *)
+      (* We know nonneg_sums[j] = regular_sums[j] = max(regular_sums) *)
+      (* So max(nonneg_sums) >= nonneg_sums[j] = max(regular_sums) *)
+      (* But also, for any i: nonneg_sums[i] >= regular_sums[i] *)
+      (* If max(nonneg_sums) > max(regular_sums), then there exists some i *)
+      (* where nonneg_sums[i] > max(regular_sums) = nonneg_sums[j] *)
+      (* But nonneg_sums[i] >= regular_sums[i] <= max(regular_sums) = nonneg_sums[j] *)
+      (* This doesn't give a direct contradiction... *)
+
+      (* Actually use the fact that j achieves the maximum *)
+      assert (H_max_eq: fold_right Z.max 0 nonneg_sums = fold_right Z.max 0 regular_sums).
+      {
+        (* This is the key lemma we need about pointwise domination with equality point *)
+        admit.
+      }
+
+      (* Use this equality to complete the proof *)
+      (* Goal: nth j nonneg_sums 0 = fold_right Z.max 0 nonneg_sums *)
+      admit. (* This follows from H_max_eq, H_agree_at_j, and H_p_max with proper rewrite order *)
     + (* Show nth j regular_sums 0 = nth j nonneg_sums 0 *)
       (* This is exactly what H_agree_at_j gives us *)
       exact (eq_sym H_agree_at_j).
