@@ -293,6 +293,15 @@ Proof.
   reflexivity.
 Qed.
 
+(* Helper lemma: Z.max 0 a = a when a >= 0 *)
+Lemma max_zero_nonneg : forall a : Z, a >= 0 -> Z.max 0 a = a.
+Proof.
+  intros a Ha.
+  apply Z.max_r.
+  apply Z.ge_le. exact Ha.
+Qed.
+
+
 (* Helper lemma: addition distributes over max *)
 Lemma nonNegPlus_distributes_over_max : distributes_over_max nonNegPlus.
 Proof.
@@ -1230,7 +1239,13 @@ Proof.
   destruct (Z.leb 0 (s + x)) eqn:Hs, (Z.leb 0 (t + x)) eqn:Ht.
   
   (* Case 1: s+x >= 0 and t+x >= 0 *)
-  - lia.
+  - (* Goal: Z.max 0 (Z.max (s + x) (t + x)) = Z.max (s + x) (t + x) *)
+    apply max_zero_nonneg.
+    (* Show Z.max (s + x) (t + x) >= 0 *)
+    apply Z.leb_le in Hs. apply Z.leb_le in Ht.
+    apply Z.le_ge.
+    (* Since s + x >= 0, and Z.max (s + x) (t + x) >= s + x, we get Z.max (s + x) (t + x) >= 0 *)
+    apply Z.le_trans with (m := s + x); [exact Hs | apply Z.le_max_l].
   
   (* Case 2: s+x >= 0 but t+x < 0 *)
   - simpl.
