@@ -953,11 +953,78 @@ Proof.
     apply (Z.max_r 0 (fold_right Z.max 0 l) H).
 Qed.
 
-Lemma map_ext_inits : forall [A B : Type] (f g : list A -> B),
-forall (property : list A -> Prop),
-(forall xs ys : list A, (exists zs, xs ++ zs = ys) -> property xs) -> 
-(forall l : list A, f l = g l /\ property l) -> forall l : list A, map f (inits l) = map g (inits l).
+Require Import Coq.Lists.List.
+Import ListNotations.
+
+Lemma fold_left_inits_ext : forall (A B : Type) (F G : B -> list A -> B) (a : B),
+  forall (P : list A -> Prop),
+  (* If xs is a prefix of ys, then P holds for xs *)
+  (forall xs ys, (exists zs, xs ++ zs = ys) -> P xs) ->
+  (* If P holds for a list x, the folding functions agree *)
+  (forall acc x, P x -> F acc x = G acc x) ->
+  (* Then the folds over the inits of any list l ar eequal *)
+  forall l, fold_left F (inits l) a = fold_left G (inits l) a.
 Proof.
+  intros A B F G a P H_prop H_fold_eq.
+  (* We prove this by induction on the list l. *)
+  induction l as [|x xs IH].
+
+  (* Base Case: l = [] *)
+  - simpl. (* inits [] simplifies to [[]] *)
+    (* The goal is: fold_left F a [[]] = fold_left G a [[]] *)
+    (* This simplifies to: F a [] = G a [] *)
+    apply H_fold_eq.
+    (* To use H_fold_eq, we must prove P []. *)
+    apply H_prop with (ys := []).
+    exists [].
+    simpl.
+    reflexivity.
+
+  (* Inductive Step: l = x :: xs *)
+  - (* The IH is: fold_left F a (inits xs) = fold_left G a (inits xs) *)
+    (* The Goal is: fold_left F a (inits (x::xs)) = fold_left G a (inits (x::xs)) *)
+    
+    (* First, expand the definition of inits on a cons cell. *)
+    rewrite inits_cons.
+    (* Goal: fold_left F a ([]::map (cons x) (inits xs)) = ... *)
+
+    (* Now, expand the fold_left on both sides. *)
+    simpl.
+    (* Goal: fold_left F (F a []) (map (cons x) (inits xs)) = 
+             fold_left G (G a []) (map (cons x) (inits xs)) *)
+
+    (* From the base case, we know F a [] = G a []. Let's prove it as a fact. *)
+    assert (Fact : F a [] = G a []).
+    {
+      apply H_fold_eq.
+      apply H_prop with (ys := x :: xs).
+      exists (x :: xs).
+      reflexivity.
+    }
+    (* Now, rewrite the goal using this fact. *)
+    rewrite Fact.
+    admit.
+
+    (* The goal is now to prove the equality of two folds over a mapped list.
+       `fold_left F (G a []) (map (cons x) (inits xs)) =`
+       `fold_left G (G a []) (map (cons x) (inits xs))`
+       We can prove this if the folding functions behave the same on every element. *)
+    (* apply fold_left_ext_strong.
+    intros acc p H_p_in.
+
+    (* The new goal is to show F acc (x :: p) = G acc (x :: p),
+       given that p is a member of (inits xs). *)
+    apply H_fold_eq.
+    
+    (* To use H_fold_eq, we must prove P (x :: p). *)
+    apply H_prop with (ys := x :: xs).
+    
+    (* We know p is a prefix of xs from H_p_in. *)
+    apply in_inits in H_p_in.
+    destruct H_p_in as [zs H_zs].
+    exists zs.
+    rewrite H_zs.
+    reflexivity. *)
 Admitted.
 
 (* 
