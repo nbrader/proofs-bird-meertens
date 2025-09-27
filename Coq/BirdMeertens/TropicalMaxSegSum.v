@@ -152,7 +152,11 @@ Proof.
       rewrite Hxs'_zero in Heq.
       rewrite Z.add_0_r in Heq.
       (* From x + 0 >= 0 and x <= 0, we conclude x = 0 *)
-      assert (Hx_zero: x = 0). { lia. }
+      assert (Hx_zero: x = 0).
+      {
+        (* We have x >= 0 from Heq and x <= 0 from Hx_nonpos *)
+        apply Z.le_antisymm; [exact Hx_nonpos | exact Heq].
+      }
       rewrite Hx_zero, Hxs'_zero. simpl. reflexivity.
     + (* Case: x + nonNegSum xs' < 0 *)
       (* nonNegPlus returns 0 in this case *)
@@ -218,8 +222,11 @@ Proof.
     (* Now use the fact that 0 is the maximum when all elements are <= 0 *)
     unfold nonNegMaximum.
     apply fold_right_max_returns_max with (m := 0).
-    - lia.
-    - intros y Hy. rewrite (H_all_zero y Hy). lia.
+    - (* Prove 0 >= 0 *)
+      apply Z.le_ge. apply Z.le_refl.
+    - intros y Hy. rewrite (H_all_zero y Hy).
+      (* After rewrite, goal is 0 <= 0 *)
+      apply Z.le_refl.
     - exact H_zero_in.
   }
   symmetry. exact H_max_zero.
@@ -378,7 +385,9 @@ Proof.
   revert i Hi.
   induction xs as [| x xs' IH]; intros i Hi.
   - (* Empty list case - contradiction *)
-    simpl in Hi. lia.
+    simpl in Hi.
+    (* Hi is now i < 0, which is impossible for natural numbers *)
+    exfalso. apply (Nat.nlt_0_r i). exact Hi.
   - (* Non-empty list: xs = x :: xs' *)
     simpl.
     destruct i as [| i'].
@@ -389,7 +398,9 @@ Proof.
       simpl.
       (* Goal: nth i' xs' base <= Z.max x (fold_right Z.max base xs') *)
       transitivity (fold_right Z.max base xs').
-      * apply IH. lia.
+      * apply IH.
+        (* Need to prove i' < length xs' from S i' < S (length xs') *)
+        apply Nat.succ_lt_mono. exact Hi.
       * apply Z.le_max_r.
 Qed.
 
@@ -429,11 +440,28 @@ Proof.
     apply Z.leb_nle in Hz.
     exfalso.
     assert (H_contra: x + y <= x + z) by (apply Zplus_le_compat_l; exact H_le).
-    lia.
+    (* Contradiction: x + y >= 0 (from Hy) but x + y <= x + z < 0 (from H_contra and Hz) *)
+    (* Convert Hz to x + z < 0 *)
+    assert (H_z_neg: x + z < 0).
+    { apply Z.nle_gt. exact Hz. }
+    (* Now we have: 0 <= x + y <= x + z < 0, which is impossible *)
+    apply Z.lt_irrefl with (x := 0).
+    apply Z.le_lt_trans with (m := x + y).
+    exact Hy.
+    apply Z.le_lt_trans with (m := x + z).
+    exact H_contra.
+    exact H_z_neg.
   - (* x + y < 0 and x + z >= 0 *)
     apply Z.leb_nle in Hy.
     apply Z.leb_le in Hz.
-    lia.
+    (* This case is valid: nonNegPlus x y = 0 and nonNegPlus x z = x + z *)
+    (* Goal: Z.max 0 (x + y) <= Z.max 0 (x + z) *)
+    (* Since x + y < 0, Z.max 0 (x + y) = 0 *)
+    (* Since x + z >= 0, Z.max 0 (x + z) = x + z *)
+    (* So goal becomes: 0 <= x + z *)
+    rewrite Z.max_l; [| apply Z.lt_le_incl; apply Z.nle_gt; exact Hy].
+    rewrite Z.max_r; [| exact Hz].
+    exact Hz.
   - (* Both negative: return 0 *)
     apply max_ineq1_l; auto.
 Qed.
@@ -469,7 +497,9 @@ Proof.
   - destruct n as [|n].
     + simpl. reflexivity.
     + simpl in Hlt. simpl.
-      apply IH. lia.
+      apply IH.
+      (* Need n < length l from S n < S (length l) *)
+      apply Nat.succ_lt_mono. exact Hlt.
 Qed.
 
 Lemma nth_cons_inits :
@@ -600,7 +630,11 @@ Lemma nth_le_max :
     nth i l 0 <= fold_right Z.max 0 l.
 Proof.
   induction l as [|x xs IH]; intros i; simpl.
-  - destruct i; simpl; lia.
+  - destruct i; simpl.
+    + (* nth 0 [] 0 = 0 <= 0 = fold_right Z.max 0 [] *)
+      apply Z.le_refl.
+    + (* nth (S i) [] 0 = 0 <= 0 = fold_right Z.max 0 [] *)
+      apply Z.le_refl.
   - destruct i as [|i]; simpl.
     + apply Z.le_max_l.
     + apply Z.le_trans with (fold_right Z.max 0 xs).
