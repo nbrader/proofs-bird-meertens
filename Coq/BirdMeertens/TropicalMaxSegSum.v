@@ -940,228 +940,82 @@ Proof.
   apply nth_map. exact Hi.
 Qed.
 
+Lemma fold_max_clip :
+  forall l, fold_right Z.max 0 (map (fun s => Z.max 0 s) l)
+           = Z.max 0 (fold_right Z.max 0 l).
+Proof.
+  induction l; simpl; auto.
+  rewrite IHl, <- Z.max_assoc.
+  replace (0 <|> fold_right Z.max 0 l) with (fold_right Z.max 0 l).
+  - reflexivity.
+  - pose proof (fold_max_nonneg l).
+    symmetry.
+    apply (Z.max_r 0 (fold_right Z.max 0 l) H).
+Qed.
+
+Lemma map_ext_inits : forall [A B : Type] (f g : list A -> B),
+forall (property : list A -> Prop),
+(forall xs ys : list A, (exists zs, xs ++ zs = ys) -> property xs) -> 
+(forall l : list A, f l = g l /\ property l) -> forall l : list A, map f (inits l) = map g (inits l).
+Proof.
+Admitted.
+
+(* 
+Lemma fold_map_rewrite xs :
+  forall (pos_sum : list Z -> Prop),
+  (forall ls : list Z, pos_sum ls <-> 0 <= fold_right Z.add 0 ls) ->
+  map (fold_right (fun x y => Z.max 0 (x+y)) 0) (inits xs) =
+  map (fun prefix => Z.max 0 (fold_right Z.add 0 prefix)) (inits xs).
+Proof.
+  intros.
+  apply map_ext_inits. intros.
+  simpl. induction prefix as [|a prefix' IH]; simpl.
+  - reflexivity.
+  - rewrite IH.
+    pose proof (H prefix').
+    replace (0 <|> fold_right Z.add 0 prefix') with (fold_right Z.add 0 prefix').
+    + reflexivity.
+    + symmetry.
+      apply Z.max_r.
+      apply H0.
+      admit.
+Admitted.
+*)
+
+(* 
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
   fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
 Proof.
-  intros xs H_mixed.
+  intros xs Hm.
+  apply fold_max_clip.
+  (* Step 1: show that for every prefix ys of xs,
+     fold_right (fun x y => Z.max 0 (x+y)) 0 ys
+     = fold_right Z.add 0 ys. *)
+  assert (Hprefix :
+    forall ys, In ys (inits xs) ->
+      fold_right (fun x y => Z.max 0 (x+y)) 0 ys
+      = fold_right Z.add 0 ys).
+  {
+    intros ys Hin.
+    (* Here use Hm (mixed_signs xs) to argue that sum ys >= 0. *)
+    (* Then by Zmax_id_left, max 0 (sum ys) = sum ys. *)
+    admit.
+  }
+  (* Step 2: now map over inits xs with pointwise equality. *)
+  apply map_ext_in with (f:= fun ys => fold_right _ 0 ys)
+                        (g:= fun ys => fold_right Z.add 0 ys).
+  - apply Hprefix.
+  (* Step 3: two sides become fold_right Z.max 0 over same list. *)
+  reflexivity.
+Qed.
+ *)
 
-  (* Key insight: There exists a prefix with nonnegative ordinary sum that achieves the maximum.
-     For such maximum-achieving prefixes, nonNegPlus equals ordinary addition due to their
-     special computational structure (not because sum >= 0 implies equality in general).
-     Other prefixes' nonNegPlus results never exceed their ordinary sums.
-     So both maxima coincide. *)
-
-  (* Step 1: The maximum regular sum is >= 0 in mixed cases *)
-  assert (H_max_nonneg : 0 <= fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs))).
-  { apply max_subarray_sum_nonneg_in_mixed_case. exact H_mixed. }
-
-  (* Step 2: Since the maximum is >= 0, it's achieved by some prefix with nonnegative sum *)
-  (* Let's call the lists of prefix sums *)
-  set (nonneg_sums := map (fold_right nonNegPlus 0) (inits xs)).
-  set (regular_sums := map (fold_right Z.add 0) (inits xs)).
-
-  (* Step 3: Show both sides have the same maximum *)
-  (* Key insight: For any prefix p in inits xs:
-     - If p is a maximum-achieving prefix with sum >= 0, then nonNegPlus and regular addition
-       happen to give the same result (due to special structure, not a general rule)
-     - If fold_right Z.add 0 p < 0, then fold_right nonNegPlus 0 p >= fold_right Z.add 0 p
-
-     Since the maximum of regular_sums is >= 0, it's achieved by some prefix with sum >= 0.
-     For that specific maximum-achieving prefix, both approaches give the same value.
-     For other prefixes, nonNegPlus gives values >= regular sums, so the maximum is preserved. *)
-
-  (* Step 4: Apply max_preserve_pointwise with swapped arguments *)
-  (* We need to show: max(nonneg_sums) = max(regular_sums) *)
-  (* Apply: max_preserve_pointwise regular_sums nonneg_sums *)
-  symmetry.
-  apply max_preserve_pointwise.
-
-  (* Prove pointwise inequality: forall i, nth i regular_sums 0 <= nth i nonneg_sums 0 *)
-  - intro i.
-    unfold nonneg_sums, regular_sums.
-    (* This follows from the fact that nonNegPlus always gives results >= regular sums *)
-    (* nth i (map (fold_right nonNegPlus 0) (inits xs)) 0 >= nth i (map (fold_right Z.add 0) (inits xs)) 0 *)
-    (* This follows from fold_right_nonNegPlus_ge_add applied to each prefix in inits xs *)
-
-    (* Case analysis on whether i is a valid index *)
-    destruct (Nat.ltb i (length (inits xs))) eqn:Hi_valid.
-    + (* Case: i < length (inits xs) *)
-      (* Both mapped lists have the same length as inits xs *)
-      assert (H_len_nonneg: length (map (fold_right nonNegPlus 0) (inits xs)) = length (inits xs)).
-      { apply map_length. }
-      assert (H_len_regular: length (map (fold_right Z.add 0) (inits xs)) = length (inits xs)).
-      { apply map_length. }
-
-      (* Since i is valid, we can extract the prefix and apply fold_right_nonNegPlus_ge_add *)
-      (* The goal is: nth i (map (fold_right nonNegPlus 0) (inits xs)) 0 >= nth i (map (fold_right Z.add 0) (inits xs)) 0 *)
-
-      (* We know i < length (inits xs), so both mapped lists have valid elements at index i *)
-      assert (Hi_lt: (i < length (inits xs))%nat).
-      { apply Nat.ltb_lt. exact Hi_valid. }
-
-      (* Let's get the actual prefix at index i *)
-      set (prefix_i := nth i (inits xs) []).
-
-      (* The key insight: both sides are comparing the same prefix computed with different functions *)
-      (* nth i (map f xs) d should equal f (nth i xs d') when i < length xs *)
-      (* But we need to be careful about the default values *)
-
-      (* Since fold_right nonNegPlus 0 [] = 0 and fold_right Z.add 0 [] = 0 *)
-      (* and the defaults matter only when index is out of bounds, which it isn't here *)
-
-      (* Use the monotonicity of fold_right_nonNegPlus_ge_add on the same prefix *)
-      assert (H_eq_prefix_nonneg: nth i (map (fold_right nonNegPlus 0) (inits xs)) 0 = fold_right nonNegPlus 0 prefix_i).
-      {
-        unfold prefix_i.
-        apply nth_map_fold_right. exact Hi_lt.
-      }
-
-      assert (H_eq_prefix_regular: nth i (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 prefix_i).
-      {
-        unfold prefix_i.
-        apply nth_map_fold_right. exact Hi_lt.
-      }
-
-      (* The pointwise inequality follows from fold_right_nonNegPlus_ge_add applied to each prefix *)
-      (* Now that we have the equations relating nth to fold_right, we can apply the inequality *)
-      rewrite H_eq_prefix_regular, H_eq_prefix_nonneg.
-      (* Goal: fold_right Z.add 0 prefix_i <= fold_right nonNegPlus 0 prefix_i *)
-      (* This is exactly what fold_right_nonNegPlus_ge_add provides *)
-      exact (fold_right_nonNegPlus_ge_add prefix_i).
-    + (* Case: i >= length (inits xs) *)
-      (* Both nth return default value 0, so 0 >= 0 *)
-      rewrite nth_overflow, nth_overflow.
-      * lia.
-      * rewrite map_length. apply Nat.ltb_ge. exact Hi_valid.
-      * rewrite map_length. apply Nat.ltb_ge. exact Hi_valid.
-
-  (* Prove existence of agreeing index: exists j where both lists agree and achieve the maximum *)
-  - assert (H_exists_prefix : exists p, In p (inits xs) /\ fold_right Z.add 0 p = fold_right Z.max 0 regular_sums /\ 0 <= fold_right Z.add 0 p).
-    {
-      apply exists_nonneg_maximizing_prefix.
-      exact H_mixed.
-      exact H_max_nonneg.
-    }
-    destruct H_exists_prefix as [p [H_in_inits [H_p_max H_p_nonneg]]].
-
-    (* Find the index j corresponding to prefix p *)
-    assert (H_index_exists : exists j, nth j (inits xs) [] = p).
-    {
-      apply In_inits_gives_index. exact H_in_inits.
-    }
-    destruct H_index_exists as [j H_j_eq_p].
-
-    (* Now we need to show the conditions for max_preserve_pointwise *)
-    (* Since we swapped arguments, we need: nth j nonneg_sums 0 = max nonneg_sums /\ nth j regular_sums 0 = nth j nonneg_sums 0 *)
-
-    (* First establish that at index j, both functions agree *)
-    assert (H_agree_at_j: nth j nonneg_sums 0 = nth j regular_sums 0).
-    {
-      unfold nonneg_sums, regular_sums.
-      (* This will follow from maximum_prefix_equality, but let's first get the structural correspondence *)
-      assert (H_nth_nonneg : nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 = fold_right nonNegPlus 0 p).
-      {
-        destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds.
-        - rewrite (nth_map_fold_right (fold_right nonNegPlus 0) (inits xs) j); [| apply Nat.ltb_lt; exact Hj_bounds].
-          rewrite H_j_eq_p. reflexivity.
-        - apply Nat.ltb_ge in Hj_bounds.
-          assert (H_p_empty: p = []).
-          { rewrite <- H_j_eq_p. apply nth_overflow. exact Hj_bounds. }
-          rewrite H_p_empty. simpl.
-          rewrite nth_overflow; [reflexivity | rewrite map_length; exact Hj_bounds].
-      }
-      assert (H_nth_regular : nth j (map (fold_right Z.add 0) (inits xs)) 0 = fold_right Z.add 0 p).
-      {
-        destruct (Nat.ltb j (length (inits xs))) eqn:Hj_bounds2.
-        - rewrite (nth_map_fold_right (fold_right Z.add 0) (inits xs) j); [| apply Nat.ltb_lt; exact Hj_bounds2].
-          rewrite H_j_eq_p. reflexivity.
-        - apply Nat.ltb_ge in Hj_bounds2.
-          assert (H_p_empty: p = []).
-          { rewrite <- H_j_eq_p. apply nth_overflow. exact Hj_bounds2. }
-          rewrite H_p_empty. simpl.
-          rewrite nth_overflow; [reflexivity | rewrite map_length; exact Hj_bounds2].
-      }
-      rewrite H_nth_nonneg, H_nth_regular.
-      (* Goal: fold_right nonNegPlus 0 p = fold_right Z.add 0 p *)
-      apply (maximum_prefix_equality xs); [exact H_mixed | exact H_in_inits | ].
-      unfold regular_sums in H_p_max. exact H_p_max.
-    }
-
-    exists j.
-    split.
-    + (* Show nth j nonneg_sums 0 = fold_right Z.max 0 nonneg_sums *)
-      (* The key insight: since nonneg_sums[i] >= regular_sums[i] for all i, *)
-      (* and nonneg_sums[j] = regular_sums[j] = max(regular_sums), *)
-      (* then nonneg_sums[j] must also be max(nonneg_sums) *)
-
-      (* We know: nth j nonneg_sums 0 = nth j regular_sums 0 = max(regular_sums) *)
-      (* We need to show this equals max(nonneg_sums) *)
-
-      (* Since nonneg_sums[i] >= regular_sums[i] for all i, we have max(nonneg_sums) >= max(regular_sums) *)
-      (* But also nonneg_sums[j] = regular_sums[j] = max(regular_sums), so max(nonneg_sums) >= nonneg_sums[j] = max(regular_sums) *)
-      (* For the other direction: any nonneg_sums[i] >= regular_sums[i], but regular_sums[i] <= max(regular_sums) = nonneg_sums[j] *)
-      (* So nonneg_sums[i] >= regular_sums[i] might be > nonneg_sums[j], but this would contradict the pointwise property unless nonneg_sums[i] = regular_sums[i] for maximizing i *)
-
-      (* More directly: by the fundamental property of maximum and the pointwise inequality, *)
-      (* if nonneg_sums[i] >= regular_sums[i] for all i, and there exists j where they're equal and regular_sums[j] = max(regular_sums), *)
-      (* then nonneg_sums[j] = max(nonneg_sums) *)
-
-      rewrite H_agree_at_j.
-      unfold nonneg_sums, regular_sums.
-      unfold regular_sums in H_p_max.
-
-      (* We need to show nth j regular_sums 0 = max(nonneg_sums) *)
-      (* We know nth j regular_sums 0 = max(regular_sums) from H_p_max *)
-      (* So we need max(regular_sums) = max(nonneg_sums) *)
-      (* But this is exactly what we're trying to prove! We need to use the structure differently. *)
-
-      (* Direct argument using the maximum preservation property: *)
-      (* We know: nonneg_sums[j] = regular_sums[j] = max(regular_sums) *)
-      (* We need to show: nonneg_sums[j] = max(nonneg_sums) *)
-
-      (* Key insight: Since nonneg_sums[i] >= regular_sums[i] for all i, *)
-      (* and nonneg_sums[j] = regular_sums[j] = max(regular_sums), *)
-      (* we have max(nonneg_sums) >= max(regular_sums) = nonneg_sums[j] *)
-
-      (* For the reverse inequality: for any i, nonneg_sums[i] >= regular_sums[i] *)
-      (* But regular_sums[i] <= max(regular_sums) = nonneg_sums[j] *)
-      (* However, this doesn't directly give us nonneg_sums[i] <= nonneg_sums[j] *)
-
-      (* We need to show: nth j nonneg_sums 0 = fold_right Z.max 0 nonneg_sums *)
-      (* We know: nth j nonneg_sums 0 = nth j regular_sums 0 = max(regular_sums) *)
-      (* We want to show: max(regular_sums) = max(nonneg_sums) *)
-
-      (* Key insight: Since nonneg_sums[i] >= regular_sums[i] for all i, *)
-      (* and there exists j where nonneg_sums[j] = regular_sums[j] = max(regular_sums), *)
-      (* then max(nonneg_sums) = max(regular_sums) *)
-
-      (* Step 1: Show max(nonneg_sums) >= max(regular_sums) *)
-      (* This follows because nonneg_sums[i] >= regular_sums[i] for all i *)
-
-      (* Step 2: Show max(nonneg_sums) <= max(regular_sums) *)
-      (* We know nonneg_sums[j] = regular_sums[j] = max(regular_sums) *)
-      (* So max(nonneg_sums) >= nonneg_sums[j] = max(regular_sums) *)
-      (* But also, for any i: nonneg_sums[i] >= regular_sums[i] *)
-      (* If max(nonneg_sums) > max(regular_sums), then there exists some i *)
-      (* where nonneg_sums[i] > max(regular_sums) = nonneg_sums[j] *)
-      (* But nonneg_sums[i] >= regular_sums[i] <= max(regular_sums) = nonneg_sums[j] *)
-      (* This doesn't give a direct contradiction... *)
-
-      (* Actually use the fact that j achieves the maximum *)
-      assert (H_max_eq: fold_right Z.max 0 nonneg_sums = fold_right Z.max 0 regular_sums).
-      {
-        (* This is the key lemma we need about pointwise domination with equality point *)
-        admit.
-      }
-
-      (* Use this equality to complete the proof *)
-      (* Goal: nth j nonneg_sums 0 = fold_right Z.max 0 nonneg_sums *)
-      admit. (* This follows from H_max_eq, H_agree_at_j, and H_p_max with proper rewrite order *)
-    + (* Show nth j regular_sums 0 = nth j nonneg_sums 0 *)
-      (* This is exactly what H_agree_at_j gives us *)
-      exact (eq_sym H_agree_at_j).
+Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
+  mixed_signs xs ->
+  fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
+  fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
 Admitted.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
