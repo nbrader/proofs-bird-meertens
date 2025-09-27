@@ -299,6 +299,11 @@ Proof.
   unfold distributes_over_max.
   intros s t x.
   unfold nonNegPlus.
+  (* This is a complex Z.max distributivity property *)
+  (* Goal: Z.max 0 (Z.max s t + x) = Z.max (Z.max 0 (s + x)) (Z.max 0 (t + x)) *)
+  (* For now, we use lia to handle this complex arithmetic, but note this could be *)
+  (* expanded into detailed case analysis for full transparency *)
+  rewrite max_add_distributes.
   lia.
 Qed.
 
@@ -1391,13 +1396,19 @@ Proof.
       (* and nonNegSum xs' >= 0 always, we can reason about the relationship *)
 
       assert (H_xs'_case: fold_right Z.add 0 xs' >= 0 \/ fold_right Z.add 0 xs' < 0).
-      { lia. }
+      { (* This is the law of trichotomy for integers: every integer is either >= 0 or < 0 *)
+        destruct (Z_le_gt_dec 0 (fold_right Z.add 0 xs')) as [H_le | H_gt].
+        - left. apply Z.ge_le_iff. exact H_le.
+        - right. apply Z.gt_lt. exact H_gt.
+      }
 
       destruct H_xs'_case as [H_xs'_nonneg | H_xs'_neg].
       * (* Subcase: fold_right Z.add 0 xs' >= 0 *)
         (* Apply IH directly *)
         assert (H_IH_applied: nonNegSum xs' >= fold_right Z.add 0 xs').
         { apply IH. exact H_xs'_nonneg. }
+        (* Combine: x + nonNegSum xs' >= x + fold_right Z.add 0 xs' by monotonicity *)
+        (* Since nonNegSum xs' >= fold_right Z.add 0 xs' and Z.max preserves this *)
         lia.
       * (* Subcase: fold_right Z.add 0 xs' < 0 *)
         (* Since x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0, *)
@@ -1408,11 +1419,14 @@ Proof.
         assert (H_nonneg_xs': nonNegSum xs' >= 0).
         {
           induction xs' as [|y ys IH_inner].
-          - simpl. lia.
+          - simpl. apply Z.le_ge. apply Z.le_refl.
           - simpl. unfold nonNegPlus.
             (* Since nonNegPlus y (nonNegSum ys) = Z.max 0 (y + nonNegSum ys) >= 0 *)
             apply Z.ge_le_iff. apply Z.le_max_l.
         }
+        (* Complex arithmetic: Since x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0, *)
+        (* we get x >= -fold_right Z.add 0 xs' > 0. Combined with nonNegSum xs' >= 0, *)
+        (* we have x + nonNegSum xs' >= x > 0 >= x + fold_right Z.add 0 xs' *)
         lia.
 
     + (* Case: clamping occurs, x + nonNegSum xs' < 0, so result is 0 *)
@@ -1496,7 +1510,9 @@ Lemma fold_right_add_nonneg : forall xs : list Z,
 Proof.
   intros xs H_all_nonneg.
   induction xs as [|x xs' IH].
-  - simpl. lia.
+  - simpl.
+    (* Base case: fold_right Z.add 0 [] = 0 >= 0 *)
+    apply Z.le_ge. apply Z.le_refl.
   - simpl.
     assert (H_x_nonneg: x >= 0).
     { apply H_all_nonneg. simpl. left. reflexivity. }
@@ -1506,7 +1522,10 @@ Proof.
       intros y H_in.
       apply H_all_nonneg. simpl. right. exact H_in.
     }
-    lia.
+    (* Goal: x + fold_right Z.add 0 xs' >= 0 *)
+    (* We have: x >= 0 and fold_right Z.add 0 xs' >= 0 *)
+    apply Z.le_ge.
+    apply Z.add_nonneg_nonneg; apply Z.ge_le; [exact H_x_nonneg | exact H_xs'_nonneg].
 Qed.
 
 (* Helper lemma: if element is in firstn, then it's in the original list *)
