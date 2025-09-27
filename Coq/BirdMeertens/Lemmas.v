@@ -76,7 +76,7 @@ Proof.
 Qed.
 
 Lemma nonNegPlus_monotone_l : forall a b x : Z,
-  a <= b -> nonNegPlus a x <= nonNegPlus b x.
+  a <= b -> a <#> x <= b <#> x.
 Proof.
   intros x a b H.
   unfold nonNegPlus.
@@ -235,18 +235,8 @@ Proof.
   induction xs as [|x xs' IH]; simpl; intros b a H_le.
   - exact H_le.
   - apply IH.
-    unfold nonNegPlus.
-    destruct (Z.leb 0 (a + x)) eqn:Ha, (Z.leb 0 (b + x)) eqn:Hb.
-    + apply (max_lowerbound_r x a b 0 H_le Ha Hb).
-    + exfalso.
-      apply Z.leb_le in Ha.
-      apply Z.leb_gt in Hb.
-      assert (H_contra: a + x <= b + x) by (apply Z.add_le_mono_r; exact H_le).
-      assert (H_ge_lt: 0 <= b + x) by (apply Z.le_trans with (m := a + x); [exact Ha | exact H_contra]).
-      apply Z.lt_irrefl with (x := 0).
-      apply Z.le_lt_trans with (m := b + x); [exact H_ge_lt | exact Hb].
-    + apply (max_ineq1_r x a b 0 H_le Ha).
-    + apply (max_ineq1_r x a b 0 H_le Ha).
+    apply nonNegPlus_monotone_l.
+    exact H_le.
 Qed.
 
 (* ===== SUFFIX/PREFIX PROPERTIES ===== *)
