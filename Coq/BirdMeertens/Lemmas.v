@@ -253,21 +253,17 @@ Proof.
   {
     intros x a b H_le.
     unfold nonNegPlus.
-    destruct (Z.leb 0 (x + a)) eqn:Ha, (Z.leb 0 (x + b)) eqn:Hb.
-    - (* Case 1: x+a >= 0 and x+b >= 0. *)
-      apply (max_lowerbound_l x a b 0 H_le Ha Hb).
-    - (* Case 2: x+a >= 0 and x+b < 0. This case is impossible. *)
-      exfalso.
-      apply Z.leb_le in Ha.
-      apply Z.leb_gt in Hb.
-      assert (H_xa_le_xb: x + a <= x + b) by (apply Z.add_le_mono_l; exact H_le).
-      assert (H_xb_ge_0: 0 <= x + b) by (apply Z.le_trans with (m := x + a); [exact Ha | exact H_xa_le_xb]).
-      apply Z.lt_irrefl with (x := 0).
-      apply Z.le_lt_trans with (m := x + b); [exact H_xb_ge_0 | exact Hb].
-    - (* Case 3: x+a < 0 and x+b >= 0. *)
-      apply (max_ineq1_l x a b 0 H_le Ha).
-    - (* Case 4: x+a < 0 and x+b < 0. *)
-      apply (max_ineq1_l x a b 0 H_le Ha).
+    (* Goal: Z.max 0 (x + a) <= Z.max 0 (x + b) *)
+
+    (* 1. Since a <= b, we know x + a <= x + b by monotonicity of addition. *)
+    assert (H_add_mono: x + a <= x + b) by (apply Z.add_le_mono_l; assumption).
+
+    (* 2. Z.max is monotonic. If u <= v, then (Z.max z u) <= (Z.max z v). *)
+    (* We can apply this property directly to our goal. *)
+    apply Z.max_le_compat_l.
+    
+    (* The only remaining subgoal is to prove x + a <= x + b, which we already know. *)
+    exact H_add_mono.
   }
 
   (* Main proof by induction on the prefix list xs. *)
