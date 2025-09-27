@@ -432,38 +432,9 @@ Lemma nonNegPlus_monotonic : forall x y z : Z,
 Proof.
   intros x y z H_le.
   unfold nonNegPlus.
-  destruct (Z.leb 0 (x + y)) eqn:Hy; destruct (Z.leb 0 (x + z)) eqn:Hz.
-  - (* Both nonnegative: x + y >= 0 and x + z >= 0 *)
-    apply max_lowerbound_l; auto.
-  - (* x + y >= 0 but x + z < 0 - impossible since y <= z *)
-    apply Z.leb_le in Hy.
-    apply Z.leb_nle in Hz.
-    exfalso.
-    assert (H_contra: x + y <= x + z) by (apply Zplus_le_compat_l; exact H_le).
-    (* Contradiction: x + y >= 0 (from Hy) but x + y <= x + z < 0 (from H_contra and Hz) *)
-    (* Convert Hz to x + z < 0 *)
-    assert (H_z_neg: x + z < 0).
-    { apply Z.nle_gt. exact Hz. }
-    (* Now we have: 0 <= x + y <= x + z < 0, which is impossible *)
-    apply Z.lt_irrefl with (x := 0).
-    apply Z.le_lt_trans with (m := x + y).
-    exact Hy.
-    apply Z.le_lt_trans with (m := x + z).
-    exact H_contra.
-    exact H_z_neg.
-  - (* x + y < 0 and x + z >= 0 *)
-    apply Z.leb_nle in Hy.
-    apply Z.leb_le in Hz.
-    (* This case is valid: nonNegPlus x y = 0 and nonNegPlus x z = x + z *)
-    (* Goal: Z.max 0 (x + y) <= Z.max 0 (x + z) *)
-    (* Since x + y < 0, Z.max 0 (x + y) = 0 *)
-    (* Since x + z >= 0, Z.max 0 (x + z) = x + z *)
-    (* So goal becomes: 0 <= x + z *)
-    rewrite Z.max_l; [| apply Z.lt_le_incl; apply Z.nle_gt; exact Hy].
-    rewrite Z.max_r; [| exact Hz].
-    exact Hz.
-  - (* Both negative: return 0 *)
-    apply max_ineq1_l; auto.
+  apply Z.max_le_compat_l.
+  apply Z.add_le_mono_l.
+  exact H_le.
 Qed.
 
 (* Helper lemma: nonNegPlus with 0 is idempotent when result is nonnegative *)
