@@ -343,7 +343,7 @@ Qed.
 
 (* Key lemma: both approaches yield same maximum despite different intermediate values *)
 Lemma nonNegPlus_eq_add_when_nonneg : forall x y : Z,
-  0 <= x + y -> nonNegPlus x y = x + y.
+  0 <= x + y -> x <#> y = x + y.
 Proof.
   intros x y H.
   unfold nonNegPlus.
@@ -426,20 +426,9 @@ Proof.
       * apply Z.le_max_r.
 Qed.
 
-(* Helper lemma: nonNegPlus is monotonic *)
-Lemma nonNegPlus_monotonic : forall x y z : Z,
-  y <= z -> nonNegPlus x y <= nonNegPlus x z.
-Proof.
-  intros x y z H_le.
-  unfold nonNegPlus.
-  apply Z.max_le_compat_l.
-  apply Z.add_le_mono_l.
-  exact H_le.
-Qed.
-
 (* Helper lemma: nonNegPlus with 0 is idempotent when result is nonnegative *)
 Lemma nonNegPlus_zero_right : forall x : Z,
-  0 <= x -> nonNegPlus x 0 = x.
+  0 <= x -> x <#> 0 = x.
 Proof.
   intros x H_nonneg.
   unfold nonNegPlus.
