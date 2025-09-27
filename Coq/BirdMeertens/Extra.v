@@ -1500,10 +1500,28 @@ Proof.
           * (* fold_right Z.add 0 xs' >= 0 *)
             (* Then x > 0 (since x + fold_right Z.add 0 xs' > 0 and fold_right Z.add 0 xs' >= 0) *)
             (* So x + nonNegSum xs' >= 0 + 0 = 0, contradicting x + nonNegSum xs' < 0 *)
-            lia.
+            (* Step 1: From x + fold_right Z.add 0 xs' > 0 and fold_right Z.add 0 xs' >= 0, derive x > 0 *)
+            (* Actually, this is tricky. If fold_right Z.add 0 xs' >= 0, then x could be negative *)
+            (* But we still get contradiction. Let's show x + nonNegSum xs' >= 0 directly *)
+            (* Since nonNegSum xs' >= fold_right Z.add 0 xs' (when the latter >= 0), *)
+            (* and x + fold_right Z.add 0 xs' > 0, we get x + nonNegSum xs' >= x + fold_right Z.add 0 xs' > 0 *)
+            assert (H_contradiction_pos: x + nonNegSum xs' >= 0).
+            {
+              (* Apply IH to get nonNegSum xs' >= fold_right Z.add 0 xs' *)
+              assert (H_IH_applied: nonNegSum xs' >= fold_right Z.add 0 xs').
+              {
+                apply IH. apply Z.ge_le_iff. exact H_xs'_nonneg.
+              }
+              (* Now use addition monotonicity *)
+              apply Z.ge_le_iff.
+              apply Z.le_trans with (m := x + fold_right Z.add 0 xs');
+                [apply Z.lt_le_incl; exact H_gt | apply Z.add_le_mono_l; apply Z.ge_le; exact H_IH_applied].
+            }
+            (* Step 2: Contradiction with Heq: x + nonNegSum xs' < 0 *)
+            apply Z.lt_irrefl with (x := x + nonNegSum xs').
+            apply Z.lt_le_trans with (m := 0); [exact Heq | apply Z.ge_le; exact H_contradiction_pos].
           * (* fold_right Z.add 0 xs' < 0 *)
-            (* Then x > -fold_right Z.add 0 xs' > 0, so x > 0 *)
-            (* So x + nonNegSum xs' > 0, contradicting x + nonNegSum xs' < 0 *)
+            (* Complex contradiction involving multiple transitivity steps - keeping lia temporarily *)
             lia.
       }
       rewrite H_sum_eq_zero.
