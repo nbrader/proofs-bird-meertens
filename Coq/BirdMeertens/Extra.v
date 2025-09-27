@@ -1383,7 +1383,7 @@ Proof.
   (* Strategy: prove by induction that nonNegSum either equals or exceeds regular sum *)
   induction xs as [|x xs' IH].
   - (* Base case: xs = [] *)
-    simpl. lia.
+    simpl. apply Z.le_ge. apply Z.le_refl.
   - (* Inductive case: xs = x :: xs' *)
     simpl. unfold nonNegPlus.
     destruct (Z.leb 0 (x + nonNegSum xs')) eqn:Heq.
@@ -1569,7 +1569,7 @@ Proof.
       - intros n Hn.
         (* For xs', we use the prefix property of x :: xs' *)
         assert (H_Sn_bound: (S n <= length (x :: xs'))%nat).
-        { simpl. lia. }
+        { simpl. apply le_n_S. exact Hn. }
         specialize (H_all_prefixes_nonneg (S n) H_Sn_bound).
         simpl firstn in H_all_prefixes_nonneg.
         simpl fold_right in H_all_prefixes_nonneg.
@@ -1604,7 +1604,9 @@ Proof.
         apply H_all_nonneg.
         simpl. right. exact H_in.
       }
-      lia.
+      (* Combine: x >= 0 and fold_right Z.add 0 xs' >= 0 implies x + fold_right Z.add 0 xs' >= 0 *)
+      apply Z.le_ge.
+      apply Z.add_nonneg_nonneg; apply Z.ge_le; [exact H_x_nonneg | exact H_xs'_sum_nonneg].
     }
 
     (* We need to show nonNegPlus x (fold_right Z.add 0 xs') = x + fold_right Z.add 0 xs' *)
