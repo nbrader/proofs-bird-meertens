@@ -302,6 +302,7 @@ Proof.
 Qed.
 
 
+
 (* Helper lemma: addition distributes over max *)
 Lemma nonNegPlus_distributes_over_max : distributes_over_max nonNegPlus.
 Proof.
@@ -313,6 +314,8 @@ Proof.
   (* For now, we use lia to handle this complex arithmetic, but note this could be *)
   (* expanded into detailed case analysis for full transparency *)
   rewrite max_add_distributes.
+  (* This is a complex distributivity involving Z.max 0 (Z.max (s + x) (t + x)) = Z.max (Z.max 0 (s + x)) (Z.max 0 (t + x)) *)
+  (* For now, keeping lia until a proper distributivity lemma is established *)
   lia.
 Qed.
 
@@ -1423,7 +1426,8 @@ Proof.
         assert (H_IH_applied: nonNegSum xs' >= fold_right Z.add 0 xs').
         { apply IH. exact H_xs'_nonneg. }
         (* Combine: x + nonNegSum xs' >= x + fold_right Z.add 0 xs' by monotonicity *)
-        (* Since nonNegSum xs' >= fold_right Z.add 0 xs' and Z.max preserves this *)
+        (* Since nonNegSum xs' >= fold_right Z.add 0 xs' by IH *)
+        (* This is a complex goal involving comparisons - keeping lia temporarily *)
         lia.
       * (* Subcase: fold_right Z.add 0 xs' < 0 *)
         (* Since x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0, *)
@@ -1439,9 +1443,7 @@ Proof.
             (* Since nonNegPlus y (nonNegSum ys) = Z.max 0 (y + nonNegSum ys) >= 0 *)
             apply Z.ge_le_iff. apply Z.le_max_l.
         }
-        (* Complex arithmetic: Since x + fold_right Z.add 0 xs' >= 0 and fold_right Z.add 0 xs' < 0, *)
-        (* we get x >= -fold_right Z.add 0 xs' > 0. Combined with nonNegSum xs' >= 0, *)
-        (* we have x + nonNegSum xs' >= x > 0 >= x + fold_right Z.add 0 xs' *)
+        (* Complex arithmetic involving transitivity chains - keeping lia temporarily *)
         lia.
 
     + (* Case: clamping occurs, x + nonNegSum xs' < 0, so result is 0 *)
@@ -1465,7 +1467,10 @@ Proof.
           (* H_sum_nonneg says fold_right Z.add 0 (x :: xs') >= 0 *)
           (* But fold_right Z.add 0 (x :: xs') = x + fold_right Z.add 0 xs' *)
           simpl in H_sum_nonneg.
-          lia.
+          (* Contradiction: H_lt says x + fold_right Z.add 0 xs' < 0 *)
+          (*                H_sum_nonneg says x + fold_right Z.add 0 xs' >= 0 *)
+          apply Z.lt_irrefl with (x := 0).
+          apply Z.le_lt_trans with (m := x + fold_right Z.add 0 xs'); [apply Z.ge_le; exact H_sum_nonneg | exact H_lt].
         - (* x + fold_right Z.add 0 xs' > 0 *)
           (* This would mean 0 > x + fold_right Z.add 0 xs' > 0, impossible *)
           exfalso.
@@ -1501,7 +1506,10 @@ Proof.
             (* So x + nonNegSum xs' > 0, contradicting x + nonNegSum xs' < 0 *)
             lia.
       }
-      rewrite H_sum_eq_zero. lia.
+      rewrite H_sum_eq_zero.
+      (* Goal is now: nonNegPlus x (nonNegSum xs') >= 0 *)
+      (* Since nonNegPlus always returns >= 0, this is immediate *)
+      apply nonNegPlus_nonneg'.
 Qed.
 
 (* Helper: nonNegSum is monotonic on non-negative sequences *)
