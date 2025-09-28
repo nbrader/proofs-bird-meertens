@@ -1726,23 +1726,54 @@ Proof.
               (* Case analysis: if p_head + fold_right nonNegPlus 0 p_tail >= 0 or < 0 *)
               destruct (Z.leb 0 (p_head + fold_right nonNegPlus 0 p_tail)) eqn:H_case.
               + (* Case: p_head + fold_right nonNegPlus 0 p_tail >= 0 *)
-                (* Then nonNegPlus gives p_head + fold_right nonNegPlus 0 p_tail *)
-                (* But we know p_head + fold_right Z.add 0 p_tail < 0 *)
-                (* Since fold_right nonNegPlus 0 p_tail >= fold_right Z.add 0 p_tail,
-                   this should lead to a contradiction in many cases *)
+                (* This case might actually be impossible given our constraints *)
+                (* We have: p_head + fold_right Z.add 0 p_tail < 0 (from l) *)
+                (* And: p_head + fold_right nonNegPlus 0 p_tail >= 0 (case assumption) *)
+                (* Since fold_right nonNegPlus 0 p_tail >= fold_right Z.add 0 p_tail always holds *)
+                (* This means p_head + fold_right nonNegPlus 0 p_tail >= p_head + fold_right Z.add 0 p_tail *)
 
-                (* This case requires more careful analysis of when this can happen *)
-                (* For now, this is the complex case that needs a more sophisticated proof *)
-                admit. (* Complex case requiring analysis of nonNegPlus vs Z.add relationship *)
+                apply Z.leb_le in H_case.
+                simpl in l.
+                (* l : p_head + fold_right Z.add 0 p_tail < 0 *)
+                (* H_case : 0 <= p_head + fold_right nonNegPlus 0 p_tail *)
+
+                (* Use the fact that fold_right nonNegPlus 0 p_tail >= fold_right Z.add 0 p_tail *)
+                assert (fold_right Z.add 0 p_tail <= fold_right nonNegPlus 0 p_tail) as H_ineq.
+                { apply fold_right_nonNegPlus_ge_add. }
+
+                (* Therefore: p_head + fold_right Z.add 0 p_tail <= p_head + fold_right nonNegPlus 0 p_tail *)
+                assert (p_head + fold_right Z.add 0 p_tail <= p_head + fold_right nonNegPlus 0 p_tail) as H_combined.
+                { apply Z.add_le_mono_l. exact H_ineq. }
+
+                (* Since p_head + fold_right Z.add 0 p_tail < 0 and the above inequality,
+                   we could have p_head + fold_right nonNegPlus 0 p_tail >= 0 *)
+                (* This is actually possible, so we need to handle this case properly *)
+
+                (* In this case, nonNegPlus gives the positive sum, not 0 *)
+                (* But we're trying to prove the result is 0, which would be a contradiction *)
+                (* unless there's something special about this case *)
+
+                (* For now, this case needs more detailed analysis *)
+                admit. (* Complex case: positive nonNegPlus sum but negative regular sum *)
 
               + (* Case: p_head + fold_right nonNegPlus 0 p_tail < 0 *)
                 (* Then nonNegPlus gives 0, which is what we want to prove *)
                 apply Z.leb_nle in H_case.
                 (* Since the condition is false, we get Z.max 0 (p_head + fold_right nonNegPlus 0 p_tail) = 0 *)
                 apply Z.max_l.
-                (* This should follow from H_case, but requires careful handling of Z arithmetic *)
-                (* For now, this is the base case that works when the sum is clearly negative *)
-                admit. (* Base case of nonNegPlus clamping - requires Z arithmetic lemma *)
+                (* H_case : ~ (0 <= p_head + fold_right nonNegPlus 0 p_tail) *)
+                (* We need: 0 >= p_head + fold_right nonNegPlus 0 p_tail *)
+                (* Use the fact that ~(0 <= x) is equivalent to x < 0, which gives us 0 > x *)
+                destruct (Z_le_gt_dec 0 (p_head + fold_right nonNegPlus 0 p_tail)) as [H_le | H_gt].
+                * (* Case: 0 <= p_head + fold_right nonNegPlus 0 p_tail *)
+                  contradiction H_case.
+                * (* Case: 0 > p_head + fold_right nonNegPlus 0 p_tail *)
+                  (* H_gt : 0 > p_head + fold_right nonNegPlus 0 p_tail *)
+                  (* We need: 0 >= p_head + fold_right nonNegPlus 0 p_tail *)
+                  (* 0 > x is the same as x < 0, and x < 0 implies 0 >= x *)
+                  apply Z.lt_le_incl.
+                  apply Z.gt_lt.
+                  exact H_gt.
           }
           rewrite H_clamped in Hys_eq.
           rewrite Hys_eq in m_pos.
