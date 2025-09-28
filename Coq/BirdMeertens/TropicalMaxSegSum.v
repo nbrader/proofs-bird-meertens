@@ -1522,6 +1522,86 @@ computations differ, the MAXIMUM values are equal because the maximum is achieve
 at a prefix where both methods agree.
 *)
 
+(* assume usual imports and that inits xs is non-empty (it contains []) *)
+
+Lemma nth0_inits {A} (xs : list A) : nth 0 (inits xs) [] = [].
+Proof.
+  induction xs; reflexivity.
+Qed.
+
+Lemma temporary_lemma_name : forall xs : list Z,
+  exists j : nat,
+    nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 =
+      fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) /\
+    nth j (map (fold_right Z.add 0) (inits xs)) 0 =
+      nth j (map (fold_right nonNegPlus 0) (inits xs)) 0.
+Proof.
+  intros.
+  set (ys := map (fold_right nonNegPlus 0) (inits xs)).
+  set (zs := map (fold_right Z.add 0) (inits xs)).
+  set (m := fold_right Z.max 0 ys).
+
+  (* helper: maximum is achieved at some index because `ys` is non-empty (inits contains []) *)
+  assert (Hmax_in : exists j, nth j ys 0 = m).
+  { (* prove: max of ys (with neutral 0) is equal to some list element *)
+    (* this follows from basic properties of fold_right Z.max and the fact inits xs <> [] *)
+    admit.
+  }
+
+  destruct Hmax_in as [j Hj_max].
+
+  (* case split on m = 0 or m > 0 *)
+  destruct (Z.eq_dec m 0) as [Hm0 | Hmpos].
+  - (* m = 0: take the empty prefix (it is the first element of inits), index 0 works *)
+    exists 0%nat.
+    split.
+    + simpl. (* nth 0 ys 0 = ys_head = nonNegPlus-sum of [] = 0 = m *)
+      rewrite Hm0.
+      unfold ys.
+      replace 0 with (fold_right nonNegPlus 0 []) by reflexivity.
+      rewrite map_nth. simpl. rewrite nth0_inits. reflexivity.
+    + admit.
+  - (* m <> 0, hence m > 0 or m < 0; but ys are non-negative so m > 0 *)
+    assert (m_pos : 0 < m).
+    { (* because ys are results of nonNegPlus sums they are >= 0; and m != 0 implies m > 0 *)
+      (* prove: forall y, 0 <= y, so fold_right Z.max 0 ys >= 0 and != 0 => >0 *)
+      admit. }
+
+    (* j is an index where ys !! j = m *)
+    exists j.
+    split.
+    + exact Hj_max.
+    + (* show zs !! j = ys !! j, i.e. sum(prefix_j) = nonNegPlus_sum(prefix_j) *)
+      (* let prefix := nth j (inits xs) [] be the corresponding prefix *)
+      set (prefix := nth j (inits xs) []).
+      assert (Hys_eq : fold_right nonNegPlus 0 prefix = m).
+      { (* because ys = map nonNegPlus (inits xs) and nth j ys 0 = m *)
+        unfold ys in Hj_max. rewrite <- Hj_max. admit. }
+
+      (* If the nonNegPlus-sum of prefix is > 0 then the regular sum of that prefix is >= 0.
+         If the regular sum were negative then the clamped nonNegPlus-sum would be 0,
+         contradicting m > 0. So sum(prefix) >= 0. *)
+      assert (Hsum_nonneg : 0 <= fold_right Z.add 0 prefix).
+      { destruct (Z_lt_dec (fold_right Z.add 0 prefix) 0).
+        - (* sum(prefix) < 0 leads to nonNegPlus sum = 0, contradiction with m > 0 *)
+          (* use H_pointwise_clamped: 0 <|> sum prefix <= nonNegPlus prefix; if sum < 0 then 0 <|> sum = 0 *)
+          (* hence nonNegPlus prefix = 0, contradicting Hys_eq = m > 0 *)
+          admit.
+        - now lia.
+      }
+
+      (* final step: when regular sum >= 0, nonNegPlus-sum equals regular sum.
+         (This is the crucial lemma about the behaviour of nonNegPlus folding.) *)
+      assert (H_eq_when_nonneg :
+                fold_right Z.add 0 prefix = fold_right nonNegPlus 0 prefix).
+      { (* Proveable by induction on prefix and the definition of nonNegPlus (clamping only affects negative intermediate sums).
+           We leave it as an auxiliary lemma to be proved from definitions. *)
+        admit.
+      }
+
+      admit.
+Admitted.
+
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
@@ -1652,9 +1732,8 @@ Proof.
        - If max = 0, then empty prefix works (sum = 0 >= 0)
        - If max > 0, then some prefix achieves this with positive contribution,
          and by mixed-sign structure, we can find one with sum >= 0 *)
-
-    admit. (* Core constructive step: find maximum-achieving index with non-negative sum *)
-Admitted.
+    apply temporary_lemma_name.
+Qed.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
   mixed_signs xs ->
