@@ -1600,6 +1600,7 @@ Proof.
         - (* sum(prefix) < 0 leads to nonNegPlus sum = 0, contradiction with m > 0 *)
           (* use H_pointwise_clamped: 0 <|> sum prefix <= nonNegPlus prefix; if sum < 0 then 0 <|> sum = 0 *)
           (* hence nonNegPlus prefix = 0, contradicting Hys_eq = m > 0 *)
+          exfalso.
           admit.
         - now lia.
       }
