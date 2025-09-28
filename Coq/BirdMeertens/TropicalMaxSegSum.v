@@ -1545,6 +1545,19 @@ Proof.
   assert (Hmax_in : exists j, nth j ys 0 = m).
   { (* prove: max of ys (with neutral 0) is equal to some list element *)
     (* this follows from basic properties of fold_right Z.max and the fact inits xs <> [] *)
+    unfold m.
+    clear zs.
+    clear m.
+    assert (all_nonnegative ys).
+    {
+      unfold all_nonnegative.
+      intros.
+      unfold ys in H.
+      pose proof nonNegSum_nonneg.
+      unfold nonNegSum in H0.
+      admit.
+    }
+    unfold all_nonnegative in H.
     admit.
   }
   destruct Hmax_in as [j Hj_max].
