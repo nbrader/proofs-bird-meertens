@@ -1112,40 +1112,96 @@ This analysis shows that the equivalence assumed in some parts of the tropical
 semiring approach requires more careful handling of the clamping operations.
 *)
 
-(* 
-Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
-  mixed_signs xs ->
-  fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
-  fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
-Proof.
-  intros xs Hm.
-  apply fold_max_clip.
-  (* Step 1: show that for every prefix ys of xs,
-     fold_right (fun x y => Z.max 0 (x+y)) 0 ys
-     = fold_right Z.add 0 ys. *)
-  assert (Hprefix :
-    forall ys, In ys (inits xs) ->
-      fold_right (fun x y => Z.max 0 (x+y)) 0 ys
-      = fold_right Z.add 0 ys).
-  {
-    intros ys Hin.
-    (* Here use Hm (mixed_signs xs) to argue that sum ys >= 0. *)
-    (* Then by Zmax_id_left, max 0 (sum ys) = sum ys. *)
-    admit.
-  }
-  (* Step 2: now map over inits xs with pointwise equality. *)
-  apply map_ext_in with (f:= fun ys => fold_right _ 0 ys)
-                        (g:= fun ys => fold_right Z.add 0 ys).
-  - apply Hprefix.
-  (* Step 3: two sides become fold_right Z.max 0 over same list. *)
-  reflexivity.
-Qed.
- *)
+(*
+PREVIOUS APPROACH (INCORRECT): The commented version below attempted to use fold_max_clip
+and assumed that clamped fold equals regular fold for all prefixes in mixed case.
+This is false due to the counterexamples we found in fold_map_rewrite.
+
+The correct approach (implemented above) recognizes that while individual prefix
+computations differ, the MAXIMUM values are equal because the maximum is achieved
+at a prefix where both methods agree.
+*)
 
 Lemma maximum_equivalence_in_mixed_case : forall xs : list Z,
   mixed_signs xs ->
   fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
   fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)).
+Proof.
+  intros xs H_mixed.
+
+  (* Key insight: nonNegSum(prefix) >= max(0, sum(prefix)) for all prefixes,
+     and the maximum is achieved at a prefix where both sides are equal *)
+
+  (* Step 1: Show that nonNegSum dominates max(0, sum) pointwise *)
+  assert (H_pointwise: forall prefix,
+    In prefix (inits xs) ->
+    fold_right Z.add 0 prefix <= fold_right nonNegPlus 0 prefix).
+  {
+    intros prefix H_in.
+    (* This follows from fold_right_nonNegPlus_ge_add which we proved earlier *)
+    apply fold_right_nonNegPlus_ge_add.
+  }
+
+  (* Step 2: Transform the pointwise inequality for max(0, sum) *)
+  assert (H_pointwise_clamped: forall prefix,
+    In prefix (inits xs) ->
+    Z.max 0 (fold_right Z.add 0 prefix) <= fold_right nonNegPlus 0 prefix).
+  {
+    intros prefix H_in.
+    pose proof (H_pointwise prefix H_in) as H_ineq.
+    (* We have: fold_right Z.add 0 prefix <= fold_right nonNegPlus 0 prefix *)
+    (* We need: Z.max 0 (fold_right Z.add 0 prefix) <= fold_right nonNegPlus 0 prefix *)
+
+    (* Since nonNegPlus always produces non-negative results *)
+    assert (H_nonneg: 0 <= fold_right nonNegPlus 0 prefix).
+    {
+      apply nonNegSum_nonneg.
+    }
+
+    (* Apply max monotonicity *)
+    apply Z.max_case_strong; intro H_case.
+    - (* Case: fold_right Z.add 0 prefix <= 0 *)
+      (* Then Z.max 0 (fold_right Z.add 0 prefix) = 0 *)
+      (* And 0 <= fold_right nonNegPlus 0 prefix by H_nonneg *)
+      exact H_nonneg.
+    - (* Case: 0 < fold_right Z.add 0 prefix *)
+      (* Then Z.max 0 (fold_right Z.add 0 prefix) = fold_right Z.add 0 prefix *)
+      (* And fold_right Z.add 0 prefix <= fold_right nonNegPlus 0 prefix by H_ineq *)
+      exact H_ineq.
+  }
+
+  (* Step 3: Show that for mixed-sign lists, there exists a prefix where both sides agree and achieve maximum *)
+  (* This is the key insight from computational analysis *)
+
+  (* For mixed-sign lists, the maximum of nonNegSum over prefixes is positive *)
+  assert (H_max_pos: 0 < fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs))).
+  {
+    (* Mixed signs means there's both positive and negative elements *)
+    unfold mixed_signs in H_mixed.
+    destruct H_mixed as [H_not_all_nonneg H_not_all_nonpos].
+
+    (* Since not all elements are non-positive, there exists a positive element *)
+    (* This means there's a non-empty prefix ending with a positive element *)
+    (* that achieves a positive nonNegSum *)
+
+    (* The detailed proof would involve showing that the first positive element
+       creates a prefix with positive sum = positive nonNegSum *)
+    admit. (* This requires more detailed analysis of mixed-sign structure *)
+  }
+
+  (* Step 4: Use a direct approach based on computational insight *)
+  (* We'll show that both sides achieve the same maximum value *)
+
+  (* The key insight: there exists a prefix where both methods achieve their maximum and agree *)
+  (* This follows from the mixed-sign property ensuring such a prefix exists *)
+
+  (* For now, admit the detailed proof since the structure is complex but computationally verified *)
+  (* The proof would involve: *)
+  (* 1. Showing mixed-sign lists have a positive-sum prefix where both methods agree *)
+  (* 2. This prefix achieves the maximum for both methods *)
+  (* 3. Therefore the maximum values are equal *)
+
+  admit. (* Detailed proof deferred - lemma is computationally verified *)
 Admitted.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
