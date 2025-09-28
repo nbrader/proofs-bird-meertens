@@ -1088,26 +1088,28 @@ Proof.
     reflexivity.
 Qed.
 
-(* 
-Lemma fold_map_rewrite xs :
-  forall (pos_sum : list Z -> Prop),
-  (forall ls : list Z, pos_sum ls <-> 0 <= fold_right Z.add 0 ls) ->
-  map (fold_right (fun x y => Z.max 0 (x+y)) 0) (inits xs) =
-  map (fun prefix => Z.max 0 (fold_right Z.add 0 prefix)) (inits xs).
-Proof.
-  intros.
-  apply map_ext_inits. intros.
-  simpl. induction prefix as [|a prefix' IH]; simpl.
-  - reflexivity.
-  - rewrite IH.
-    pose proof (H prefix').
-    replace (0 <|> fold_right Z.add 0 prefix') with (fold_right Z.add 0 prefix').
-    + reflexivity.
-    + symmetry.
-      apply Z.max_r.
-      apply H0.
-      admit.
-Admitted.
+(*
+LEMMA PROVED FALSE: The original fold_map_rewrite lemma is incorrect.
+
+Original claim:
+map (fold_right (fun x y => Z.max 0 (x+y)) 0) (inits xs) =
+map (fun prefix => Z.max 0 (fold_right Z.add 0 prefix)) (inits xs)
+
+COUNTEREXAMPLE: xs = [1, -1]
+- For prefix [1, -1]:
+  * Left side (clamped fold): max(0, -1 + 0) = 0, then max(0, 1 + 0) = 1 → Result: 1
+  * Right side (post-clamp): max(0, sum([1, -1])) = max(0, 0) = 0 → Result: 0
+
+The issue is that intermediate clamping preserves positive partial results,
+while post-clamping only affects the final sum. These are fundamentally different
+operations and cannot be equated without additional constraints.
+
+OTHER COUNTEREXAMPLES:
+- [2, -1]: Left gives [0, 2, 2], Right gives [0, 2, 1]
+- [1, -2, 1]: Left gives [0, 1, 1, 1], Right gives [0, 1, 0, 0]
+
+This analysis shows that the equivalence assumed in some parts of the tropical
+semiring approach requires more careful handling of the clamping operations.
 *)
 
 (* 
