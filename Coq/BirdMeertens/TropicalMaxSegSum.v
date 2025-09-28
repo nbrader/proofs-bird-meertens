@@ -1315,6 +1315,31 @@ Proof.
 Qed.
 
 
+(* Helper: inits always contains the empty prefix *)
+Lemma inits_contains_empty : forall (A : Type) (xs : list A),
+  In [] (inits xs).
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - simpl. left. reflexivity.
+  - simpl. left. reflexivity.
+Qed.
+
+(* Helper: inits contains the full list as its last element *)
+Lemma inits_contains_full : forall (A : Type) (xs : list A),
+  In xs (inits xs).
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - simpl. left. reflexivity.
+  - simpl. right.
+    apply in_map_iff.
+    exists xs'.
+    split.
+    + reflexivity.
+    + exact IH.
+Qed.
+
 Lemma fold_max_clip :
   forall l, fold_right Z.max 0 (map (fun s => Z.max 0 s) l)
            = Z.max 0 (fold_right Z.max 0 l).
@@ -1584,12 +1609,51 @@ Proof.
   - (* This is the key step - we need to show that there exists a prefix where both methods give the same result
        and this result is the maximum of the nonNegPlus list *)
 
-    (* For mixed-sign lists, computational analysis shows this always holds *)
-    (* The proof would require analyzing the structure of mixed-sign lists *)
-    (* and showing that the maximum is achieved at a prefix where both methods agree *)
+    (* Computational analysis shows that for mixed-sign lists, there always exists a prefix where:
+       1. The nonNegSum achieves its maximum
+       2. Both nonNegSum and regular sum agree (because the prefix sum is non-negative) *)
 
-    (* This requires the sophisticated analysis mentioned in the comments *)
-    admit. (* Core step: maximum agreement point exists for mixed-sign lists *)
+    (* The key insight: Agreement occurs when the prefix sum >= 0, because then:
+       - nonNegSum(prefix) = sum(prefix) (no clamping)
+       - Both methods give the same result *)
+
+    (* For mixed-sign lists, we can always find such a prefix among those achieving the maximum *)
+
+    (* Strategy: Use the fact that mixed_signs guarantees both positive and negative elements exist *)
+    (* This ensures there exists a prefix with non-negative sum that achieves the maximum *)
+
+    (* For now, we use the computational verification to assert this exists *)
+    (* The formal proof would require case analysis on the structure of mixed-sign lists *)
+
+    (* Key cases where agreement occurs:
+       1. Empty prefix [] (always has sum = 0, so agreement holds)
+       2. Prefixes ending with sufficient positive elements to make sum >= 0 *)
+
+    (* Since mixed_signs xs holds, we have both positive and negative elements *)
+    (* The maximum nonNegSum is achieved either at:
+       - A prefix with positive sum (where agreement holds), or
+       - Multiple prefixes including one with sum = 0 (where agreement holds) *)
+
+    (* Key insight: Agreement occurs when fold_right Z.add 0 prefix >= 0, because then:
+       nonNegSum prefix = fold_right nonNegPlus 0 prefix = fold_right Z.add 0 prefix *)
+
+    (* Strategy: Among all maximum-achieving indices, find one where the prefix sum >= 0 *)
+
+    (* We know that:
+       1. The empty prefix [] has sum 0 >= 0 and both methods give 0
+       2. If max nonNegSum > 0, then there exists a prefix with positive contribution
+       3. By the structure of mixed-sign lists, we can always find agreement *)
+
+    (* Use the fact that we can construct such an index *)
+    (* From computational verification: there always exists such a j *)
+
+    (* The formal proof requires showing that among maximum-achieving prefixes,
+       at least one has non-negative sum. This follows from:
+       - If max = 0, then empty prefix works (sum = 0 >= 0)
+       - If max > 0, then some prefix achieves this with positive contribution,
+         and by mixed-sign structure, we can find one with sum >= 0 *)
+
+    admit. (* Core constructive step: find maximum-achieving index with non-negative sum *)
 Admitted.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
