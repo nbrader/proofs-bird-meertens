@@ -1529,6 +1529,11 @@ Proof.
   induction xs; reflexivity.
 Qed.
 
+Lemma inits_map_comm {A B} (x : A) (xs : list A) (f : list A -> B) : In (f [x]) (map f (inits xs)) = In (f [x]) (inits (map f xs)).
+Proof.
+  induction xs; reflexivity.
+Qed.
+
 Lemma temporary_lemma_name : forall xs : list Z,
   exists j : nat,
     nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 =
@@ -1555,6 +1560,11 @@ Proof.
       unfold ys in H.
       pose proof nonNegSum_nonneg.
       unfold nonNegSum in H0.
+      apply inits_map_comm in H.
+      apply inits_are_prefixes in H.
+      Search In.
+      apply in_map.
+      apply Forall_forall.
       admit.
     }
     unfold all_nonnegative in H.
