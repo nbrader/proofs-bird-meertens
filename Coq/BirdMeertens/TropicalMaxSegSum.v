@@ -1529,10 +1529,6 @@ Proof.
   induction xs; reflexivity.
 Qed.
 
-Lemma inits_map_comm {A B} (x : A) (xs : list A) (f : list A -> B) : In (f [x]) (map f (inits xs)) = In (f [x]) (inits (map f xs)).
-Proof.
-  induction xs; reflexivity.
-Qed.
 
 Lemma temporary_lemma_name : forall xs : list Z,
   exists j : nat,
@@ -1556,16 +1552,18 @@ Proof.
     assert (all_nonnegative ys).
     {
       unfold all_nonnegative.
-      intros.
+      intros x H.
       unfold ys in H.
-      pose proof nonNegSum_nonneg.
-      unfold nonNegSum in H0.
-      apply inits_map_comm in H.
-      apply inits_are_prefixes in H.
-      Search In.
-      apply in_map.
-      apply Forall_forall.
-      admit.
+      (* H : In x (map (fold_right nonNegPlus 0) (inits xs)) *)
+      (* By in_map, there exists prefix such that In prefix (inits xs) and x = fold_right nonNegPlus 0 prefix *)
+      apply in_map_iff in H.
+      destruct H as [prefix [H_eq H_in]].
+      subst x.
+      (* Now we need to prove fold_right nonNegPlus 0 prefix >= 0 *)
+      (* This follows from nonNegSum_nonneg since nonNegSum = fold_right nonNegPlus 0 *)
+      pose proof (nonNegSum_nonneg prefix) as H_nonneg.
+      unfold nonNegSum in H_nonneg.
+      lia.
     }
     unfold all_nonnegative in H.
     admit.
