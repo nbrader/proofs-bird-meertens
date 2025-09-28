@@ -1570,7 +1570,16 @@ Proof.
     assert (m_pos : 0 < m).
     { (* because ys are results of nonNegPlus sums they are >= 0; and m != 0 implies m > 0 *)
       (* prove: forall y, 0 <= y, so fold_right Z.max 0 ys >= 0 and != 0 => >0 *)
-      admit. }
+      pose proof (fold_max_nonneg ys).
+      unfold m.
+      apply Z.le_lteq in H.
+      destruct H.
+      apply H.
+      exfalso.
+      unfold m in Hmpos.
+      rewrite <- H in Hmpos.
+      contradiction.
+    }
 
     (* j is an index where ys !! j = m *)
     exists j.
