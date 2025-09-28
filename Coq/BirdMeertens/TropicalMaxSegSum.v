@@ -1314,6 +1314,7 @@ Proof.
   apply Z.max_assoc.
 Qed.
 
+
 Lemma fold_max_clip :
   forall l, fold_right Z.max 0 (map (fun s => Z.max 0 s) l)
            = Z.max 0 (fold_right Z.max 0 l).
@@ -1551,22 +1552,44 @@ Proof.
      fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) =
      fold_right Z.max 0 (map (fold_right Z.add 0) (inits xs)) *)
 
-  (* The computational analysis shows that while individual prefix computations
-     may differ between nonNegSum and regular sum, the MAXIMUM values achieved
-     are always equal for mixed-sign lists. *)
+  (* Apply max_preserve_pointwise with the lists in the correct order *)
+  (* We need to show: max of nonNegPlus list = max of Z.add list *)
+  (* Since nonNegPlus >= Z.add pointwise, we use the lemma in reverse *)
+  symmetry.
+  apply max_preserve_pointwise.
 
-  (* This follows from the structure established in H_pointwise and H_pointwise_clamped:
-     - We have fold_right Z.add 0 prefix <= fold_right nonNegPlus 0 prefix (pointwise)
-     - We have Z.max 0 (fold_right Z.add 0 prefix) <= fold_right nonNegPlus 0 prefix (clamped)
-     - The maximums are achieved at prefixes where both methods agree *)
+  (* Prove pointwise inequality: for all i, map (fold_right Z.add 0) (inits xs)[i] <= map (fold_right nonNegPlus 0) (inits xs)[i] *)
+  - intro i.
+    (* This should follow from our H_pointwise for valid indices *)
+    destruct (Nat.ltb i (length (inits xs))) eqn:Hi_valid.
+    + (* Case: i < length (inits xs) - valid index *)
+      apply Nat.ltb_lt in Hi_valid.
+      (* Use the fact that nth of map equals function applied to nth *)
+      pose proof (nth_map_fold_right (fold_right Z.add 0) (inits xs) i Hi_valid) as H_add.
+      pose proof (nth_map_fold_right (fold_right nonNegPlus 0) (inits xs) i Hi_valid) as H_nonneg.
+      rewrite H_add, H_nonneg.
+      (* Now we need to show: fold_right Z.add 0 (nth i (inits xs) []) <= fold_right nonNegPlus 0 (nth i (inits xs) []) *)
+      apply H_pointwise.
+      (* Need to show: In (nth i (inits xs) []) (inits xs) *)
+      apply nth_In. exact Hi_valid.
+    + (* Case: i >= length (inits xs) - default values *)
+      apply Nat.ltb_nlt in Hi_valid.
+      rewrite (nth_overflow (map (fold_right Z.add 0) (inits xs)) 0).
+      * rewrite (nth_overflow (map (fold_right nonNegPlus 0) (inits xs)) 0).
+        -- apply Z.le_refl.
+        -- rewrite map_length. apply Nat.nlt_ge. exact Hi_valid.
+      * rewrite map_length. apply Nat.nlt_ge. exact Hi_valid.
 
-  (* For mixed-sign lists, there exists a prefix where both sides achieve their
-     maximum and have the same value. Therefore the maximums are equal. *)
+  (* Prove agreement at maximum: exists j where map (fold_right nonNegPlus 0) (inits xs) achieves max and both lists agree *)
+  - (* This is the key step - we need to show that there exists a prefix where both methods give the same result
+       and this result is the maximum of the nonNegPlus list *)
 
-  (* This is computationally verified but technically complex to prove formally
-     without additional structural lemmas about mixed-sign lists and maximum-achieving prefixes. *)
+    (* For mixed-sign lists, computational analysis shows this always holds *)
+    (* The proof would require analyzing the structure of mixed-sign lists *)
+    (* and showing that the maximum is achieved at a prefix where both methods agree *)
 
-  admit. (* Computationally verified equivalence - maximum values are equal *)
+    (* This requires the sophisticated analysis mentioned in the comments *)
+    admit. (* Core step: maximum agreement point exists for mixed-sign lists *)
 Admitted.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
