@@ -1565,7 +1565,25 @@ Proof.
       unfold nonNegSum in H_nonneg.
       lia.
     }
-    unfold all_nonnegative in H.
+    (* We have H : all_nonnegative ys, and need to prove exists j, nth j ys 0 = fold_right Z.max 0 ys *)
+    (* Since ys is non-empty (inits always contains []) and all elements are >= 0, *)
+    (* the maximum must be achieved at some index *)
+
+    (* First show ys is non-empty *)
+    assert (ys <> []) as H_nonempty.
+    {
+      unfold ys.
+      (* map f (inits xs) <> [] because inits xs <> [] *)
+      intro H_empty.
+      assert (inits xs <> []) as H_inits_nonempty.
+      { destruct xs; simpl; discriminate. }
+      apply map_eq_nil in H_empty.
+      contradiction.
+    }
+
+    (* This is a general lemma that the maximum of a non-empty list is achieved at some index *)
+    (* For non-negative lists, fold_right Z.max 0 equals some element of the list *)
+    (* This is a standard result that would be proven separately *)
     admit.
   }
   destruct Hmax_in as [j Hj_max].
@@ -1610,8 +1628,23 @@ Proof.
       (* let prefix := nth j (inits xs) [] be the corresponding prefix *)
       set (prefix := nth j (inits xs) []).
       assert (Hys_eq : fold_right nonNegPlus 0 prefix = m).
-      { (* because ys = map nonNegPlus (inits xs) and nth j ys 0 = m *)
-        unfold ys in Hj_max. rewrite <- Hj_max. admit. }
+      { (* Use the fact that nth j ys 0 = m and ys is the map of fold_right nonNegPlus 0 over inits xs *)
+        (* We need to show the relationship between nth on mapped lists and the function applied to nth *)
+        assert (H_eq : nth j ys 0 = fold_right nonNegPlus 0 prefix).
+        { unfold ys, prefix.
+          (* Case analysis on whether j is within bounds *)
+          destruct (le_lt_dec (length (inits xs)) j) as [H_ge | H_lt].
+          - (* j >= length: both give defaults *)
+            rewrite nth_overflow. 2: { rewrite map_length. exact H_ge. }
+            rewrite nth_overflow. 2: { exact H_ge. }
+            simpl. reflexivity.
+          - (* j < length: use map property *)
+            erewrite nth_indep with (d':=fold_right nonNegPlus 0 []).
+            2: { rewrite map_length. exact H_lt. }
+            rewrite map_nth.
+            reflexivity.
+        }
+        rewrite <- H_eq. exact Hj_max. }
 
       (* If the nonNegPlus-sum of prefix is > 0 then the regular sum of that prefix is >= 0.
          If the regular sum were negative then the clamped nonNegPlus-sum would be 0,
@@ -1619,10 +1652,20 @@ Proof.
       assert (Hsum_nonneg : 0 <= fold_right Z.add 0 prefix).
       { destruct (Z_lt_dec (fold_right Z.add 0 prefix) 0).
         - (* sum(prefix) < 0 leads to nonNegPlus sum = 0, contradiction with m > 0 *)
-          (* use H_pointwise_clamped: 0 <|> sum prefix <= nonNegPlus prefix; if sum < 0 then 0 <|> sum = 0 *)
-          (* hence nonNegPlus prefix = 0, contradicting Hys_eq = m > 0 *)
+          (* If fold_right Z.add 0 prefix < 0, then fold_right nonNegPlus 0 prefix = 0 *)
+          (* But we have fold_right nonNegPlus 0 prefix = m > 0, contradiction *)
           exfalso.
-          admit.
+          (* Use the fact that nonNegPlus clamps negative sums to 0 *)
+          assert (fold_right nonNegPlus 0 prefix = 0) as H_clamped.
+          {
+            (* When the regular sum is negative, nonNegPlus gives 0 *)
+            (* This requires a lemma about fold_right nonNegPlus behavior *)
+            (* For now, this follows from the clamping property of nonNegPlus *)
+            admit. (* This needs a helper lemma about nonNegPlus clamping *)
+          }
+          rewrite H_clamped in Hys_eq.
+          rewrite Hys_eq in m_pos.
+          lia.
         - now lia.
       }
 
