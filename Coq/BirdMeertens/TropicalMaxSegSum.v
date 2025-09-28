@@ -1547,7 +1547,6 @@ Proof.
     (* this follows from basic properties of fold_right Z.max and the fact inits xs <> [] *)
     admit.
   }
-
   destruct Hmax_in as [j Hj_max].
 
   (* case split on m = 0 or m > 0 *)
@@ -1560,7 +1559,13 @@ Proof.
       unfold ys.
       replace 0 with (fold_right nonNegPlus 0 []) by reflexivity.
       rewrite map_nth. simpl. rewrite nth0_inits. reflexivity.
-    + admit.
+    + simpl.
+      unfold ys, zs.
+      simpl.
+      replace 0 with (fold_right nonNegPlus 0 []) by reflexivity.
+      rewrite map_nth. simpl. rewrite nth0_inits.
+      simpl.
+      induction xs; reflexivity.
   - (* m <> 0, hence m > 0 or m < 0; but ys are non-negative so m > 0 *)
     assert (m_pos : 0 < m).
     { (* because ys are results of nonNegPlus sums they are >= 0; and m != 0 implies m > 0 *)
