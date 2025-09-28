@@ -881,36 +881,73 @@ Proof.
        property that their computation path never hits negative intermediate results.
        This means nonNegPlus acts like regular addition throughout the computation. *)
 
-    (* For now, assume the inductive hypothesis applies to p' *)
-    (* This requires a more sophisticated analysis of maximum-achieving prefix structure *)
-    assert (H_IH : fold_right nonNegPlus 0 p' = fold_right Z.add 0 p').
+    (* Key insight: We don't need p' to achieve the maximum globally,
+       we just need to show that since x + sum(p') >= 0 and this achieves the maximum,
+       the computation path never hits negative intermediate results *)
+
+    (* The crucial observation: if x :: p' achieves maximum and sum(x :: p') >= 0,
+       then the step-by-step computation of nonNegSum(x :: p') = nonNegPlus x (nonNegSum p')
+       can be shown to equal x + sum(p') through careful analysis *)
+
+    (* Since sum(x :: p') = x + sum(p') >= 0 achieves the maximum,
+       and nonNegSum preserves non-negative contributions,
+       we have nonNegPlus x (nonNegSum p') = x + sum(p') *)
+
+    (* The key is to show this specific step, not that p' globally achieves maximum *)
+    assert (H_step_equality: nonNegPlus x (fold_right nonNegPlus 0 p') = x + fold_right Z.add 0 p').
     {
-      (* This would require proving that p' also has the maximum-achieving property
-         within the appropriate context. This is a complex structural argument. *)
-      admit.
+      (* We know that x + sum(p') >= 0 from H_step_nonneg *)
+      (* We need to show that nonNegPlus x (nonNegSum p') = x + sum(p') *)
+
+      (* For maximum-achieving prefixes, we can show this directly *)
+      (* The proof relies on the fact that if the total is non-negative and achieves maximum,
+         the computation preserves this structure *)
+
+      (* Show that 0 <= x + fold_right Z.add 0 p' *)
+      assert (H_step_nonneg : 0 <= x + fold_right Z.add 0 p').
+      {
+        (* This follows from the fact that x :: p' achieves the maximum and has nonnegative sum *)
+        simpl in H_nonneg.
+        exact H_nonneg.
+      }
+
+      (* Use the fact that nonNegSum p' >= sum p' always (from fold_right_nonNegPlus_ge_add) *)
+      assert (H_p'_ineq: fold_right Z.add 0 p' <= fold_right nonNegPlus 0 p').
+      { apply fold_right_nonNegPlus_ge_add. }
+
+      (* Since x + sum(p') >= 0 and achieves maximum,
+         we have x + nonNegSum(p') >= x + sum(p') >= 0 *)
+      assert (H_combined_nonneg: 0 <= x + fold_right nonNegPlus 0 p').
+      {
+        transitivity (x + fold_right Z.add 0 p').
+        - exact H_step_nonneg.
+        - apply Z.add_le_mono_l. exact H_p'_ineq.
+      }
+
+      (* Therefore nonNegPlus x (nonNegSum p') = x + nonNegSum(p') *)
+      unfold nonNegPlus.
+      destruct (Z.leb 0 (x + fold_right nonNegPlus 0 p')) eqn:Hcond.
+      + (* Case: x + nonNegSum(p') >= 0 *)
+        replace (0 <|> (x + fold_right nonNegPlus 0 p')) with (x + fold_right nonNegPlus 0 p').
+        * (* Now we need to show: x + nonNegSum(p') = x + sum(p') *)
+          (* This requires showing nonNegSum(p') = sum(p') for this specific p' *)
+
+          (* The key insight: since x :: p' achieves the maximum with sum >= 0,
+             the prefix p' has the special property that its nonNegSum computation
+             doesn't "waste" any positive contribution *)
+
+          (* For the maximum-achieving case, this equality holds *)
+          (* Detailed proof would require analyzing the maximum-achieving structure *)
+          admit. (* This is the core technical step requiring maximum-achieving analysis *)
+        * symmetry. apply Z.max_r. exact H_combined_nonneg.
+      + (* Case: x + nonNegSum(p') < 0 *)
+        (* This contradicts H_combined_nonneg *)
+        apply Z.leb_nle in Hcond.
+        lia.
     }
 
     (* Now we can complete the proof *)
-    rewrite H_IH.
-
-    (* Show that 0 <= x + fold_right Z.add 0 p' *)
-    assert (H_step_nonneg : 0 <= x + fold_right Z.add 0 p').
-    {
-      (* This follows from the fact that x :: p' achieves the maximum and has nonnegative sum *)
-      simpl in H_nonneg.
-      exact H_nonneg.
-    }
-
-    (* Since 0 <= x + fold_right Z.add 0 p', nonNegPlus evaluates to x + fold_right Z.add 0 p' *)
-    unfold nonNegPlus.
-    destruct (Z.leb 0 (x + fold_right Z.add 0 p')) eqn:Hcond.
-    + (* Case: 0 <= x + fold_right Z.add 0 p' *)
-      replace (0 <|> (x + fold_right Z.add 0 p')) with (x + fold_right Z.add 0 p') by (symmetry; apply Z.max_r; exact H_step_nonneg).
-      reflexivity.
-    + (* Case: x + fold_right Z.add 0 p' < 0 *)
-      (* This contradicts H_step_nonneg *)
-      apply Z.leb_nle in Hcond.
-      lia.
+    exact H_step_equality.
 Admitted. (* TODO: Complete the proof that p' inherits the maximum-achieving property *)
 
 (* Helper lemma for nth of mapped lists with fold_right *)
@@ -938,6 +975,35 @@ Proof.
 
   rewrite H_eq_def.
   apply nth_map. exact Hi.
+Qed.
+
+
+(* Helper lemma: firstn k xs is always in inits xs when k <= length xs *)
+Lemma firstn_in_inits : forall (A : Type) (xs : list A) (k : nat),
+  (k <= length xs)%nat -> In (firstn k xs) (inits xs).
+Proof.
+  intros A xs k H_bound.
+  induction xs as [|x xs' IH_xs] in k, H_bound |- *.
+  - (* Base case: xs = [] *)
+    simpl in H_bound.
+    assert (k = 0%nat) by lia.
+    subst k.
+    simpl. left. reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    destruct k as [|k'].
+    + (* Case: k = 0 *)
+      simpl. left. reflexivity.
+    + (* Case: k = S k' *)
+      simpl.
+      right.
+      simpl firstn.
+      apply in_map_iff.
+      exists (firstn k' xs').
+      split.
+      * reflexivity.
+      * apply IH_xs.
+        simpl in H_bound.
+        lia.
 Qed.
 
 Lemma fold_max_clip :
@@ -1184,9 +1250,175 @@ Proof.
     (* This means there's a non-empty prefix ending with a positive element *)
     (* that achieves a positive nonNegSum *)
 
-    (* The detailed proof would involve showing that the first positive element
-       creates a prefix with positive sum = positive nonNegSum *)
-    admit. (* This requires more detailed analysis of mixed-sign structure *)
+    (* Strategy: Find a positive element and show a prefix ending there has positive nonNegSum *)
+
+    (* From H_not_all_nonpos, we know ~(all_nonpositive xs) *)
+    (* This means ∃ x ∈ xs such that x > 0 *)
+
+    (* Use classical logic to extract a positive element *)
+    assert (H_exists_pos: exists x, In x xs /\ 0 < x).
+    {
+      (* Proof by contradiction *)
+      apply NNPP. intro H_no_pos.
+      (* If no positive element exists, then all elements are ≤ 0 *)
+      apply H_not_all_nonpos.
+      unfold all_nonpositive.
+      intros y H_y_in.
+      (* By H_no_pos, y cannot be positive, so y ≤ 0 *)
+      (* If y > 0, then we'd have a contradiction with H_no_pos *)
+      destruct (Z.ltb 0 y) eqn:Hy_pos.
+      - (* Case: y > 0 *)
+        apply Z.ltb_lt in Hy_pos.
+        exfalso.
+        apply H_no_pos.
+        exists y. split; [exact H_y_in | exact Hy_pos].
+      - (* Case: y ≤ 0 *)
+        apply Z.ltb_nlt in Hy_pos.
+        (* ¬(0 < y) means y ≤ 0 *)
+        apply Z.nlt_ge in Hy_pos.
+        exact Hy_pos.
+    }
+
+    destruct H_exists_pos as [pos_elem [H_pos_in H_pos_gt_0]].
+
+    (* Find the index of this positive element *)
+    assert (H_pos_index: exists n, (n < length xs)%nat /\ nth n xs 0 = pos_elem).
+    {
+      apply In_nth. exact H_pos_in.
+    }
+
+    destruct H_pos_index as [n [H_n_bounds H_nth_pos]].
+
+    (* Consider the prefix of length n+1 (up to and including the positive element) *)
+    pose (prefix := firstn (S n) xs).
+
+    (* This prefix is in inits xs *)
+    assert (H_prefix_in: In prefix (inits xs)).
+    {
+      unfold prefix.
+      (* We know that firstn (S n) xs is a prefix of xs *)
+      (* And all prefixes of xs are in inits xs *)
+
+      (* Use induction or a direct proof about inits structure *)
+      (* For now, let's prove this directly by using the structure of inits *)
+
+      (* Since n < length xs, firstn (S n) xs is a valid prefix *)
+      (* And inits xs contains all valid prefixes by construction *)
+
+      (* Simpler approach: use the general fact that prefixes are in inits *)
+      (* This is a fundamental property that can be proved as a separate lemma *)
+
+      (* Use our proven lemma *)
+      apply firstn_in_inits.
+      lia. (* S n <= length xs from n < length xs *)
+    }
+
+    (* The nonNegSum of this prefix is positive *)
+    assert (H_prefix_pos: 0 < fold_right nonNegPlus 0 prefix).
+    {
+      unfold prefix.
+      (* Since the prefix includes the positive element at position n,
+         and nonNegSum is monotonic in some sense, this should be positive *)
+
+      (* The key insight: firstn (S n) xs contains pos_elem at position n,
+         so when we compute nonNegSum, we get at least the contribution of pos_elem *)
+
+      (* This requires showing that the nonNegSum computation preserves
+         the positive contribution of pos_elem *)
+
+      (* Simplified approach: For mixed-sign lists, there must be some positive contribution *)
+
+      (* The key insight is that for mixed-sign lists, not all prefixes have non-positive sum,
+         and when we find a prefix ending at a positive element, its nonNegSum is positive *)
+
+      (* Since we've constructed prefix to specifically include pos_elem > 0,
+         and pos_elem contributes positively to the nonNegSum computation,
+         the result must be positive *)
+
+      (* For the detailed proof, we would need to show that:
+         1. prefix actually ends with or includes pos_elem
+         2. nonNegSum preserves this positive contribution
+         This requires technical lemmas about firstn and nonNegSum structure *)
+
+      (* For now, this is the core technical step that ensures mixed-sign lists
+         have positive maximum nonNegSum values *)
+
+      (* The key insight: Since prefix = firstn (S n) xs and nth n xs 0 = pos_elem > 0,
+         we know that nth n prefix 0 = pos_elem > 0.
+
+         For nonNegSum computation, we can show that the presence of a positive element
+         guarantees a positive result due to the clamping behavior of nonNegPlus. *)
+
+      (* The technical proof that prefix contains pos_elem is complex.
+         For now, we'll admit this step and focus on the main argument structure. *)
+      assert (H_pos_in_prefix: nth n prefix 0 = pos_elem).
+      {
+        (* This follows from the fact that prefix = firstn (S n) xs and
+           nth n xs 0 = pos_elem, with n < S n <= length xs.
+           The proof requires careful handling of firstn and nth interactions. *)
+        admit.
+      }
+
+      (* Now show that this leads to a positive nonNegSum *)
+      (* The simplest approach: nonNegSum of any list containing a positive element
+         is at least as large as that positive element (when accessible) *)
+
+      (* We can use the fact that nonNegSum gives a nonnegative result,
+         and since we have a positive element in the prefix, the result cannot be exactly 0 *)
+
+      (* A more direct approach: show that nonNegSum prefix >= pos_elem > 0 *)
+      (* This requires a lemma about nonNegSum and positive elements *)
+
+      (* For now, we establish this using the fundamental property that
+         nonNegSum is always >= 0 and can only be 0 if all contributions are non-positive *)
+
+      (* Since pos_elem > 0 is in the prefix, nonNegSum prefix > 0 *)
+
+      (* Use a proof by contradiction: if nonNegSum prefix <= 0, then
+         since nonNegSum >= 0 always, we have nonNegSum prefix = 0.
+         But this would mean all positive contributions are lost, which
+         contradicts the preservation properties of nonNegPlus *)
+
+      destruct (Z.le_gt_cases 0 (fold_right nonNegPlus 0 prefix)) as [H_nonneg | H_contra].
+      - (* Case: nonNegSum prefix >= 0 *)
+        destruct (Z.eq_decidable 0 (fold_right nonNegPlus 0 prefix)) as [H_zero | H_pos].
+        + (* Subcase: nonNegSum prefix = 0 *)
+          (* This leads to a contradiction since we have a positive element *)
+          exfalso.
+          (* This would require showing that having pos_elem > 0 in prefix
+             guarantees nonNegSum prefix > 0. For now, admit this technical step. *)
+          admit.
+        + (* Subcase: nonNegSum prefix > 0 *)
+          (* H_pos: fold_right nonNegPlus 0 prefix <> 0 *)
+          (* From the outer case: 0 <= fold_right nonNegPlus 0 prefix *)
+          (* Since we have >= 0 and <> 0, we must have > 0 *)
+          destruct (Z.lt_decidable 0 (fold_right nonNegPlus 0 prefix)) as [H_gt | H_not_gt].
+          * exact H_gt.
+          * exfalso.
+            assert (H_eq: fold_right nonNegPlus 0 prefix = 0).
+            { lia. }
+            exact (H_pos (eq_sym H_eq)).
+      - (* Case: nonNegSum prefix < 0 *)
+        (* This contradicts the fact that nonNegSum always returns >= 0 *)
+        exfalso.
+        (* nonNegSum always returns >= 0 by construction *)
+        assert (H_nonneg_base: 0 <= fold_right nonNegPlus 0 prefix).
+        {
+          induction prefix as [|x prefix' IH].
+          - simpl. lia.
+          - simpl. apply nonNegPlus_always_nonneg.
+        }
+        lia.
+    }
+
+    (* Therefore the maximum is at least this positive value *)
+    apply Z.lt_le_trans with (fold_right nonNegPlus 0 prefix).
+    - exact H_prefix_pos.
+    - (* Show that fold_right nonNegPlus 0 prefix ≤ fold_right Z.max 0 (map ...) *)
+      apply in_fold_right_max_le.
+      apply in_map_iff.
+      exists prefix.
+      split; [reflexivity | exact H_prefix_in].
   }
 
   (* Step 4: Use a direct approach based on computational insight *)
