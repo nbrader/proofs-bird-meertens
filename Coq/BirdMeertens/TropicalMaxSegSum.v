@@ -981,17 +981,17 @@ Proof.
     reflexivity.
 
   (* Inductive Step: l = x :: xs *)
-  - (* The IH is: fold_left F a (inits xs) = fold_left G a (inits xs) *)
-    (* The Goal is: fold_left F a (inits (x::xs)) = fold_left G a (inits (x::xs)) *)
-    
+  - (* The IH is: fold_left F (inits xs) a = fold_left G (inits xs) a *)
+    (* The Goal is: fold_left F (inits (x::xs)) a = fold_left G (inits (x::xs)) a *)
+
     (* First, expand the definition of inits on a cons cell. *)
     rewrite inits_cons.
-    (* Goal: fold_left F a ([]::map (cons x) (inits xs)) = ... *)
+    (* Goal: fold_left F ([]::map (cons x) (inits xs)) a = ... *)
 
     (* Now, expand the fold_left on both sides. *)
     simpl.
-    (* Goal: fold_left F (F a []) (map (cons x) (inits xs)) = 
-             fold_left G (G a []) (map (cons x) (inits xs)) *)
+    (* Goal: fold_left F (map (cons x) (inits xs)) (F a []) =
+             fold_left G (map (cons x) (inits xs)) (G a []) *)
 
     (* From the base case, we know F a [] = G a []. Let's prove it as a fact. *)
     assert (Fact : F a [] = G a []).
@@ -1003,29 +1003,90 @@ Proof.
     }
     (* Now, rewrite the goal using this fact. *)
     rewrite Fact.
-    admit.
 
     (* The goal is now to prove the equality of two folds over a mapped list.
-       `fold_left F (G a []) (map (cons x) (inits xs)) =`
-       `fold_left G (G a []) (map (cons x) (inits xs))`
+       `fold_left F (map (cons x) (inits xs)) (G a []) =`
+       `fold_left G (map (cons x) (inits xs)) (G a [])`
        We can prove this if the folding functions behave the same on every element. *)
-    (* apply fold_left_ext_strong.
-    intros acc p H_p_in.
 
-    (* The new goal is to show F acc (x :: p) = G acc (x :: p),
-       given that p is a member of (inits xs). *)
+    (* We need to show that F and G agree on all elements of map (cons x) (inits xs) *)
+    (* Each element has the form (x :: p) where p is in (inits xs) *)
+
+    (* Use fold_left extensionality over mapped lists *)
+    assert (fold_left_map_ext : forall (f g : B -> list A -> B) (acc : B) (l : list (list A)),
+      (forall acc' p, In p l -> f acc' p = g acc' p) ->
+      fold_left f l acc = fold_left g l acc).
+    {
+      intros f g acc l H_ext.
+      revert acc.
+      induction l as [|p ps IH_inner]; intro acc.
+      - simpl. reflexivity.
+      - simpl.
+        (* First apply f and g to current element p, then recurse *)
+        assert (H_current: f acc p = g acc p).
+        {
+          apply H_ext. left. reflexivity.
+        }
+        rewrite H_current.
+        apply IH_inner.
+        intros acc' p' H_in.
+        apply H_ext.
+        right. exact H_in.
+    }
+
+    apply fold_left_map_ext.
+    intros acc' p H_p_in.
+
+    (* H_p_in : In p (map (cons x) (inits xs)) *)
+    (* We need to show F acc' p = G acc' p *)
+
+    (* Since p is in map (cons x) (inits xs), p = x :: p' for some p' in inits xs *)
+    apply in_map_iff in H_p_in.
+    destruct H_p_in as [p' [H_p_eq H_p'_in]].
+    rewrite <- H_p_eq.
+
+    (* Now we need to show F acc' (x :: p') = G acc' (x :: p') *)
     apply H_fold_eq.
-    
-    (* To use H_fold_eq, we must prove P (x :: p). *)
+
+    (* To use H_fold_eq, we must prove P (x :: p'). *)
     apply H_prop with (ys := x :: xs).
-    
-    (* We know p is a prefix of xs from H_p_in. *)
-    apply in_inits in H_p_in.
-    destruct H_p_in as [zs H_zs].
-    exists zs.
-    rewrite H_zs.
-    reflexivity. *)
-Admitted.
+
+    (* We know p' is a prefix of xs from H_p'_in. *)
+    (* Since p' ∈ inits xs, there exists a suffix such that p' ++ suffix = xs *)
+    (* Use a general lemma about inits containing only prefixes *)
+    assert (H_general_prefix : forall (T : Type) (l : list T) (prefix : list T),
+      In prefix (inits l) -> exists suffix, prefix ++ suffix = l).
+    {
+      intros T l.
+      induction l as [|z zs IH_gen]; intros prefix H_in_prefix.
+      - (* Base case: l = [], so inits l = [[]] *)
+        simpl in H_in_prefix.
+        destruct H_in_prefix as [H_eq | H_false].
+        + (* prefix = [] *)
+          exists []. rewrite <- H_eq. simpl. reflexivity.
+        + (* Impossible case *)
+          contradiction.
+      - (* Inductive case: l = z :: zs *)
+        rewrite inits_cons in H_in_prefix.
+        destruct H_in_prefix as [H_eq | H_map_in].
+        + (* prefix = [] *)
+          exists (z :: zs). rewrite <- H_eq. simpl. reflexivity.
+        + (* prefix is in map (cons z) (inits zs) *)
+          apply in_map_iff in H_map_in.
+          destruct H_map_in as [q [H_prefix_eq H_q_in]].
+          (* prefix = z :: q and q ∈ inits zs *)
+          pose proof (IH_gen q H_q_in) as [suffix H_q_suffix].
+          exists suffix.
+          rewrite <- H_prefix_eq.
+          simpl. rewrite H_q_suffix. reflexivity.
+    }
+
+    pose proof (H_general_prefix A xs p' H_p'_in) as [suffix H_suffix].
+    (* Now we have p' ++ suffix = xs, so x :: p' ++ suffix = x :: xs *)
+    exists suffix.
+    rewrite <- H_suffix.
+    reflexivity.
+Qed.
 
 (* 
 Lemma fold_map_rewrite xs :
