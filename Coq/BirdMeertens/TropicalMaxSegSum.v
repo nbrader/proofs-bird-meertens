@@ -1193,6 +1193,127 @@ Proof.
   exact H_le.
 Qed.
 
+(* Helper lemma: nonNegSum is always non-negative *)
+Lemma nonNegSum_always_nonneg : forall xs : list Z,
+  0 <= nonNegSum xs.
+Proof.
+  intro xs.
+  apply nonNegSum_nonneg.
+Qed.
+
+(* Helper lemma: Z.max with same element *)
+Lemma Z_max_same : forall x : Z,
+  Z.max x x = x.
+Proof.
+  intro x.
+  apply Z.max_id.
+Qed.
+
+(* Helper lemma: Z.max left identity with 0 for non-negative *)
+Lemma Z_max_0_nonneg : forall x : Z,
+  0 <= x -> Z.max 0 x = x.
+Proof.
+  intro x.
+  intro H_nonneg.
+  apply Z.max_r.
+  exact H_nonneg.
+Qed.
+
+(* Helper lemma: nonNegPlus left identity *)
+Lemma nonNegPlus_0_l : forall x : Z,
+  nonNegPlus 0 x = Z.max 0 x.
+Proof.
+  intro x.
+  unfold nonNegPlus.
+  rewrite Z.add_0_l.
+  reflexivity.
+Qed.
+
+(* Helper lemma: nonNegSum of two-element list *)
+Lemma nonNegSum_two_elements : forall x y : Z,
+  nonNegSum [x; y] = nonNegPlus x (nonNegPlus y 0).
+Proof.
+  intros x y.
+  unfold nonNegSum. simpl.
+  reflexivity.
+Qed.
+
+(* Helper lemma: Z.max distributes over non-negative operands *)
+Lemma Z_max_nonneg_distrib : forall x y : Z,
+  0 <= x -> 0 <= y -> Z.max 0 (Z.max x y) = Z.max x y.
+Proof.
+  intros x y H_x_nonneg H_y_nonneg.
+  apply Z.max_r.
+  apply Z.max_case_strong; intro; assumption.
+Qed.
+
+(* Helper lemma: fold_right Z.max is stable under non-negative extension *)
+Lemma fold_right_max_nonneg_stable : forall x : Z, forall xs : list Z,
+  0 <= x -> fold_right Z.max 0 (x :: xs) = Z.max x (fold_right Z.max 0 xs).
+Proof.
+  intros x xs H_nonneg.
+  simpl. reflexivity.
+Qed.
+
+(* Helper lemma: nonNegPlus monotonicity in first argument *)
+Lemma nonNegPlus_mono_l : forall x y z : Z,
+  x <= y -> nonNegPlus x z <= nonNegPlus y z.
+Proof.
+  intros x y z H_le.
+  unfold nonNegPlus.
+  apply Z.max_le_compat_l.
+  apply Z.add_le_mono_r.
+  exact H_le.
+Qed.
+
+(* Helper lemma: nonNegPlus monotonicity in second argument *)
+Lemma nonNegPlus_mono_r : forall x y z : Z,
+  x <= y -> nonNegPlus z x <= nonNegPlus z y.
+Proof.
+  intros x y z H_le.
+  unfold nonNegPlus.
+  apply Z.max_le_compat_l.
+  apply Z.add_le_mono_l.
+  exact H_le.
+Qed.
+
+(* Helper lemma: In membership for inits preserves length bounds *)
+Lemma inits_length_bound : forall (A : Type) (xs : list A) (prefix : list A),
+  In prefix (inits xs) -> (length prefix <= length xs)%nat.
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - (* Base case: xs = [] *)
+    intros prefix H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_false].
+    + rewrite <- H_eq. simpl. apply Nat.le_refl.
+    + contradiction.
+  - (* Inductive case: xs = x :: xs' *)
+    intros prefix H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_in_tail].
+    + (* prefix = [] *)
+      rewrite <- H_eq. simpl. apply Nat.le_0_l.
+    + (* prefix in map (cons x) (inits xs') *)
+      apply in_map_iff in H_in_tail.
+      destruct H_in_tail as [prefix' [H_eq H_in']].
+      rewrite <- H_eq. simpl.
+      apply le_n_S.
+      (* We have: prefix = x :: prefix' and prefix' is in inits xs' *)
+      (* So we need: length prefix' <= length xs' *)
+      (* Which follows from IH applied to prefix' *)
+      apply (IH prefix' H_in').
+Qed.
+
+(* Helper lemma: Z.max absorption with 0 *)
+Lemma Z_max_0_absorption : forall x : Z,
+  Z.max 0 (Z.max 0 x) = Z.max 0 x.
+Proof.
+  intro x.
+  apply Z.max_assoc.
+Qed.
+
 Lemma fold_max_clip :
   forall l, fold_right Z.max 0 (map (fun s => Z.max 0 s) l)
            = Z.max 0 (fold_right Z.max 0 l).
