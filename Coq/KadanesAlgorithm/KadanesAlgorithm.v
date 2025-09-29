@@ -161,10 +161,15 @@ Section KadaneTheorems.
 
   Theorem gform4_eq_gform5 : gform4 = gform5.
   Proof.
-    (* Should follow from map distribution properties *)
-    (* Similar to the original proof using map_distr lemmas *)
-    admit.
-  Admitted.
+    (* Follows the exact same pattern as original form4_eq_form5 *)
+    unfold gform4, gform5.
+    f_equal.
+    rewrite compose_assoc.
+    rewrite compose_assoc.
+    rewrite (map_distr (map semiring_product) inits).
+    rewrite (map_distr semiring_sum (compose (map semiring_product) inits)).
+    reflexivity.
+  Qed.
 
   Theorem gform5_eq_gform6 : gform5 = gform6.
   Proof.
