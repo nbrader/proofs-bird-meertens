@@ -2,6 +2,7 @@
 -R BirdMeertens BirdMeertens
 -R CoqUtilLib CoqUtilLib
 -R FreeMonoid FreeMonoid
+-R KadanesAlgorithm KadanesAlgorithm
 CoqUtilLib/FunctionLemmas.v
 CoqUtilLib/Iteration.v
 CoqUtilLib/ListFunctions.v
@@ -36,3 +37,4 @@ BirdMeertens/TropicalMaxSegSum.v
 BirdMeertens/BirdMeertens.v
 BirdMeertens/TailsMonoid.v
 BirdMeertens/Extra.v
+KadanesAlgorithm/KadanesAlgorithm.v
