@@ -91,6 +91,36 @@ Definition gform8 {A : Type} `{Semiring A} : list A -> A :=
 
 (*
 =================================================================================
+GENERALIZED SEMIRING LEMMAS
+=================================================================================
+*)
+
+(* Generalized version of fold_max_app for semirings *)
+Lemma semiring_fold_app {A : Type} `{Semiring A} : forall (l1 l2 : list A),
+  fold_right add_op add_zero (l1 ++ l2) = add_op (fold_right add_op add_zero l1) (fold_right add_op add_zero l2).
+Proof.
+  intros l1 l2.
+  induction l1 as [|x xs IH]; simpl.
+  - rewrite add_left_id. reflexivity.
+  - rewrite IH. rewrite add_assoc. reflexivity.
+Qed.
+
+(* Generalized fold promotion for semirings *)
+Lemma semiring_fold_promotion {A : Type} `{Semiring A} :
+  semiring_sum ∘ concat = semiring_sum ∘ map semiring_sum.
+Proof.
+  unfold compose, semiring_sum.
+  apply functional_extensionality; intro lss.
+  induction lss as [| ls lss' IH].
+  - simpl. reflexivity.
+  - simpl concat. simpl map.
+    rewrite semiring_fold_app.
+    rewrite IH.
+    reflexivity.
+Qed.
+
+(*
+=================================================================================
 ABSTRACT THEOREM STATEMENTS
 =================================================================================
 *)
@@ -123,10 +153,11 @@ Section KadaneTheorems.
 
   Theorem gform3_eq_gform4 : gform3 = gform4.
   Proof.
-    (* Should follow from generalized fold promotion for semirings *)
-    (* The pattern is: semiring_sum ∘ concat = semiring_sum ∘ map semiring_sum *)
-    admit.
-  Admitted.
+    (* Follows from generalized fold promotion for semirings *)
+    unfold gform3, gform4.
+    rewrite semiring_fold_promotion.
+    reflexivity.
+  Qed.
 
   Theorem gform4_eq_gform5 : gform4 = gform5.
   Proof.
