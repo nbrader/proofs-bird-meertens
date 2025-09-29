@@ -147,3 +147,45 @@ The project structure allows for cross-language validation of the formal Coq pro
 4. **Complete dependency closure**: Lemmas.v should be self-contained for all non-library dependencies
 5. **No duplication with Extra.v files**: Remove any theorems from Extra.v that are in any other file
 6. **Library imports remain**: Keep all `Require Import` statements for external libraries in both files as needed
+
+## Generalized Semiring-Based Kadane's Algorithm
+
+### Overview
+The `Coq/KadanesAlgorithm/` directory contains a generalized semiring-based formulation of Kadane's algorithm that abstracts away from specific operations (max/plus) to work with arbitrary semirings.
+
+### Key Design Principles
+1. **Pure Semiring Operations**: Uses existing semiring infrastructure from `FreeMonoid.StructSemiring`
+2. **Sum/Product Terminology**:
+   - "Sum" operations use ⊕ (semiring addition, e.g., max in max-plus semiring)
+   - "Product" operations use ⊗ (semiring multiplication, e.g., + in max-plus semiring)
+3. **Direct Operations**: No lifting functions - operates directly on semiring elements
+4. **Abstract Framework**: All forms parameterized by semiring type `{A : Type} `{Semiring A}`
+
+### Eight Equivalent Forms (gform1-gform8)
+The generalized formulation provides 8 equivalent forms of the algorithm:
+- **gform1**: `semiring_sum ∘ map semiring_product ∘ segs` (specification)
+- **gform2-gform5**: Intermediate transformations using map promotion and distribution
+- **gform6**: Uses Horner's rule operation `horner_op := fun x y => add_op (mul_op x y) mul_one`
+- **gform7**: Scan-based formulation
+- **gform8**: Efficient fold-based algorithm (Kadane's algorithm structure)
+
+### Key Theorem: form5 → form6 Transition
+The critical step uses generalized Horner's rule from `FreeMonoid.SemiringLemmas`:
+- **Before**: Sum of products over `inits`
+- **After**: Direct product computation via Horner's rule
+- **Enables**: Clean transition from mathematical specification to efficient computation
+
+### Implementation Plan
+1. **Complete abstract proofs** in `KadanesAlgorithm.v` using semiring properties
+2. **Create specific instances** in separate files:
+   - `MaxPlusSemiring.v` for maximum subarray problem
+   - `BooleanSemiring.v` for existence problems
+   - Other semiring instances as needed
+3. **Instantiate theorems** with specific semiring instances
+4. **Connect to original formulation** by showing equivalence with `BirdMeertens.v` forms
+
+### Benefits of This Approach
+- **Mathematical Clarity**: Makes semiring structure explicit
+- **Broader Applicability**: Same framework works for different problems
+- **Cleaner Proofs**: Leverages existing semiring theory from `FreeMonoid.SemiringLemmas`
+- **Avoids Ad-hoc Operations**: No more artificial nonNeg-clamped operations
