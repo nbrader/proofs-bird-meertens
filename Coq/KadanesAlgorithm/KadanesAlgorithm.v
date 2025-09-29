@@ -78,14 +78,17 @@ Definition gform5 {A : Type} `{Semiring A} : list A -> A :=
   semiring_sum ∘ map (semiring_sum ∘ map semiring_product ∘ inits) ∘ tails.
 
 Definition gform6 {A : Type} `{Semiring A} : list A -> A :=
-  semiring_sum ∘ map (fold_right mul_op mul_one) ∘ tails.
+  let horner_op := fun x y => add_op (mul_op x y) mul_one in
+  semiring_sum ∘ map (fold_right horner_op mul_one) ∘ tails.
 
 Definition gform7 {A : Type} `{Semiring A} : list A -> A :=
-  semiring_sum ∘ scan_right mul_op mul_one.
+  let horner_op := fun x y => add_op (mul_op x y) mul_one in
+  semiring_sum ∘ scan_right horner_op mul_one.
 
 Definition gform8 {A : Type} `{Semiring A} : list A -> A :=
+  let horner_op := fun x y => add_op (mul_op x y) mul_one in
   fst ∘ fold_right (fun x uv => let '(u, v) := uv in
-                                let w := mul_op v x in
+                                let w := horner_op v x in
                                 (add_op u w, w)) (add_zero, mul_one).
 
 (*
@@ -230,6 +233,7 @@ Section KadaneTheorems.
   (* With this property, we can prove the form5 to form6 transition *)
   Theorem gform5_eq_gform6 `{KadaneSemiring A} : gform5 = gform6.
   Proof.
+    (* This is THE KEY STEP: follows from generalized Horner's rule *)
     unfold gform5, gform6.
     apply functional_extensionality; intro xs.
     unfold compose.
@@ -238,9 +242,13 @@ Section KadaneTheorems.
     intros a.
     unfold semiring_sum, semiring_product.
 
-    (* Apply the Kadane semiring property *)
-    symmetry.
-    apply kadane_horner_property.
+    (* Apply the generalized Horner's rule *)
+    pose proof (@generalised_horners_rule_right A _) as HR.
+
+    (* The goal is exactly what the rule provides, just need to apply it in the right direction *)
+    rewrite (equal_f HR a).
+    unfold compose.
+    reflexivity.
   Qed.
 
   Theorem gform6_eq_gform7 : gform6 = gform7.
@@ -250,10 +258,11 @@ Section KadaneTheorems.
     apply functional_extensionality; intro xs.
     unfold compose.
     f_equal.
-    (* We need to show: map (fold_right mul_op mul_one) (tails xs) = scan_right mul_op mul_one xs *)
+    (* We need to show: map (fold_right horner_op mul_one) (tails xs) = scan_right horner_op mul_one xs *)
     (* This should follow from scan_right_lemma *)
+    set (horner_op := fun x y => add_op (mul_op x y) mul_one).
     symmetry.
-    rewrite (@scan_right_lemma A A mul_op mul_one xs).
+    rewrite (@scan_right_lemma A A horner_op mul_one xs).
     (* Now we need tails = tails_rec *)
     f_equal.
     symmetry.
@@ -274,39 +283,47 @@ Section KadaneTheorems.
     - rewrite IH. rewrite add_assoc. reflexivity.
   Qed.
 
-  (* Helper lemma: the second component of the fold is the product (requires commutativity) *)
+  (* Helper lemma: the second component of the fold is the horner_op result *)
   Lemma fold_pair_snd `{KadaneSemiring A} : forall (xs : list A),
+    let horner_op := fun x y => add_op (mul_op x y) mul_one in
     snd (fold_right (fun x uv => let '(u, v) := uv in
-                                 let w := mul_op v x in
+                                 let w := horner_op v x in
                                  (add_op u w, w)) (add_zero, mul_one) xs) =
-    fold_right mul_op mul_one xs.
+    fold_right horner_op mul_one xs.
   Proof.
     intro xs.
+    set (horner_op := fun x y => add_op (mul_op x y) mul_one).
     induction xs as [| x xs' IH].
     - simpl. reflexivity.
     - simpl fold_right at 1.
       simpl fold_right at 2.
-      remember (fold_right (fun x0 uv => let '(u, v) := uv in let w := mul_op v x0 in (add_op u w, w))
+      remember (fold_right (fun x0 uv => let '(u, v) := uv in let w := horner_op v x0 in (add_op u w, w))
                 (add_zero, mul_one) xs') as pair eqn:Hpair.
       destruct pair as [u' v'].
       simpl snd.
-      (* Goal: mul_op v' x = mul_op x (fold_right mul_op mul_one xs') *)
-      (* Combine IH and Hpair to get v' = fold_right mul_op mul_one xs' *)
-      (* IH: snd (u', v') = fold_right mul_op mul_one xs' *)
-      (* So v' = fold_right mul_op mul_one xs' *)
+      (* Goal: horner_op v' x = fold_right horner_op mul_one xs' applied to x *)
+      (* From IH: snd (u', v') = fold_right horner_op mul_one xs' *)
       simpl snd in IH.
       rewrite IH.
+      (* Now goal is: horner_op v' x = fold_right horner_op mul_one (x :: xs') at the right position *)
+      (* Actually we need to show: horner_op v' x = horner_op x (fold_right horner_op mul_one xs') *)
+      (* But horner_op is not commutative in general, so we need to unfold and use mul_comm *)
+      unfold horner_op at 1.
+      unfold horner_op at 2.
+      f_equal.
       apply mul_comm.
   Qed.
 
   (* We prove the scan-fold fusion property for Kadane semirings *)
   Lemma semiring_scan_fold_fusion `{KadaneSemiring A} : forall (xs : list A),
-    fold_right add_op add_zero (scan_right mul_op mul_one xs) =
+    let horner_op := fun x y => add_op (mul_op x y) mul_one in
+    fold_right add_op add_zero (scan_right horner_op mul_one xs) =
     fst (fold_right (fun x uv => let '(u, v) := uv in
-                                 let w := mul_op v x in
+                                 let w := horner_op v x in
                                  (add_op u w, w)) (add_zero, mul_one) xs).
   Proof.
     intro xs.
+    set (horner_op := fun x y => add_op (mul_op x y) mul_one).
     induction xs as [| x xs' IH].
     - (* Base case: xs = [] *)
       simpl.
@@ -318,24 +335,24 @@ Section KadaneTheorems.
 
       (* Expand fold_right on the right side *)
       simpl fold_right.
-      destruct (fold_right (fun x0 uv => let '(u, v) := uv in let w := mul_op v x0 in (add_op u w, w))
+      destruct (fold_right (fun x0 uv => let '(u, v) := uv in let w := horner_op v x0 in (add_op u w, w))
                 (add_zero, mul_one) xs') as [u' v'] eqn:Heq.
       simpl fst.
 
-      (* LHS: fold_right add_op add_zero (mul_op x (fold_right mul_op mul_one xs') :: scan_right mul_op mul_one xs') *)
-      (* RHS: add_op u' (mul_op v' x) *)
+      (* LHS: fold_right add_op add_zero (horner_op x (fold_right horner_op mul_one xs') :: scan_right horner_op mul_one xs') *)
+      (* RHS: add_op u' (horner_op v' x) *)
       simpl fold_right.
 
       (* Use the IH *)
       rewrite IH.
 
-      (* Goal: add_op (mul_op x (fold_right mul_op mul_one xs')) (fst (u', v')) = add_op u' (mul_op v' x) *)
+      (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) (fst (u', v')) = add_op u' (horner_op v' x) *)
       simpl fst.
 
-      (* Goal: add_op (mul_op x (fold_right mul_op mul_one xs')) u' = add_op u' (mul_op v' x) *)
+      (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) u' = add_op u' (horner_op v' x) *)
 
-      (* Use fold_pair_snd to establish v' = fold_right mul_op mul_one xs' *)
-      assert (Hv: v' = fold_right mul_op mul_one xs').
+      (* Use fold_pair_snd to establish v' = fold_right horner_op mul_one xs' *)
+      assert (Hv: v' = fold_right horner_op mul_one xs').
       {
         rewrite <- (fold_pair_snd xs').
         rewrite Heq.
@@ -345,8 +362,11 @@ Section KadaneTheorems.
 
       rewrite Hv.
 
-      (* Goal: add_op (mul_op x (fold_right mul_op mul_one xs')) u' = add_op u' (mul_op (fold_right mul_op mul_one xs') x) *)
+      (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) u' = add_op u' (horner_op (fold_right horner_op mul_one xs') x) *)
       rewrite add_comm.
+      f_equal.
+      (* horner_op x y = add_op (mul_op x y) mul_one, need commutativity of mul_op *)
+      unfold horner_op.
       f_equal.
       apply mul_comm.
   Qed.
