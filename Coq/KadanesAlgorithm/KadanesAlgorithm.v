@@ -105,25 +105,33 @@ Section KadaneTheorems.
 
   Theorem gform1_eq_gform2 : gform1 = gform2.
   Proof.
-    (* Should follow from segs = concat ∘ map inits ∘ tails *)
-    admit.
-  Admitted.
+    (* Follows from segs = concat ∘ map inits ∘ tails *)
+    reflexivity.
+  Qed.
 
   Theorem gform2_eq_gform3 : gform2 = gform3.
   Proof.
-    (* Should follow from map promotion through concat *)
-    admit.
-  Admitted.
+    (* Follows from map promotion through concat *)
+    unfold gform2, gform3.
+    f_equal.
+    rewrite compose_assoc.
+    rewrite (compose_assoc _ _ _ _ (concat ∘ map inits) (map semiring_product) semiring_sum).
+    rewrite <- (compose_assoc _ _ _ _ (map inits) concat (map semiring_product)).
+    rewrite (map_promotion semiring_product).
+    reflexivity.
+  Qed.
 
   Theorem gform3_eq_gform4 : gform3 = gform4.
   Proof.
-    (* Should follow from fold promotion *)
+    (* Should follow from generalized fold promotion for semirings *)
+    (* The pattern is: semiring_sum ∘ concat = semiring_sum ∘ map semiring_sum *)
     admit.
   Admitted.
 
   Theorem gform4_eq_gform5 : gform4 = gform5.
   Proof.
-    (* Should follow from map distribution *)
+    (* Should follow from map distribution properties *)
+    (* Similar to the original proof using map_distr lemmas *)
     admit.
   Admitted.
 
