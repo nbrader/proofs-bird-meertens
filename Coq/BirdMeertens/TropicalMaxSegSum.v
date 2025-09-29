@@ -1545,7 +1545,7 @@ Proof.
 Qed.
 
 
-Lemma temporary_lemma_name : forall xs : list Z,
+Lemma exists_max_achieving_prefix_with_equality : forall xs : list Z,
   exists j : nat,
     nth j (map (fold_right nonNegPlus 0) (inits xs)) 0 =
       fold_right Z.max 0 (map (fold_right nonNegPlus 0) (inits xs)) /\
@@ -2041,7 +2041,7 @@ Proof.
        - If max = 0, then empty prefix works (sum = 0 >= 0)
        - If max > 0, then some prefix achieves this with positive contribution,
          and by mixed-sign structure, we can find one with sum >= 0 *)
-    apply temporary_lemma_name.
+    apply exists_max_achieving_prefix_with_equality.
 Qed.
 
 Lemma maxsegsum_mixed_case : forall xs : list Z,
