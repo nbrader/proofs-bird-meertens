@@ -295,21 +295,20 @@ Section KadaneTheorems.
     set (horner_op := fun x y => add_op (mul_op x y) mul_one).
     induction xs as [| x xs' IH].
     - simpl. reflexivity.
-    - simpl fold_right at 1.
-      simpl fold_right at 2.
-      remember (fold_right (fun x0 uv => let '(u, v) := uv in let w := horner_op v x0 in (add_op u w, w))
-                (add_zero, mul_one) xs') as pair eqn:Hpair.
-      destruct pair as [u' v'].
-      simpl snd.
-      (* Goal: horner_op v' x = fold_right horner_op mul_one xs' applied to x *)
-      (* From IH: snd (u', v') = fold_right horner_op mul_one xs' *)
-      simpl snd in IH.
-      rewrite IH.
-      (* Now goal is: horner_op v' x = fold_right horner_op mul_one (x :: xs') at the right position *)
-      (* Actually we need to show: horner_op v' x = horner_op x (fold_right horner_op mul_one xs') *)
-      (* But horner_op is not commutative in general, so we need to unfold and use mul_comm *)
-      unfold horner_op at 1.
-      unfold horner_op at 2.
+    - simpl fold_right.
+      (* Destruct the fold result to simplify the pattern match *)
+      destruct (fold_right (fun (x0 : A) '(u, v) => (add_op u (horner_op v x0), horner_op v x0)) (add_zero, mul_one) xs') as [u' v'] eqn:Hfold.
+      (* Simplify to evaluate the pattern match and let binding *)
+      simpl.
+      (* Use IH to get v' = fold_right horner_op mul_one xs' *)
+      assert (Hv' : v' = fold_right horner_op mul_one xs').
+      { apply (f_equal snd) in Hfold. simpl in Hfold. rewrite <- Hfold. apply IH. }
+      (* Rewrite the fold in the goal using Hfold *)
+      rewrite Hfold.
+      simpl.
+      rewrite Hv'.
+      (* Now show: horner_op (fold_right horner_op mul_one xs') x = horner_op x (fold_right horner_op mul_one xs') *)
+      unfold horner_op.
       f_equal.
       apply mul_comm.
   Qed.
@@ -341,25 +340,50 @@ Section KadaneTheorems.
 
       (* LHS: fold_right add_op add_zero (horner_op x (fold_right horner_op mul_one xs') :: scan_right horner_op mul_one xs') *)
       (* RHS: add_op u' (horner_op v' x) *)
-      simpl fold_right.
-
-      (* Use the IH *)
-      rewrite IH.
-
-      (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) (fst (u', v')) = add_op u' (horner_op v' x) *)
-      simpl fst.
-
-      (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) u' = add_op u' (horner_op v' x) *)
 
       (* Use fold_pair_snd to establish v' = fold_right horner_op mul_one xs' *)
       assert (Hv: v' = fold_right horner_op mul_one xs').
       {
-        rewrite <- (fold_pair_snd xs').
-        rewrite Heq.
-        simpl snd.
-        reflexivity.
+        apply (f_equal snd) in Heq.
+        simpl in Heq.
+        rewrite <- Heq.
+        apply fold_pair_snd.
       }
 
+      (* Simplify scan_right *)
+      unfold scan_right at 1.
+      simpl fold_right at 1.
+
+      (* Fold scan_right back in the remaining occurrence *)
+      fold (scan_right horner_op mul_one xs').
+
+      (* The goal has: horner_op x ... ⊕ fold_right add_op (scan_right ...) = fst (let ...) *)
+      (* Use the IH by replacing the fold_right add_op (scan_right ...) part *)
+      assert (Hfold_scan: fold_right add_op add_zero (scan_right horner_op mul_one xs') = u').
+      {
+        rewrite IH.
+        rewrite Heq.
+        simpl.
+        reflexivity.
+      }
+      rewrite Hfold_scan.
+
+      (* Rewrite RHS using Heq - need to handle the let binding carefully *)
+      assert (Hrhs: fst (let '(u, v) := fold_right (fun (x0 : A) '(u, v) => (add_op u (horner_op v x0), horner_op v x0)) (add_zero, mul_one) xs' in
+                         (add_op u (horner_op v x), horner_op v x)) = add_op u' (horner_op v' x)).
+      {
+        (* Show that Heq's form matches this form *)
+        assert (Heq_expanded: fold_right (fun (x0 : A) '(u, v) => let w := horner_op v x0 in (add_op u w, w)) (add_zero, mul_one) xs' =
+                              fold_right (fun (x0 : A) '(u, v) => (add_op u (horner_op v x0), horner_op v x0)) (add_zero, mul_one) xs').
+        {
+          apply fold_right_ext.
+          intros a [u v]. simpl. reflexivity.
+        }
+        rewrite Heq_expanded in Heq.
+        rewrite Heq.
+        simpl. reflexivity.
+      }
+      rewrite Hrhs.
       rewrite Hv.
 
       (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) u' = add_op u' (horner_op (fold_right horner_op mul_one xs') x) *)
