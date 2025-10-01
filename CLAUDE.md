@@ -30,6 +30,7 @@ This is a Coq formalization project that proves the correctness of Kadane's algo
 - The semiring-based approach should be self-contained
 - For the standard integer Kadane's algorithm, we aim to prove the SAME results as BirdMeertens (both fold_right and fold_left/dual versions) but using the semiring framework for as much as possible
 - Any useful techniques from BirdMeertens should be extracted and reproven independently, not imported as dependencies
+- We're not trying to prove the intermediate integer forms directly: The point of the KadanesAlgorithm Folder part of the project is to skip from form1 to form7 using the semiring proved in KadanesAlgorithm.v
 
 ## Key Proof Strategy: Dual Conversion Approach
 
