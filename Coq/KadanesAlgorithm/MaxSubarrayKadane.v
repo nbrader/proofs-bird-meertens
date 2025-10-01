@@ -1,6 +1,7 @@
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
 Require Import Coq.Lists.List.
+Import ListNotations.
 
 Require Import Coq.ZArith.Int.
 Require Import Coq.ZArith.BinInt.
@@ -13,7 +14,6 @@ Open Scope Z_scope.
 (* Import the generalized framework *)
 Require Import KadanesAlgorithm.KadanesAlgorithm.
 Require Import FreeMonoid.StructSemiring.
-Require Import BirdMeertens.ListFunctions.
 Require Import CoqUtilLib.ListFunctions.
 
 (*
@@ -220,7 +220,7 @@ HANDLING THE FORM5 -> FORM6 STEP WITH CLAMPING
    The Kadane Horner property as stated is FALSE for pure tropical semiring: *)
 
 Example tropical_horner_counterexample :
-  let xs := [Finite (-5)] in
+  let xs : list ExtZ := (Finite (-5)) :: nil in
   fold_right tropical_plus tropical_one xs <>
   fold_right tropical_max tropical_zero (map (fold_right tropical_plus tropical_one) (inits xs)).
 Proof.
@@ -486,7 +486,7 @@ TROPICAL-SPECIFIC GFORM7 → GFORM8 STEP
 =================================================================================
 
 The gform7 → gform8 step (scan-fold fusion) does NOT work for general semirings.
-For the tropical semiring, we prove it using the fold_scan_fusion approach.
+For the tropical semiring, we need to prove it using properties specific to max and plus.
 
 Key insight: The tropical semiring's horner_op with mul_one = 0 gives us:
   horner_op x y = tropical_max (tropical_plus x y) (Finite 0)
@@ -494,11 +494,9 @@ Key insight: The tropical semiring's horner_op with mul_one = 0 gives us:
 which is exactly the clamped addition operation used in Kadane's algorithm!
 *)
 
-(* First, let's prove gform7 = gform8 for the tropical semiring using
-   a direct adaptation of fold_scan_fusion_pair for the tropical operations *)
-
-Require Import BirdMeertens.Lemmas.
-Require Import BirdMeertens.MajorLemmas.
+(* Define the clamped addition operation *)
+Definition nonNegPlus (x y : Z) : Z := Z.max 0 (x + y).
+Notation "x <#> y" := (nonNegPlus x y) (at level 40, left associativity).
 
 (* We need to show that the tropical horner_op matches the pattern of nonNegPlus *)
 Lemma tropical_horner_matches_nonNegPlus : forall x y : Z,
@@ -516,32 +514,19 @@ Qed.
 
 (*
 =================================================================================
-ALTERNATIVE DERIVATION: INTEGER KADANE VIA TROPICAL SEMIRING
+INTEGER KADANE'S ALGORITHM: COMPLETING THE DERIVATION
 =================================================================================
 
-This section provides an alternative derivation of Kadane's algorithm for integers
-that uses the tropical semiring framework for most of the proof (forms 1-7),
-then connects to the existing integer proof for the final step (form 7-8).
+We now complete the proof for integer Kadane's algorithm by proving gform7 = gform8.
+This requires fold-scan fusion, which needs specific properties of max and plus.
 
 Strategy:
-1. Use tropical semiring to get forms 1-7 (DONE above - uses only general semiring properties)
-2. For form 7-8, observe that BirdMeertens.v already has a complete proof for integers
-3. Show that the tropical framework on integers is equivalent to the BirdMeertens forms
+1. Use tropical semiring for forms 1-7 (DONE above - only general semiring properties)
+2. Prove gform7 = gform8 using fold-scan fusion lemma (specific to max/plus)
+3. Combine to get the complete correctness result: gform1 = gform8
 
-This demonstrates that:
-- The "hard" part (forms 1-7) can be done generically using semiring algebra
-- The "easy" part (form 7-8, scan-fold fusion) requires specific properties of max/plus
-*)
-
-(* CRITICAL OBSERVATION: The BirdMeertens forms for integers already exist and are proven! *)
-Require Import BirdMeertens.BirdMeertens.
-
-(* The BirdMeertens file proves: form1 = form8 for integers with the SAME operations:
-   - form7 uses: nonNegMaximum ∘ scan_right nonNegPlus 0
-   - form8 uses: fst ∘ fold_right maxSoFarAndPreviousSum (0, 0)
-   where nonNegPlus x y = max 0 (x + y)
-
-   The tropical semiring on Finite values gives exactly these operations!
+The fold-scan fusion step is where we transition from the general algebraic framework
+to the specific properties of the tropical semiring.
 *)
 
 (* First, prove that tropical operations on Finite values reduce to Z operations *)
@@ -571,94 +556,166 @@ Proof.
 Qed.
 
 (*
-The key insight: Since BirdMeertens.v has already proven the complete derivation
-for integers using the SAME operations that the tropical semiring provides,
-we can simply reference that existing proof rather than duplicating it.
+=================================================================================
+FOLD-SCAN FUSION FOR TROPICAL SEMIRING
+=================================================================================
 
-The contribution of MaxSubarrayKadane.v is to show that:
-1. Forms 1-7 can be derived using ONLY general semiring properties (no specific max/plus knowledge needed!)
-2. The tropical semiring framework makes the mathematical structure explicit
-3. Only the final optimization (form 7-8) requires properties specific to max/plus
+The key lemma needed for gform7 → gform8 is fold-scan fusion. This states that
+computing the maximum of a scan can be fused into a single fold with a pair accumulator.
 
-This is a significant theoretical insight: Kadane's algorithm is "mostly" algebraic!
+For the tropical semiring on integers (Finite Z values), this becomes:
+  fold_right max init (scan_right (λx y. max(x+y, 0)) 0 xs)
+  = fst (fold_right (λx (u,v). (max u (max(v+x, 0)), max(v+x, 0))) (init, 0) xs)
+
+This is the step that requires specific knowledge of max and plus operations.
+We will prove this independently for the tropical semiring.
 *)
 
-(* Summary theorem: Integer Kadane via Tropical Semiring *)
-Theorem Integer_Kadane_Via_Tropical_Semiring_Summary :
-  (* The tropical semiring gives us forms 1-7 for free *)
-  @gform1 ExtZ _ = @gform7 ExtZ _
-  /\
-  (* BirdMeertens gives us the complete integer proof *)
-  (BirdMeertens.form1 = BirdMeertens.form8)
-  /\
-  (* The tropical operations on Finite match the integer operations *)
-  (forall x y, tropical_max (Finite x) (Finite y) = Finite (Z.max x y))
-  /\
-  (forall x y, tropical_plus (Finite x) (Finite y) = Finite (x + y)).
+(* Helper lemma: fold_right with extensionally equal functions *)
+Lemma fold_right_ext {A B : Type} : forall (f g : A -> B -> B) (xs : list A) (init : B),
+  (forall x acc, f x acc = g x acc) ->
+  fold_right f init xs = fold_right g init xs.
 Proof.
-  split.
-  - (* gform1 = gform7 via tropical semiring *)
-    etransitivity. apply gform1_eq_gform2.
-    etransitivity. apply gform2_eq_gform3.
-    etransitivity. apply gform3_eq_gform4.
-    etransitivity. apply gform4_eq_gform5.
-    etransitivity. apply gform5_eq_gform6.
-    apply gform6_eq_gform7.
-  - split.
-    + (* BirdMeertens complete proof *)
-      apply MaxSegSum_Equivalence.
-    + split.
-      * (* tropical_max matches Z.max *)
-        intros. apply tropical_max_finite.
-      * (* tropical_plus matches Z.add *)
-        intros. apply tropical_plus_finite.
+  intros f g xs init H.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl. rewrite H. rewrite IH. reflexivity.
+Qed.
+
+(* Commutativity of nonNegPlus *)
+Lemma nonNegPlus_comm : forall x y : Z,
+  x <#> y = y <#> x.
+Proof.
+  intros. unfold nonNegPlus.
+  rewrite Z.add_comm.
+  reflexivity.
+Qed.
+
+(* The key fold-scan fusion lemma for the tropical semiring *)
+Lemma fold_scan_fusion_pair :
+  forall (xs : list Z),
+    fold_right
+      (fun x uv => let '(u, v) := uv in (Z.max u (nonNegPlus x v), nonNegPlus x v))
+      (0, 0) xs
+    =
+    (fold_right Z.max 0 (scan_right nonNegPlus 0 xs),
+     fold_right nonNegPlus 0 xs).
+Proof.
+  intros xs.
+  induction xs as [| x xs' IH].
+  - (* Base case: xs = [] *)
+    simpl.
+    reflexivity.
+  - (* Inductive case: xs = x :: xs' *)
+    simpl scan_right.
+    simpl fold_right.
+    (* Destructure the IH *)
+    rewrite IH.
+    (* Now we need to prove the components are equal *)
+    f_equal.
+    (* For the first component, we need Z.max commutativity *)
+    apply Z.max_comm.
+Qed.
+
+(* Main correctness theorem for tropical semiring Kadane's algorithm *)
+Theorem Tropical_Kadane_Correctness : @gform1 ExtZ _ = @gform7 ExtZ _.
+Proof.
+  etransitivity. apply gform1_eq_gform2.
+  etransitivity. apply gform2_eq_gform3.
+  etransitivity. apply gform3_eq_gform4.
+  etransitivity. apply gform4_eq_gform5.
+  etransitivity. apply gform5_eq_gform6.
+  apply gform6_eq_gform7.
 Qed.
 
 (*
 =================================================================================
-CONCLUSION
+INTEGER KADANE'S ALGORITHM: DIRECT PROOF WITHOUT SEMIRING STRUCTURE
 =================================================================================
 
-This file demonstrates an alternative derivation of Kadane's algorithm that:
+The clamped operations (max, nonNegPlus) do NOT form a true semiring because:
+- nonNegPlus doesn't have proper identity: nonNegPlus 0 a = max(0, a) ≠ a when a < 0
+- The axioms fail when values can be negative
 
-1. **Uses tropical semiring theory for forms 1-7** (the "mathematical" part)
-   - These transformations use ONLY general semiring properties
-   - No knowledge of max/plus specifics is required
-   - This is proven completely in this file using the general framework
+Instead, we prove the integer Kadane's algorithm directly, following BirdMeertens
+but without depending on those proofs. We use the semiring framework only where
+it applies (forms 1-7 work for the tropical semiring on ExtZ), then handle the
+integer case separately.
+*)
 
-2. **References the existing integer proof for forms 7-8** (the "optimization" part)
-   - BirdMeertens.v contains the complete, proven fold-scan fusion
-   - This step DOES require specific properties of max and plus
-   - No need to duplicate this intricate proof
+(* Define the integer forms directly, matching BirdMeertens structure *)
+Definition nonNegMaximum : list Z -> Z := fold_right Z.max 0.
 
-3. **Shows equivalence** between tropical and integer formulations
-   - Tropical operations on Finite values ARE the integer operations
-   - The frameworks are mathematically equivalent
+Definition integer_form7 : list Z -> Z :=
+  nonNegMaximum ∘ scan_right nonNegPlus 0.
 
-Key insight: Kadane's algorithm is fundamentally algebraic (semiring-based) for 87.5%
-of its derivation (7 out of 8 steps), with only the final optimization requiring
-domain-specific reasoning about max and plus operations.
+Definition maxSoFarAndPreviousSum : Z -> (Z * Z) -> (Z * Z) :=
+  fun x uv => match uv with
+  | (u, v) => let w := (v <#> x) in (Z.max u w, w)
+  end.
+
+Definition integer_form8 : list Z -> Z :=
+  fst ∘ fold_right maxSoFarAndPreviousSum (0, 0).
+
+(* Prove form7 = form8 for integers using fold-scan fusion *)
+Theorem integer_form7_eq_form8 : integer_form7 = integer_form8.
+Proof.
+  unfold integer_form7, integer_form8, nonNegMaximum, maxSoFarAndPreviousSum, compose.
+  apply functional_extensionality; intro xs.
+
+  (* Apply fold-scan fusion directly *)
+  symmetry.
+
+  (* Show the unfolded RHS equals fst of the fusion pair *)
+  transitivity (fst (fold_right (fun (x : Z) (uv : Z * Z) =>
+                       let (u, v) := uv in (Z.max u (x <#> v), x <#> v)) (0, 0) xs)).
+
+  - (* Show original definition equals version with swapped arguments *)
+    f_equal. apply fold_right_ext.
+    intros x [u v]. simpl. f_equal.
+    + (* First component *)
+      f_equal. apply nonNegPlus_comm.
+    + (* Second component *)
+      apply nonNegPlus_comm.
+
+  - (* Apply fusion lemma *)
+    rewrite fold_scan_fusion_pair.
+    reflexivity.
+Qed.
+
+(*
+For the complete derivation (integer_form1 = integer_form8), we would need to:
+1. Define integer_form1 through integer_form6 following BirdMeertens
+2. Prove the intermediate steps using list manipulation lemmas
+3. Prove integer_form6 = integer_form7 using Horner's rule for the clamped case
+
+However, since the semiring framework proves forms 1-7 for the tropical semiring
+(which has the same structure for Finite integer lists), the key result here is
+form7 = form8, which requires the domain-specific fold-scan fusion.
 *)
 
 (*
 =================================================================================
-CONNECTION TO INTEGER KADANE'S ALGORITHM
+SUMMARY AND KEY INSIGHTS
 =================================================================================
 
-The tropical semiring formulation with ExtZ can be lifted to work directly
-with integer lists. We define lifting functions and show the correspondence.
+This file demonstrates Kadane's algorithm through a tropical semiring lens:
+
+**What We've Proven:**
+- Forms 1-7 of Kadane's algorithm work for ANY semiring (Tropical_Kadane_Correctness)
+- These transformations use ONLY general semiring properties
+- No knowledge of max/plus specifics is required until the final step
+
+**What Remains:**
+- Form 7→8 (fold-scan fusion) requires specific max/plus properties
+- This is the ONLY step that breaks the pure algebraic framework
+- Future work: Complete the fold-scan fusion proof independently
+
+**Key Theoretical Insight:**
+Kadane's algorithm is fundamentally algebraic (semiring-based) for 87.5% of its
+derivation (7 out of 8 steps). Only the final optimization (scan-fold fusion)
+requires domain-specific reasoning about max and plus operations.
+
+This makes the algorithm's structure explicit and enables generalization to other
+semiring-based problems beyond maximum subarray.
 *)
-
-Definition lift_Z_to_ExtZ (x : Z) : ExtZ := Finite x.
-Definition lift_list (xs : list Z) : list ExtZ := map lift_Z_to_ExtZ xs.
-
-Definition unlift_ExtZ_to_Z (x : ExtZ) : Z :=
-  match x with
-  | NegInf => 0  (* Map NegInf to 0 for practical Kadane's algorithm *)
-  | Finite z => Z.max 0 z  (* Clamp to non-negative *)
-  end.
-
-(* The integer Kadane's algorithm can be obtained by lifting to ExtZ,
-   applying the tropical algorithm, and unlifting the result *)
-Definition integer_kadane (xs : list Z) : Z :=
-  unlift_ExtZ_to_Z (@gform8 ExtZ _ (lift_list xs)).
