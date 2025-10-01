@@ -25,19 +25,19 @@ This file provides a generalized semiring-based formulation of Kadane's algorith
 
 KEY RESULTS:
 
-1. Forms gform1 through gform6 work for ANY semiring (ℤ, tropical, etc.)
-   - These steps use only basic semiring properties
-   - The gform5 → gform6 step uses Horner's rule (proven for all semirings)
+Forms gform1 through gform7 work for ANY semiring (ℤ, tropical, etc.)!
+- gform1-gform4: Use basic list manipulation and semiring properties
+- gform5 → gform6: Uses Horner's rule (proven for all semirings)
+- gform6 → gform7: Uses scan-fold relationship
 
-2. Forms gform7 and gform8 require a KadaneSemiring
-   - Needs: commutative multiplication + mul_one_add_absorb property
-   - These are restrictive: tropical semiring does NOT satisfy them
-   - Finding non-trivial KadaneSemiring examples is challenging
+The gform7 → gform8 step (scan-fold fusion) requires additional properties
+that do NOT hold for general semirings. This must be proven separately for
+specific instances using domain-specific arguments.
 
 See companion files:
 - IntegerKadane.v: Demonstrates gform1-gform6 work for integers (ℤ, +, ×)
-- TropicalNotKadane.v: Proves tropical semiring fails KadaneSemiring properties
-- ExampleKadaneSemiring.v: Discusses difficulty of finding non-trivial examples
+- MaxSubarrayKadane.v: Tropical semiring case with clamping arguments for gform7→gform8
+- AlternativeGform8.v: Analysis of why (add_zero, mul_one) is uniquely determined
 *)
 
 (*
@@ -262,187 +262,31 @@ Section KadaneTheorems.
 
   (*
   =================================================================================
-  KADANE SEMIRING: SPECIAL PROPERTIES FOR SCAN-FOLD FUSION
+  MAIN CORRECTNESS RESULT FOR GENERAL SEMIRINGS
   =================================================================================
 
-  The gform7 → gform8 step (scan-fold fusion) requires additional semiring properties.
-  These are NOT needed for gform1 → gform6, which work for any semiring.
+  All forms gform1 through gform7 work for ANY semiring!
 
-  KadaneSemiring captures semirings where:
-  1. Multiplication is commutative (needed to reorder operations in the fusion)
-  2. mul_one "absorbs" into add_zero (needed for the base case of fusion)
+  The gform7 → gform8 step (scan-fold fusion) requires additional properties
+  that do NOT hold for general semirings. This step must be proven separately
+  for specific semiring instances using domain-specific arguments.
 
-  These properties are quite restrictive and do NOT hold for common semirings like:
-  - The tropical (max-plus) semiring (violates mul_one_add_absorb)
-  - The natural numbers (violates mul_one_add_absorb)
-  - The boolean semiring (violates mul_one_add_absorb)
-
-  See TropicalNotKadane.v for a proof that tropical semiring is not a KadaneSemiring.
-  See ExampleKadaneSemiring.v for discussion of finding non-trivial examples.
+  See MaxSubarrayKadane.v for the tropical semiring case, which uses:
+  - Clamping arguments for mixed-sign inputs
+  - Specific properties of max and plus operations
   *)
 
-  Class KadaneSemiring (A : Type) `{Semiring A} : Prop := {
-    (* Multiplication must be commutative for the scan-fold fusion *)
-    mul_comm : forall (x y : A), mul_op x y = mul_op y x;
-
-    (* The multiplicative identity "absorbs" when added to additive identity *)
-    (* This is needed for the base case of scan-fold fusion *)
-    mul_one_add_absorb : add_op mul_one add_zero = add_zero
-  }.
-
-  (* The form7 to form8 step requires scan-fold fusion with KadaneSemiring properties *)
-
-  (* We need a helper lemma for fold_right over appended lists *)
-  Lemma semiring_fold_right_app : forall (l1 l2 : list A),
-    fold_right add_op add_zero (l1 ++ l2) =
-    add_op (fold_right add_op add_zero l1) (fold_right add_op add_zero l2).
-  Proof.
-    intros l1 l2.
-    induction l1 as [|x xs IH]; simpl.
-    - rewrite add_left_id. reflexivity.
-    - rewrite IH. rewrite add_assoc. reflexivity.
-  Qed.
-
-  (* Helper lemma: the second component of the fold is the horner_op result *)
-  Lemma fold_pair_snd `{KadaneSemiring A} : forall (xs : list A),
-    let horner_op := fun x y => add_op (mul_op x y) mul_one in
-    snd (fold_right (fun x uv => let '(u, v) := uv in
-                                 let w := horner_op v x in
-                                 (add_op u w, w)) (add_zero, mul_one) xs) =
-    fold_right horner_op mul_one xs.
-  Proof.
-    intro xs.
-    set (horner_op := fun x y => add_op (mul_op x y) mul_one).
-    induction xs as [| x xs' IH].
-    - simpl. reflexivity.
-    - simpl fold_right.
-      (* Destruct the fold result to simplify the pattern match *)
-      destruct (fold_right (fun (x0 : A) '(u, v) => (add_op u (horner_op v x0), horner_op v x0)) (add_zero, mul_one) xs') as [u' v'] eqn:Hfold.
-      (* Simplify to evaluate the pattern match and let binding *)
-      simpl.
-      (* Use IH to get v' = fold_right horner_op mul_one xs' *)
-      assert (Hv' : v' = fold_right horner_op mul_one xs').
-      { apply (f_equal snd) in Hfold. simpl in Hfold. rewrite <- Hfold. apply IH. }
-      (* Rewrite the fold in the goal using Hfold *)
-      rewrite Hfold.
-      simpl.
-      rewrite Hv'.
-      (* Now show: horner_op (fold_right horner_op mul_one xs') x = horner_op x (fold_right horner_op mul_one xs') *)
-      unfold horner_op.
-      f_equal.
-      apply mul_comm.
-  Qed.
-
-  (* We prove the scan-fold fusion property for Kadane semirings *)
-  Lemma semiring_scan_fold_fusion `{KadaneSemiring A} : forall (xs : list A),
-    let horner_op := fun x y => add_op (mul_op x y) mul_one in
-    fold_right add_op add_zero (scan_right horner_op mul_one xs) =
-    fst (fold_right (fun x uv => let '(u, v) := uv in
-                                 let w := horner_op v x in
-                                 (add_op u w, w)) (add_zero, mul_one) xs).
-  Proof.
-    intro xs.
-    set (horner_op := fun x y => add_op (mul_op x y) mul_one).
-    induction xs as [| x xs' IH].
-    - (* Base case: xs = [] *)
-      simpl.
-      (* Use the mul_one_add_absorb property *)
-      apply mul_one_add_absorb.
-    - (* Inductive case: xs = x :: xs' *)
-      (* Expand scan_right for (x :: xs') *)
-      simpl scan_right.
-
-      (* Expand fold_right on the right side *)
-      simpl fold_right.
-      destruct (fold_right (fun x0 uv => let '(u, v) := uv in let w := horner_op v x0 in (add_op u w, w))
-                (add_zero, mul_one) xs') as [u' v'] eqn:Heq.
-      simpl fst.
-
-      (* LHS: fold_right add_op add_zero (horner_op x (fold_right horner_op mul_one xs') :: scan_right horner_op mul_one xs') *)
-      (* RHS: add_op u' (horner_op v' x) *)
-
-      (* Use fold_pair_snd to establish v' = fold_right horner_op mul_one xs' *)
-      assert (Hv: v' = fold_right horner_op mul_one xs').
-      {
-        apply (f_equal snd) in Heq.
-        simpl in Heq.
-        rewrite <- Heq.
-        apply fold_pair_snd.
-      }
-
-      (* Simplify scan_right *)
-      unfold scan_right at 1.
-      simpl fold_right at 1.
-
-      (* Fold scan_right back in the remaining occurrence *)
-      fold (scan_right horner_op mul_one xs').
-
-      (* The goal has: horner_op x ... ⊕ fold_right add_op (scan_right ...) = fst (let ...) *)
-      (* Use the IH by replacing the fold_right add_op (scan_right ...) part *)
-      assert (Hfold_scan: fold_right add_op add_zero (scan_right horner_op mul_one xs') = u').
-      {
-        rewrite IH.
-        rewrite Heq.
-        simpl.
-        reflexivity.
-      }
-      rewrite Hfold_scan.
-
-      (* Rewrite RHS using Heq - need to handle the let binding carefully *)
-      assert (Hrhs: fst (let '(u, v) := fold_right (fun (x0 : A) '(u, v) => (add_op u (horner_op v x0), horner_op v x0)) (add_zero, mul_one) xs' in
-                         (add_op u (horner_op v x), horner_op v x)) = add_op u' (horner_op v' x)).
-      {
-        (* Show that Heq's form matches this form *)
-        assert (Heq_expanded: fold_right (fun (x0 : A) '(u, v) => let w := horner_op v x0 in (add_op u w, w)) (add_zero, mul_one) xs' =
-                              fold_right (fun (x0 : A) '(u, v) => (add_op u (horner_op v x0), horner_op v x0)) (add_zero, mul_one) xs').
-        {
-          apply fold_right_ext.
-          intros a [u v]. simpl. reflexivity.
-        }
-        rewrite Heq_expanded in Heq.
-        rewrite Heq.
-        simpl. reflexivity.
-      }
-      rewrite Hrhs.
-      rewrite Hv.
-
-      (* Goal: add_op (horner_op x (fold_right horner_op mul_one xs')) u' = add_op u' (horner_op (fold_right horner_op mul_one xs') x) *)
-      rewrite add_comm.
-      f_equal.
-      (* horner_op x y = add_op (mul_op x y) mul_one, need commutativity of mul_op *)
-      unfold horner_op.
-      f_equal.
-      apply mul_comm.
-  Qed.
-
-  Theorem gform7_eq_gform8 `{KadaneSemiring A} : gform7 = gform8.
-  Proof.
-    unfold gform7, gform8.
-    apply functional_extensionality; intro xs.
-    unfold compose, semiring_sum.
-    apply semiring_scan_fold_fusion.
-  Qed.
-
-End KadaneTheorems.
-
-(* For the main correctness theorem, we need to work outside the section
-   to avoid multiple Semiring instances *)
-Section KadaneCorrectness.
-  Context {A : Type} `{KS : KadaneSemiring A}.
-
-  (* The main theorem: all forms are equivalent for Kadane semirings *)
-  Theorem Generalized_Kadane_Correctness : gform1 = gform8.
+  Theorem Generalized_Kadane_Correctness_To_Form7 : gform1 = gform7.
   Proof.
     etransitivity. apply gform1_eq_gform2.
     etransitivity. apply gform2_eq_gform3.
     etransitivity. apply gform3_eq_gform4.
     etransitivity. apply gform4_eq_gform5.
     etransitivity. apply gform5_eq_gform6.
-    etransitivity. apply gform6_eq_gform7.
-    apply gform7_eq_gform8.
+    apply gform6_eq_gform7.
   Qed.
 
-End KadaneCorrectness.
+End KadaneTheorems.
 
 (*
 =================================================================================

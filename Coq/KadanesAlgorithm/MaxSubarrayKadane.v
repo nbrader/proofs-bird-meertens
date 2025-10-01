@@ -453,18 +453,45 @@ instantiates to the traditional maximum subarray problem:
 
 1. We define the tropical semiring (ExtZ with max and plus operations)
 2. We prove it satisfies the Semiring axioms
-3. We prove it satisfies the additional KadaneSemiring properties
-4. We instantiate the generalized correctness theorem
+3. We instantiate the general result gform1 = gform7 (works for ANY semiring!)
+4. We prove gform7 = gform8 using tropical-specific clamping arguments
 5. We extract the concrete efficient algorithm
 6. We prove the concrete algorithm is correct
 
 The key insight is that Kadane's algorithm is fundamentally about computing
 over a tropical semiring, making the mathematical structure explicit and
 providing a rigorous proof of correctness.
+*)
 
-TODO:
-- Complete the tropical_horner_property proof
-- Complete the kadane_matches_gform8 proof
-- These require connecting the ExtZ operations to Z operations under
-  the interpretation of "maximum subarray sum"
+(*
+=================================================================================
+USING THE GENERAL RESULT UP TO GFORM7
+=================================================================================
+*)
+
+(* The general framework gives us gform1 = gform7 for FREE! *)
+Theorem tropical_gform1_eq_gform7 : @gform1 ExtZ _ = @gform7 ExtZ _.
+Proof.
+  etransitivity. apply gform1_eq_gform2.
+  etransitivity. apply gform2_eq_gform3.
+  etransitivity. apply gform3_eq_gform4.
+  etransitivity. apply gform4_eq_gform5.
+  etransitivity. apply gform5_eq_gform6.
+  apply gform6_eq_gform7.
+Qed.
+
+(*
+=================================================================================
+TROPICAL-SPECIFIC GFORM7 → GFORM8 STEP
+=================================================================================
+
+The gform7 → gform8 step (scan-fold fusion) does NOT work for general semirings.
+For the tropical semiring, we need a clamping-based argument:
+
+- For mixed-sign inputs: Use clamped versions where negative prefixes become 0
+- The clamped computation matches traditional Kadane's algorithm
+- This uses specific properties of max and plus, not general semiring properties
+
+TODO: Complete the tropical-specific gform7 → gform8 proof using clamping arguments
+as outlined in CLAUDE.md (tropical semiring proof strategy section).
 *)
