@@ -4,7 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Coq formalization project that translates a theorem from the Bird-Meertens Formalism Wikipedia article about the correctness of Kadane's algorithm for the Maximum subarray problem.
+This is a Coq formalization project that proves the correctness of Kadane's algorithm for the Maximum subarray problem using a generalized semiring-based approach. The project demonstrates that Kadane's algorithm is fundamentally algebraic, with 87.5% of its derivation (7 out of 8 steps) using only general semiring properties.
+
+### Project Goals and Direction
+
+**PRIMARY GOAL**: Develop a streamlined, semiring-based proof framework that:
+1. **Generalizes beyond integers**: Proves Kadane-style algorithms for ANY semiring, not just the tropical (max-plus) semiring
+2. **Maximizes reusability**: The general semiring derivation (forms 1-7) can be applied to multiple problem domains
+3. **Provides concrete instances**: Standard integer Kadane's algorithm as the primary example, with potential for other semiring applications
+
+**ARCHITECTURE STRATEGY**:
+- **`KadanesAlgorithm/` directory**: Contains the NEW, primary proof framework
+  - General semiring-based proofs (forms 1-7) that work for ANY semiring
+  - Specific instances like `MaxSubarrayKadane.v` that instantiate the framework for particular semirings
+  - This is the MAIN development focus going forward
+
+- **`BirdMeertens/` directory**: Contains the ORIGINAL proofs
+  - These proofs are being **effectively replaced** by the semiring-based approach
+  - Will be **retained for reference** and to extract useful lemmas/techniques
+  - **NOT to be used as dependencies** for new `KadanesAlgorithm/` proofs
+  - Serves as a source to "distill" useful results for other purposes
+
+**CRITICAL CONSTRAINT**:
+- **New proofs in `KadanesAlgorithm/` MUST NOT depend on `BirdMeertens/` proofs**
+- The semiring-based approach should be self-contained
+- For the standard integer Kadane's algorithm, we aim to prove the SAME results as BirdMeertens (both fold_right and fold_left/dual versions) but using the semiring framework for as much as possible
+- Any useful techniques from BirdMeertens should be extracted and reproven independently, not imported as dependencies
 
 ## Key Proof Strategy: Dual Conversion Approach
 
