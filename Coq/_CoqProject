@@ -38,3 +38,4 @@ BirdMeertens/BirdMeertens.v
 BirdMeertens/TailsMonoid.v
 BirdMeertens/Extra.v
 KadanesAlgorithm/KadanesAlgorithm.v
+KadanesAlgorithm/TropicalNotKadane.v
