@@ -497,6 +497,17 @@ which is exactly the clamped addition operation used in Kadane's algorithm!
 (* Define the clamped addition operation *)
 Definition nonNegPlus (x y : Z) : Z := Z.max 0 (x + y).
 Notation "x <#> y" := (nonNegPlus x y) (at level 40, left associativity).
+Notation "x <|> y" := (Z.max x y) (at level 50, left associativity).
+
+(* Case classification predicates *)
+Definition all_nonnegative (xs : list Z) : Prop :=
+  forall x, In x xs -> x >= 0.
+
+Definition all_nonpositive (xs : list Z) : Prop :=
+  forall x, In x xs -> x <= 0.
+
+Definition mixed_signs (xs : list Z) : Prop :=
+  ~(all_nonnegative xs) /\ ~(all_nonpositive xs).
 
 (* We need to show that the tropical horner_op matches the pattern of nonNegPlus *)
 Lemma tropical_horner_matches_nonNegPlus : forall x y : Z,
@@ -644,8 +655,34 @@ integer case separately.
 *)
 
 (* Define the integer forms directly, matching BirdMeertens structure *)
+Definition nonNegSum (xs : list Z) : Z := fold_right nonNegPlus 0 xs.
 Definition nonNegMaximum : list Z -> Z := fold_right Z.max 0.
 
+(* Form 1: Maximum nonNegSum over all segments (specification) *)
+Definition integer_form1 : list Z -> Z :=
+  nonNegMaximum ∘ map nonNegSum ∘ segs.
+
+(* Form 2: Promote map through composition *)
+Definition integer_form2 : list Z -> Z :=
+  nonNegMaximum ∘ map nonNegSum ∘ concat ∘ map tails ∘ inits.
+
+(* Form 3: Map promotion *)
+Definition integer_form3 : list Z -> Z :=
+  nonNegMaximum ∘ concat ∘ map (map nonNegSum) ∘ map tails ∘ inits.
+
+(* Form 4: Map fusion *)
+Definition integer_form4 : list Z -> Z :=
+  nonNegMaximum ∘ concat ∘ map (map nonNegSum ∘ tails) ∘ inits.
+
+(* Form 5: Rewrite map nonNegSum ∘ tails = map nonNegSum ∘ inits *)
+Definition integer_form5 : list Z -> Z :=
+  nonNegMaximum ∘ concat ∘ map (map nonNegSum ∘ inits) ∘ inits.
+
+(* Form 6: Apply Horner's rule (via tropical semiring for mixed case) *)
+Definition integer_form6 : list Z -> Z :=
+  nonNegMaximum ∘ map (fold_right nonNegPlus 0) ∘ inits.
+
+(* Form 7: Use scan_right *)
 Definition integer_form7 : list Z -> Z :=
   nonNegMaximum ∘ scan_right nonNegPlus 0.
 
@@ -683,15 +720,282 @@ Proof.
     reflexivity.
 Qed.
 
-(*
-For the complete derivation (integer_form1 = integer_form8), we would need to:
-1. Define integer_form1 through integer_form6 following BirdMeertens
-2. Prove the intermediate steps using list manipulation lemmas
-3. Prove integer_form6 = integer_form7 using Horner's rule for the clamped case
+(* ===== HELPER LEMMAS FOR CASE-BASED PROOF ===== *)
 
-However, since the semiring framework proves forms 1-7 for the tropical semiring
-(which has the same structure for Finite integer lists), the key result here is
-form7 = form8, which requires the domain-specific fold-scan fusion.
+Require Import Coq.Logic.Classical.
+
+Lemma case_trichotomy : forall xs : list Z,
+  all_nonnegative xs \/ all_nonpositive xs \/ mixed_signs xs.
+Proof.
+  intro xs.
+  destruct (classic (all_nonnegative xs)) as [H_nonneg | H_not_nonneg].
+  - left. exact H_nonneg.
+  - destruct (classic (all_nonpositive xs)) as [H_nonpos | H_not_nonpos].
+    + right. left. exact H_nonpos.
+    + right. right.
+      unfold mixed_signs.
+      split; [exact H_not_nonneg | exact H_not_nonpos].
+Qed.
+
+Lemma nonNegSum_nonneg : forall xs : list Z, 0 <= nonNegSum xs.
+Proof.
+  intro xs.
+  induction xs as [|x xs' IH].
+  - simpl. lia.
+  - simpl. unfold nonNegPlus.
+    apply Z.le_max_l.
+Qed.
+
+Lemma nonNegSum_all_nonpositive_is_zero : forall xs : list Z,
+  all_nonpositive xs -> nonNegSum xs = 0.
+Proof.
+  intros xs H_nonpos.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl nonNegSum.
+    assert (Hx_nonpos: x <= 0) by (apply H_nonpos; simpl; left; reflexivity).
+    unfold nonNegPlus.
+    destruct (Z.leb_spec 0 (x + nonNegSum xs')) as [Heq | Heq].
+    + (* Case: x + nonNegSum xs' >= 0 *)
+      assert (Hxs'_zero: nonNegSum xs' = 0).
+      { apply IH. intros y Hy. apply H_nonpos. right. exact Hy. }
+      rewrite Hxs'_zero in Heq.
+      rewrite Z.add_0_r in Heq.
+      assert (Hx_zero: x = 0).
+      { apply Z.le_antisymm; [exact Hx_nonpos | exact Heq]. }
+      rewrite Hx_zero, Hxs'_zero. simpl. reflexivity.
+    + (* Case: x + nonNegSum xs' < 0 *)
+      apply Z.max_l.
+      lia.
+Qed.
+
+Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
+  In ys (inits xs) -> exists suffix, ys ++ suffix = xs.
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - intros ys H_in. simpl in H_in.
+    destruct H_in as [H_eq | H_false].
+    + rewrite <- H_eq. exists []. reflexivity.
+    + contradiction.
+  - intros ys H_in.
+    rewrite inits_cons in H_in.
+    destruct H_in as [H_eq | H_in'].
+    + (* ys = [] *)
+      rewrite <- H_eq. exists (x :: xs'). reflexivity.
+    + (* ys is in map (cons x) (inits xs') *)
+      rewrite in_map_iff in H_in'.
+      destruct H_in' as [prefix [H_eq H_prefix_in]].
+      destruct (IH prefix H_prefix_in) as [suffix H_suffix].
+      rewrite <- H_eq.
+      exists suffix.
+      simpl. f_equal. exact H_suffix.
+Qed.
+
+Lemma inits_contains_original : forall {A : Type} (xs : list A),
+  In xs (inits xs).
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - simpl. left. reflexivity.
+  - rewrite inits_cons. right.
+    apply in_map. exact IH.
+Qed.
+
+(* Additional helper lemma - needed for fold_right_max_returns_max *)
+Lemma fold_right_max_le : forall (xs : list Z) (init ub : Z),
+  init <= ub ->
+  (forall x, In x xs -> x <= ub) ->
+  fold_right Z.max init xs <= ub.
+Proof.
+  intros xs init ub H_init H_ub.
+  induction xs as [|x xs' IH].
+  - simpl. exact H_init.
+  - simpl fold_right.
+    apply Z.max_lub.
+    + apply H_ub. simpl. left. reflexivity.
+    + apply IH. intros y H_y_in.
+      apply H_ub. simpl. right. exact H_y_in.
+Qed.
+
+Lemma fold_right_max_returns_max : forall (xs : list Z) (m init : Z),
+  m >= init ->
+  (forall y, In y xs -> y <= m) ->
+  In m xs ->
+  fold_right Z.max init xs = m.
+Proof.
+  intros xs m init H_ge H_le_m H_in.
+  induction xs as [|x xs' IH].
+  - contradiction.
+  - simpl in H_in.
+    destruct H_in as [H_m_eq_x | H_m_in_xs'].
+    + (* m = x *)
+      subst x.
+      simpl fold_right.
+      apply Z.max_l.
+      apply fold_right_max_le.
+      * apply Z.ge_le. exact H_ge.
+      * intros y H_y_in.
+        apply H_le_m. simpl. right. exact H_y_in.
+    + (* In m xs' *)
+      simpl fold_right.
+      assert (H_IH: fold_right Z.max init xs' = m).
+      { apply IH.
+        - intros y H_y_in. apply H_le_m. simpl. right. exact H_y_in.
+        - exact H_m_in_xs'. }
+      rewrite H_IH.
+      apply Z.max_r.
+      apply H_le_m. simpl. left. reflexivity.
+Qed.
+
+(* ===== CORRESPONDENCE BETWEEN INTEGER AND TROPICAL FORMS (MIXED CASE ONLY) ===== *)
+
+(* Key insight: For MIXED SIGN lists, the integer and tropical computations correspond.
+   The mixed_signs hypothesis is crucial because it guarantees that the maximum subarray
+   sum is non-negative (there exists some positive element), which means the clamping
+   in nonNegPlus doesn't interfere with the tropical semiring operations. *)
+
+(* Correspondence for form1: integer spec equals tropical spec on Finite-lifted lists (MIXED CASE) *)
+Lemma integer_tropical_form1_correspondence_mixed : forall xs : list Z,
+  mixed_signs xs ->
+  integer_form1 xs =
+  match @gform1 ExtZ _ (map Finite xs) with
+  | Finite n => n
+  | NegInf => 0  (* Never happens for finite lists *)
+  end.
+Proof.
+  intros xs H_mixed.
+  unfold integer_form1, gform1, compose.
+  (* Both compute max sum over all segments *)
+  (* Key: mixed_signs guarantees max is >= 0, so clamping doesn't interfere *)
+  admit. (* TODO: Prove correspondence for form1 using mixed_signs *)
+Admitted.
+
+(* Correspondence for form7: integer scan equals tropical scan on Finite-lifted lists (MIXED CASE) *)
+Lemma integer_tropical_form7_correspondence_mixed : forall xs : list Z,
+  mixed_signs xs ->
+  integer_form7 xs =
+  match @gform7 ExtZ _ (map Finite xs) with
+  | Finite n => n
+  | NegInf => 0  (* Never happens for finite lists *)
+  end.
+Proof.
+  intros xs H_mixed.
+  unfold integer_form7, gform7, compose.
+  (* Both compute max of scan_right *)
+  (* Key: mixed_signs ensures correspondence works *)
+  admit. (* TODO: Prove correspondence for form7 using mixed_signs *)
+Admitted.
+
+(* ===== CASE-BASED PROOFS ===== *)
+
+(* Case 1: All non-negative - maximum subarray is the entire array *)
+Lemma integer_form1_eq_form8_all_nonnegative : forall xs : list Z,
+  all_nonnegative xs ->
+  integer_form1 xs = integer_form8 xs.
+Proof.
+  intros xs H_nonneg.
+  unfold integer_form1, integer_form8, nonNegMaximum, nonNegSum, maxSoFarAndPreviousSum, compose.
+
+  (* Strategy: Show LHS = fold_right (+) 0 xs (sum of entire array) *)
+  (*           Show RHS = fold_right (+) 0 xs (same) *)
+  (* Key insight: When all elements are >= 0, adding elements never decreases the sum,
+     so the maximum is achieved by the entire array. Also, nonNegPlus reduces to (+)
+     because x + y >= 0 when both x, y >= 0. *)
+
+  admit. (* TODO: Direct proof using all_nonnegative property *)
+Admitted.
+
+(* Case 2: All non-positive - both sides equal 0 due to clamping *)
+Lemma integer_form1_eq_form8_all_nonpositive : forall xs : list Z,
+  all_nonpositive xs ->
+  integer_form1 xs = integer_form8 xs.
+Proof.
+  intros xs H_nonpos.
+  unfold integer_form1, integer_form8, nonNegMaximum, nonNegSum, maxSoFarAndPreviousSum, compose.
+
+  (* Strategy: Show both sides equal 0 *)
+  (* Key insight: When all elements are <= 0, every segment sum is <= 0,
+     so nonNegSum clamps everything to 0. Both LHS and RHS compute 0. *)
+
+  (* LHS: all segments have nonNegSum = 0, so max is 0 *)
+  (* RHS: fold_right accumulator stays at (0, 0) throughout *)
+
+  admit. (* TODO: Direct proof using all_nonpositive property *)
+Admitted.
+
+(* Case 3: Mixed signs - use tropical semiring correspondence *)
+Lemma integer_form1_eq_form8_mixed : forall xs : list Z,
+  mixed_signs xs ->
+  integer_form1 xs = integer_form8 xs.
+Proof.
+  intros xs H_mixed.
+  (* Strategy: ONLY in mixed case do we use tropical correspondence *)
+  (* The mixed_signs hypothesis is ESSENTIAL for the correspondence to work *)
+  transitivity (integer_form7 xs).
+  - (* integer_form1 = integer_form7 via tropical correspondence *)
+    rewrite integer_tropical_form1_correspondence_mixed; [|exact H_mixed].
+    rewrite integer_tropical_form7_correspondence_mixed; [|exact H_mixed].
+    (* Use tropical correctness: gform1 = gform7 *)
+    assert (H_trop: @gform1 ExtZ _ (map Finite xs) = @gform7 ExtZ _ (map Finite xs)).
+    { rewrite Tropical_Kadane_Correctness. reflexivity. }
+    rewrite H_trop. reflexivity.
+  - (* integer_form7 = integer_form8 *)
+    rewrite integer_form7_eq_form8. reflexivity.
+Qed. (* Complete proof modulo mixed correspondence lemmas *)
+
+(* Main theorem: Kadane's algorithm correctness for all integer lists *)
+Theorem Integer_Kadane_Correctness : forall xs : list Z,
+  integer_form1 xs = integer_form8 xs.
+Proof.
+  intro xs.
+  destruct (case_trichotomy xs) as [H_nonneg | [H_nonpos | H_mixed]].
+  - (* All non-negative *)
+    apply integer_form1_eq_form8_all_nonnegative. exact H_nonneg.
+  - (* All non-positive *)
+    apply integer_form1_eq_form8_all_nonpositive. exact H_nonpos.
+  - (* Mixed signs *)
+    apply integer_form1_eq_form8_mixed. exact H_mixed.
+Qed. (* Complete proof modulo correspondence lemmas *)
+
+(*
+=================================================================================
+PROOF STATUS AND NEXT STEPS
+=================================================================================
+
+COMPLETE PROOFS (Qed):
+- integer_form7_eq_form8: Proven using fold-scan fusion
+- fold_scan_fusion_pair: Key lemma extracted from BirdMeertens, proven independently
+- All helper lemmas for fold_right max and nonNegSum
+- Tropical semiring Kadane (gform1-gform7): Complete via semiring framework
+- integer_form1_eq_form8_mixed: Complete (modulo mixed correspondence lemmas)
+- Integer_Kadane_Correctness: Main theorem complete (modulo case lemmas)
+
+ADMITTED (Remaining work):
+THREE PROOF STRATEGIES (one for each case):
+
+1. ALL NON-NEGATIVE CASE:
+   - integer_form1_eq_form8_all_nonnegative: Direct proof (no tropical correspondence needed)
+   - Strategy: Show LHS = sum of entire array, show RHS = sum of entire array
+   - Key: When all elements >= 0, maximum subarray is the whole array
+
+2. ALL NON-POSITIVE CASE:
+   - integer_form1_eq_form8_all_nonpositive: Direct proof (no tropical correspondence needed)
+   - Strategy: Show both LHS and RHS equal 0 (or maximum single element)
+   - Key: When all elements <= 0, nonNegSum clamps everything to 0
+
+3. MIXED SIGNS CASE (THE INTERESTING ONE):
+   - integer_tropical_form1_correspondence_mixed: Use mixed_signs hypothesis
+   - integer_tropical_form7_correspondence_mixed: Use mixed_signs hypothesis
+   - Strategy: ONLY here do we need tropical semiring correspondence
+   - Key: mixed_signs ensures max >= 0, so clamping doesn't interfere with tropical ops
+
+CRITICAL INSIGHT:
+The case analysis is ESSENTIAL - not just for organization, but for correctness:
+- Simple cases (all nonneg/all nonpos) have direct proofs using sign information
+- Mixed case is the ONLY one requiring tropical semiring machinery
+- The mixed_signs hypothesis is CRUCIAL for the correspondence lemmas to work
+
 *)
 
 (*
