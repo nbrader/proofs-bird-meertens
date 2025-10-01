@@ -21,14 +21,23 @@ Require Import CoqUtilLib.ListFunctions.
 GENERALIZED KADANE'S ALGORITHM VIA SEMIRING FORMULATION
 =================================================================================
 
-This file explores a generalized approach to Kadane's algorithm that:
-1. Uses proper semiring operations throughout (not ad-hoc nonNeg operations)
-2. Leverages tropical semiring and Horner's rule directly
-3. Avoids the artificial distinction between sum vs nonNegSum
-4. Provides a cleaner path from mathematical definition to efficient algorithm
+This file provides a generalized semiring-based formulation of Kadane's algorithm.
 
-Key insight: The original Bird-Meertens derivation works with any suitable semiring,
-not just the specific nonNeg-clamped operations we've been using.
+KEY RESULTS:
+
+1. Forms gform1 through gform6 work for ANY semiring (ℤ, tropical, etc.)
+   - These steps use only basic semiring properties
+   - The gform5 → gform6 step uses Horner's rule (proven for all semirings)
+
+2. Forms gform7 and gform8 require a KadaneSemiring
+   - Needs: commutative multiplication + mul_one_add_absorb property
+   - These are restrictive: tropical semiring does NOT satisfy them
+   - Finding non-trivial KadaneSemiring examples is challenging
+
+See companion files:
+- IntegerKadane.v: Demonstrates gform1-gform6 work for integers (ℤ, +, ×)
+- TropicalNotKadane.v: Proves tropical semiring fails KadaneSemiring properties
+- ExampleKadaneSemiring.v: Discusses difficulty of finding non-trivial examples
 *)
 
 (*
@@ -211,27 +220,9 @@ Section KadaneTheorems.
     reflexivity.
   Qed.
 
-  (* The form5 to form6 and form7 to form8 steps require special semiring properties.
-     These properties characterize idempotent/tropical semirings where Kadane's algorithm works.
+  (* The gform5 → gform6 transition follows from Horner's rule, which holds for ANY semiring *)
 
-     We abstract this as a type class for semirings where Kadane's works. *)
-  Class KadaneSemiring (A : Type) `{Semiring A} : Prop := {
-    (* The Horner property: product equals sum of prefix products *)
-    kadane_horner_property :
-      forall (xs : list A),
-        semiring_product xs = semiring_sum (map semiring_product (inits xs));
-
-    (* The multiplicative identity acts as an additive zero for the scan-fold fusion *)
-    (* This says: adding mul_one doesn't change the sum *)
-    mul_one_add_absorb :
-      add_op mul_one add_zero = add_zero;
-
-    (* Multiplication must be commutative for the scan-fold fusion *)
-    mul_comm : forall (x y : A), mul_op x y = mul_op y x
-  }.
-
-  (* With this property, we can prove the form5 to form6 transition *)
-  Theorem gform5_eq_gform6 `{KadaneSemiring A} : gform5 = gform6.
+  Theorem gform5_eq_gform6 : gform5 = gform6.
   Proof.
     (* This is THE KEY STEP: follows from generalized Horner's rule *)
     unfold gform5, gform6.
@@ -269,8 +260,37 @@ Section KadaneTheorems.
     apply tails_rec_equiv.
   Qed.
 
-  (* The form7 to form8 step requires a scan-fold fusion property.
-     This is similar to the non-generalized fold_scan_fusion_pair lemma. *)
+  (*
+  =================================================================================
+  KADANE SEMIRING: SPECIAL PROPERTIES FOR SCAN-FOLD FUSION
+  =================================================================================
+
+  The gform7 → gform8 step (scan-fold fusion) requires additional semiring properties.
+  These are NOT needed for gform1 → gform6, which work for any semiring.
+
+  KadaneSemiring captures semirings where:
+  1. Multiplication is commutative (needed to reorder operations in the fusion)
+  2. mul_one "absorbs" into add_zero (needed for the base case of fusion)
+
+  These properties are quite restrictive and do NOT hold for common semirings like:
+  - The tropical (max-plus) semiring (violates mul_one_add_absorb)
+  - The natural numbers (violates mul_one_add_absorb)
+  - The boolean semiring (violates mul_one_add_absorb)
+
+  See TropicalNotKadane.v for a proof that tropical semiring is not a KadaneSemiring.
+  See ExampleKadaneSemiring.v for discussion of finding non-trivial examples.
+  *)
+
+  Class KadaneSemiring (A : Type) `{Semiring A} : Prop := {
+    (* Multiplication must be commutative for the scan-fold fusion *)
+    mul_comm : forall (x y : A), mul_op x y = mul_op y x;
+
+    (* The multiplicative identity "absorbs" when added to additive identity *)
+    (* This is needed for the base case of scan-fold fusion *)
+    mul_one_add_absorb : add_op mul_one add_zero = add_zero
+  }.
+
+  (* The form7 to form8 step requires scan-fold fusion with KadaneSemiring properties *)
 
   (* We need a helper lemma for fold_right over appended lists *)
   Lemma semiring_fold_right_app : forall (l1 l2 : list A),
