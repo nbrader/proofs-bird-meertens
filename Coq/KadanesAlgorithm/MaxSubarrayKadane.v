@@ -181,85 +181,123 @@ Instance Tropical_Semiring : Semiring ExtZ := {
 
 (*
 =================================================================================
-KADANE SEMIRING INSTANCE FOR TROPICAL SEMIRING
+USING THE GENERALIZED FRAMEWORK
 =================================================================================
 *)
 
+(* We can use gform1-gform5 from KadanesAlgorithm.v without needing KadaneSemiring!
+   These forms only use basic semiring properties, which the tropical semiring satisfies. *)
 
-(* The Horner property as stated is FALSE for the tropical semiring.
-   Here's a counterexample: *)
-Example tropical_horner_property_false :
-  exists (xs : list ExtZ),
-    fold_right tropical_plus tropical_one xs <>
-    fold_right tropical_max tropical_zero (map (fold_right tropical_plus tropical_one) (inits xs)).
+(* The tropical semiring satisfies the requirements for gform1-gform5 *)
+Check @gform1.
+Check @gform2.
+Check @gform3.
+Check @gform4.
+Check @gform5.
+
+(* These equivalences hold for ANY semiring, including tropical: *)
+Check @gform1_eq_gform2.
+Check @gform2_eq_gform3.
+Check @gform3_eq_gform4.
+Check @gform4_eq_gform5.
+
+(* We can use these directly! *)
+Theorem tropical_gform1_eq_gform5 : @gform1 ExtZ _ = @gform5 ExtZ _.
 Proof.
-  (* Counterexample: xs = [Finite 5] *)
-  exists [Finite 5].
-  simpl.
-  (* LHS: tropical_plus (Finite 5) (Finite 0) = Finite 5 *)
-  (* RHS: tropical_max (Finite 0) (tropical_max (Finite 5) NegInf) = Finite 5 *)
-  (* Actually they're equal in this case. Let's try xs = [Finite (-5)] *)
-Abort.
+  etransitivity. apply gform1_eq_gform2.
+  etransitivity. apply gform2_eq_gform3.
+  etransitivity. apply gform3_eq_gform4.
+  apply gform4_eq_gform5.
+Qed.
 
-(* Actually, let's try: xs = [Finite (-5)] *)
+(*
+=================================================================================
+HANDLING THE FORM5 -> FORM6 STEP WITH CLAMPING
+=================================================================================
+*)
+
+(* Now we need to handle the form5 -> form6 step, which requires the Horner property.
+   The Kadane Horner property as stated is FALSE for pure tropical semiring: *)
+
 Example tropical_horner_counterexample :
   let xs := [Finite (-5)] in
   fold_right tropical_plus tropical_one xs <>
   fold_right tropical_max tropical_zero (map (fold_right tropical_plus tropical_one) (inits xs)).
 Proof.
   simpl.
-  (* LHS: tropical_plus (Finite (-5)) (Finite 0) = Finite (-5) *)
-  (* RHS: tropical_max (Finite 0) (tropical_max (Finite (-5)) NegInf) = Finite 0 *)
-  (* Finite (-5) <> Finite 0 *)
   intro H. injection H. intro. lia.
 Qed.
 
-(* Since the property is false, we axiomatize it for demonstration purposes *)
-Axiom tropical_horner_property : forall (xs : list ExtZ),
-  fold_right tropical_plus tropical_one xs =
-  fold_right tropical_max tropical_zero (map (fold_right tropical_plus tropical_one) (inits xs)).
+(* The issue: inits includes the empty list [], which contributes tropical_one = Finite 0
+   to the max. So when xs has all negative values, the RHS gives Finite 0, but LHS gives
+   the negative sum.
 
-(* NOTE: The pure tropical semiring doesn't quite satisfy the Kadane semiring
-   properties as stated, because the traditional Kadane's algorithm for maximum
-   subarray uses a "clamping" operation (taking max with 0) that isn't present
-   in the pure tropical semiring.
+   Solution: Introduce an intermediate "clamped" form that applies clamp_to_zero *)
 
-   A more accurate model would either:
-   1. Use a modified tropical semiring with an explicit "clamp to zero" operation
-   2. Work with non-negative integers only
-   3. Add additional structure beyond just semiring operations
+Definition clamp_to_zero (x : ExtZ) : ExtZ :=
+  tropical_max tropical_one x.
 
-   For this demonstration, we mark these as admitted to show the overall structure. *)
+(* Define clamped versions of the forms *)
+Definition gform5_clamped (xs : list ExtZ) : ExtZ :=
+  clamp_to_zero (gform5 xs).
 
-(* The tropical_one_absorb property is FALSE *)
-Example tropical_one_absorb_false :
-  tropical_max tropical_one tropical_zero <> tropical_zero.
+Definition gform6_clamped (xs : list ExtZ) : ExtZ :=
+  let horner_op := fun x y => tropical_max (tropical_plus x y) tropical_one in
+  clamp_to_zero (fold_right tropical_max tropical_zero
+    (map (fold_right horner_op tropical_one) (tails xs))).
+
+(* Key insight: For the clamped version, we can use the Horner property from BirdMeertens.v! *)
+(* The property nonNegSum = nonNegMaximum ∘ map nonNegSum ∘ inits is EXACTLY what we need *)
+
+(* To connect ExtZ operations to Z operations via BirdMeertens, we need conversion functions *)
+
+Definition ExtZ_to_Z (x : ExtZ) : Z :=
+  match x with
+  | NegInf => 0  (* Empty subarray *)
+  | Finite z => Z.max 0 z  (* At least empty subarray *)
+  end.
+
+Definition Z_to_ExtZ (z : Z) : ExtZ := Finite z.
+
+(* Connection to BirdMeertens operations *)
+Lemma tropical_max_corresponds_to_Z_max : forall (a b : Z),
+  ExtZ_to_Z (tropical_max (Z_to_ExtZ a) (Z_to_ExtZ b)) = Z.max (Z.max 0 a) (Z.max 0 b).
 Proof.
-  unfold tropical_max, tropical_one, tropical_zero.
+  intros a b.
+  unfold ExtZ_to_Z, Z_to_ExtZ, tropical_max.
   simpl.
-  (* Finite 0 <> NegInf *)
-  discriminate.
+  lia.
 Qed.
 
-(* Since it's false, we axiomatize it for demonstration *)
-Axiom tropical_one_absorb : tropical_max tropical_one tropical_zero = tropical_zero.
-
-(* tropical_mul_comm is TRUE and already proven *)
-Lemma tropical_mul_comm : forall (x y : ExtZ), tropical_plus x y = tropical_plus y x.
+Lemma tropical_plus_corresponds_to_Z_add : forall (a b : Z),
+  Z_to_ExtZ (a + b) = tropical_plus (Z_to_ExtZ a) (Z_to_ExtZ b).
 Proof.
-  apply tropical_plus_comm.
+  intros a b.
+  unfold Z_to_ExtZ, tropical_plus.
+  reflexivity.
 Qed.
 
-(* KadaneSemiring instance for tropical semiring (axiomatized) *)
-Instance Tropical_KadaneSemiring : KadaneSemiring ExtZ := {
-  kadane_horner_property := tropical_horner_property;
-  mul_one_add_absorb := tropical_one_absorb;
-  mul_comm := tropical_mul_comm
-}.
+(* The key theorem: clamping commutes with taking the maximum over a list *)
+Lemma clamp_commutes_with_max : forall (xs : list ExtZ),
+  clamp_to_zero (fold_right tropical_max tropical_zero xs) =
+  fold_right tropical_max tropical_one xs.
+Proof.
+  intro xs.
+  unfold clamp_to_zero.
+  induction xs as [| x xs' IH].
+  - simpl. reflexivity.
+  - simpl.
+    rewrite <- IH.
+    (* Goal: tropical_max tropical_one (tropical_max x (fold_right tropical_max tropical_zero xs')) =
+             tropical_max x (tropical_max tropical_one (fold_right tropical_max tropical_zero xs')) *)
+    destruct x, (fold_right tropical_max tropical_zero xs'); simpl; try reflexivity.
+    + f_equal. lia.
+    + f_equal. lia.
+Qed.
 
 (*
 =================================================================================
-TRADITIONAL KADANE'S ALGORITHM DERIVATION
+MAXIMUM SUBARRAY PROBLEM USING THE GENERALIZED FRAMEWORK
 =================================================================================
 *)
 
@@ -267,40 +305,69 @@ TRADITIONAL KADANE'S ALGORITHM DERIVATION
 Definition to_ext (xs : list Z) : list ExtZ :=
   map Finite xs.
 
-(* Extract the maximum subarray sum from the result *)
-Definition extract_result (x : ExtZ) : Z :=
-  match x with
-  | NegInf => 0  (* Empty subarray has sum 0 *)
-  | Finite z => Z.max 0 z  (* At least 0, for empty subarray *)
-  end.
+(* The specification using the generalized framework *)
+Definition max_subarray_spec_ext (xs : list Z) : ExtZ :=
+  gform5 (to_ext xs).
 
-(* The traditional maximum subarray problem *)
-Definition max_subarray_sum (xs : list Z) : Z :=
-  extract_result (gform8 (to_ext xs)).
-
-(* The specification: maximum sum over all contiguous subarrays *)
+(* Apply clamping to get the final result *)
 Definition max_subarray_spec (xs : list Z) : Z :=
-  extract_result (gform1 (to_ext xs)).
+  ExtZ_to_Z (clamp_to_zero (max_subarray_spec_ext xs)).
 
-(* Main correctness theorem: The efficient algorithm equals the specification *)
-Theorem Kadane_Correctness : forall (xs : list Z),
-  max_subarray_sum xs = max_subarray_spec xs.
+(* Correctness: gform1 through gform5 are all equivalent for the tropical semiring *)
+Theorem max_subarray_spec_via_gform1 : forall (xs : list Z),
+  max_subarray_spec_ext xs = gform1 (to_ext xs).
 Proof.
   intro xs.
-  unfold max_subarray_sum, max_subarray_spec.
-  f_equal.
-  (* Apply the generalized correctness theorem *)
-  rewrite Generalized_Kadane_Correctness.
+  unfold max_subarray_spec_ext.
+  symmetry.
+  rewrite <- tropical_gform1_eq_gform5.
   reflexivity.
+Qed.
+
+(* The key remaining step: prove that applying clamp_to_zero distributes over max
+   in the right way for non-empty lists. *)
+
+(* Helper lemma: max(clamp a, clamp b) = clamp(max(a,b)) *)
+Lemma tropical_max_clamp_distr : forall (a b : ExtZ),
+  tropical_max (clamp_to_zero a) (clamp_to_zero b) =
+  clamp_to_zero (tropical_max a b).
+Proof.
+  intros a b.
+  unfold clamp_to_zero.
+  destruct a as [|x], b as [|y]; unfold tropical_max, tropical_one, tropical_zero; simpl.
+  - (* NegInf, NegInf *) reflexivity.
+  - (* NegInf, Finite y *) f_equal. lia.
+  - (* Finite x, NegInf *) f_equal. lia.
+  - (* Finite x, Finite y *) f_equal. lia.
+Qed.
+
+Lemma map_clamp_then_max_nonempty : forall (x : ExtZ) (xs : list ExtZ),
+  fold_right tropical_max tropical_zero (map clamp_to_zero (x :: xs)) =
+  clamp_to_zero (fold_right tropical_max tropical_zero (x :: xs)).
+Proof.
+  intros x xs.
+  generalize dependent x.
+  induction xs as [| y xs' IH]; intro x.
+  - (* Base case: single element *)
+    simpl. unfold clamp_to_zero, tropical_max, tropical_zero.
+    destruct x; reflexivity.
+  - (* Inductive case *)
+    (* Don't use simpl - it expands too much. Manually unfold just what we need. *)
+    unfold map at 1; fold (map clamp_to_zero (y :: xs')).
+    unfold fold_right at 1; fold (fold_right tropical_max tropical_zero (map clamp_to_zero (y :: xs'))).
+    rewrite (IH y).
+    unfold fold_right at 2; fold (fold_right tropical_max tropical_zero (y :: xs')).
+    rewrite tropical_max_clamp_distr.
+    reflexivity.
 Qed.
 
 (*
 =================================================================================
-CONCRETE ALGORITHM EXTRACTED FROM gform8
+CONCRETE KADANE'S ALGORITHM
 =================================================================================
 *)
 
-(* The concrete efficient algorithm extracted from gform8 *)
+(* The concrete efficient algorithm (traditional Kadane's algorithm) *)
 Definition kadane_algorithm (xs : list Z) : Z :=
   let process_element (x : Z) (uv : Z * Z) :=
     let (max_so_far, max_ending_here) := uv in
@@ -309,43 +376,39 @@ Definition kadane_algorithm (xs : list Z) : Z :=
   in
   fst (fold_right process_element (0, 0) xs).
 
-(* Show that kadane_algorithm matches the extracted form *)
-Lemma kadane_matches_gform8 : forall (xs : list Z),
-  kadane_algorithm xs = extract_result (gform8 (to_ext xs)).
-Proof.
-  intro xs.
-  unfold kadane_algorithm, gform8, to_ext, extract_result, semiring_sum.
-  unfold compose.
-  simpl.
-  (* The challenge here is that:
-     1. kadane_algorithm works with Z and uses Z.max 0 (clamping)
-     2. gform8 works with ExtZ and uses tropical operations
-     3. We need to show they're equivalent when:
-        - tropical_max corresponds to Z.max
-        - tropical_plus corresponds to Z.add
-        - We extract with extract_result which applies Z.max 0
+(*
+=================================================================================
+CORRECTNESS VIA BIRDMEERTENS.V CONNECTION
+=================================================================================
+*)
 
-     This requires a detailed induction showing that the fold_right operations
-     produce equivalent results when the ExtZ operations are "interpreted" back to Z.
+(* The connection to BirdMeertens.v: ExtZ_to_Z ∘ clamp_to_zero corresponds to
+   the nonNeg operations in BirdMeertens.v.
 
-     The proof would proceed by:
-     1. Induction on xs
-     2. Show that at each step, the pair (max_so_far, max_ending_here) in Z
-        corresponds to the pair produced by tropical operations in ExtZ
-     3. Use the fact that extract_result properly "collapses" the ExtZ result
-        back to a non-negative Z
-  *)
-  admit.
-Admitted.
+   We've shown:
+   1. gform1 = ... = gform5 for the tropical semiring (proven above)
+   2. The clamping operation clamp_to_zero handles the "at least 0" constraint
+   3. The remaining steps (gform5 -> gform8) can be handled by showing equivalence
+      with the BirdMeertens forms, which use the same clamping pattern
 
-(* Combined correctness: The concrete algorithm solves the specification *)
-Theorem Kadane_Algorithm_Correct : forall (xs : list Z),
+   The final correctness theorem connects kadane_algorithm to the specification.
+*)
+
+(* For now, we leave the final connection as admitted, since it requires
+   detailed correspondence between ExtZ operations and the BirdMeertens nonNeg operations *)
+Theorem kadane_algorithm_correct : forall (xs : list Z),
   kadane_algorithm xs = max_subarray_spec xs.
 Proof.
   intro xs.
-  rewrite kadane_matches_gform8.
-  apply Kadane_Correctness.
-Qed.
+  (* This proof requires:
+     1. Showing that kadane_algorithm corresponds to a fold-based form (like gform8)
+     2. Connecting the ExtZ clamped operations to the BirdMeertens nonNeg operations
+     3. Using the existing BirdMeertens correctness proof
+
+     The key insight: ExtZ_to_Z ∘ clamp_to_zero ∘ tropical_plus = nonNegPlus
+     and ExtZ_to_Z ∘ clamp_to_zero ∘ fold tropical_plus = nonNegSum
+  *)
+Admitted.
 
 (*
 =================================================================================
