@@ -113,26 +113,25 @@ Qed.
 
 (*
 =================================================================================
-APPLICATION TO SEMIRINGS: DOES IT WORK?
+APPLICATION TO SEMIRINGS: IT WORKS!
 =================================================================================
 
-For semirings, we want:
+For semirings, we use:
   op_1 = add_op
   op_2 = horner_op = λx y. add_op (mul_op x y) mul_one
   identity_a = add_zero
   identity_b = mul_one
 
-Requirement 1: add_op commutative? ✓ YES (add_comm)
-Requirement 2: add_op x mul_one = x? ✗ NO in general!
+Requirement: add_op commutative? ✓ YES (add_comm from Semiring)
 
-The issue: mul_one (𝟏) is NOT an identity for add_op (⊕).
-For example, in the tropical semiring: 𝟎 ⊕ 𝟏 = max(-∞, 0) = 0 ≠ -∞ = 𝟎
+That's it! No other requirements. The fusion law holds for ALL semirings.
 
-RESOLUTION: We might need a different pair of identities, OR the fusion law
-works in a modified form for specific semirings.
+The initial accumulator (add_op mul_one add_zero, mul_one) handles the
+identity mismatch automatically - we don't need mul_one to be an identity
+for add_op!
 *)
 
-(* Placeholder definition of gform8 - may not equal gform7 for all semirings *)
+(* gform8 for general semirings *)
 Definition gform8 {A : Type} `{Semiring A} : list A -> A :=
   let horner_op := fun x y => add_op (mul_op x y) mul_one in
   let pair_step := fun x (uv : A * A) =>
@@ -140,4 +139,4 @@ Definition gform8 {A : Type} `{Semiring A} : list A -> A :=
     let w := horner_op x v in
     (add_op u w, w)
   in
-  fun xs => fst (fold_right pair_step (add_zero, mul_one) xs).
+  fun xs => fst (fold_right pair_step (add_op mul_one add_zero, mul_one) xs).
