@@ -761,6 +761,36 @@ Proof.
       lia.
 Qed.
 
+Lemma scan_right_nonNegPlus_all_nonpositive_is_zeros : forall xs : list Z,
+  all_nonpositive xs ->
+  forall y, In y (scan_right nonNegPlus 0 xs) -> y = 0.
+Proof.
+  intros xs H_all_nonpos y H_y_in.
+  induction xs as [|x xs' IH].
+  - (* xs = [] => scan_right = [0] *)
+    simpl in H_y_in. destruct H_y_in as [H_eq | []].
+    symmetry. exact H_eq.
+  - (* xs = x :: xs' *)
+    simpl in H_y_in.
+    destruct H_y_in as [H_eq | H_in_scan].
+    + (* y = nonNegPlus (fold_right nonNegPlus 0 xs') x *)
+      subst y.
+      (* From scan_right definition: nonNegPlus (fold_right nonNegPlus 0 xs') x *)
+      assert (H_fold_zero: fold_right nonNegPlus 0 xs' = 0).
+      { apply nonNegSum_all_nonpositive_is_zero.
+        intros z Hz. apply H_all_nonpos. simpl. right. exact Hz. }
+      assert (Hx_nonpos: x <= 0) by (apply H_all_nonpos; simpl; left; reflexivity).
+      (* Goal: fold_right nonNegPlus 0 xs' <#> x = 0 *)
+      rewrite H_fold_zero.
+      (* Goal: 0 <#> x = 0 *)
+      unfold nonNegPlus.
+      simpl. apply Z.max_l. lia.
+    + (* y ∈ scan_right nonNegPlus 0 xs' *)
+      apply IH.
+      * intros z Hz. apply H_all_nonpos. simpl. right. exact Hz.
+      * exact H_in_scan.
+Qed.
+
 Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
   In ys (inits xs) -> exists suffix, ys ++ suffix = xs.
 Proof.
@@ -990,10 +1020,35 @@ Lemma integer_form1_eq_form7_all_nonpositive : forall xs : list Z,
   integer_form1 xs = integer_form7 xs.
 Proof.
   intros xs H_all_nonpos.
-  (* When all elements ≤ 0:
-     - nonNegSum clamps everything to 0
-     - Both form1 and form7 return 0 (empty subarray) *)
-Admitted.
+  unfold integer_form1, integer_form7, nonNegMaximum, compose.
+
+  (* Key insight: When all elements ≤ 0:
+     - Every segment sums to ≤ 0
+     - nonNegSum clamps to 0 for every segment
+     - scan_right nonNegPlus 0 produces all zeros
+     - fold_right Z.max 0 over all zeros = 0
+  *)
+
+  (* Both sides equal 0 *)
+  assert (H_lhs: fold_right Z.max 0 (map nonNegSum (segs xs)) = 0).
+  { apply fold_right_max_all_zeros.
+    intros sum H_sum_in.
+    apply in_map_iff in H_sum_in.
+    destruct H_sum_in as [seg [H_eq H_seg_in]].
+    subst sum.
+    (* seg is a segment of xs, so all elements in seg are ≤ 0 *)
+    apply nonNegSum_all_nonpositive_is_zero.
+    intros y H_y_in.
+    eapply H_all_nonpos.
+    eapply segs_elements_subset; eassumption. }
+
+  assert (H_rhs: fold_right Z.max 0 (scan_right nonNegPlus 0 xs) = 0).
+  { apply fold_right_max_all_zeros.
+    intros sum H_sum_in.
+    apply (scan_right_nonNegPlus_all_nonpositive_is_zeros xs H_all_nonpos sum H_sum_in). }
+
+  rewrite H_lhs. rewrite H_rhs. reflexivity.
+Qed.
 
 (* Case 3: Mixed signs - USE TROPICAL CORRESPONDENCE *)
 Lemma integer_form1_eq_form7_mixed : forall xs : list Z,
