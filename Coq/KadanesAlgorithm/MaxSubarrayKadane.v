@@ -16,6 +16,10 @@ Require Import KadanesAlgorithm.KadanesAlgorithm.
 Require Import FreeMonoid.StructSemiring.
 Require Import CoqUtilLib.ListFunctions.
 
+(* Import only the list function definitions, NOT the BirdMeertens proofs *)
+(* We need: segs, inits, tails, tails_rec, scan_right *)
+From CoqUtilLib Require Import ListFunctions.
+
 (*
 =================================================================================
 TRADITIONAL KADANE'S ALGORITHM FOR MAXIMUM SUBARRAY PROBLEM
@@ -696,25 +700,11 @@ Definition integer_form8 : list Z -> Z :=
 
 (* ===== PROOFS OF INTEGER FORM EQUIVALENCES ===== *)
 
-Theorem integer_form1_eq_form2 : integer_form1 = integer_form2.
-Proof.
-  reflexivity.
-Qed.
-
-Theorem integer_form2_eq_form3 : integer_form2 = integer_form3.
-Admitted.
-
-Theorem integer_form3_eq_form4 : integer_form3 = integer_form4.
-Admitted.
-
-Theorem integer_form4_eq_form5 : integer_form4 = integer_form5.
-Admitted.
-
-Theorem integer_form5_eq_form6 : integer_form5 = integer_form6.
-Admitted.
-
-Theorem integer_form6_eq_form7 : integer_form6 = integer_form7.
-Admitted.
+(* ===== CRITICAL INSIGHT =====
+   We DON'T prove integer forms 2-6 directly!
+   Instead, we use the tropical semiring and connect integer operations to ExtZ operations.
+   Forms 1-7 work at the tropical semiring level, so we just need to show correspondence.
+*)
 
 (* Prove form7 = form8 for integers using fold-scan fusion *)
 Theorem integer_form7_eq_form8 : integer_form7 = integer_form8.
@@ -939,58 +929,59 @@ Admitted.
 
 (* ===== CASE-BASED PROOFS ===== *)
 
-(* Direct proof for ALL lists - no case analysis needed! *)
-Theorem Integer_Kadane_Direct : integer_form1 = integer_form8.
-Proof.
-  transitivity integer_form2. apply integer_form1_eq_form2.
-  transitivity integer_form3. apply integer_form2_eq_form3.
-  transitivity integer_form4. apply integer_form3_eq_form4.
-  transitivity integer_form5. apply integer_form4_eq_form5.
-  transitivity integer_form6. apply integer_form5_eq_form6.
-  transitivity integer_form7. apply integer_form6_eq_form7.
-  apply integer_form7_eq_form8.
-Qed.
+(* ===== MAIN CORRECTNESS THEOREM VIA TROPICAL CORRESPONDENCE =====
 
-(* Case 1: All non-negative - maximum subarray is the entire array *)
-Lemma integer_form1_eq_form8_all_nonnegative : forall xs : list Z,
-  all_nonnegative xs ->
-  integer_form1 xs = integer_form8 xs.
-Proof.
-  intros xs H_nonneg.
-  rewrite Integer_Kadane_Direct. reflexivity.
-Qed.
+   STRATEGY:
+   1. Show integer_form1 corresponds to tropical gform1 on Finite-lifted lists
+   2. Use tropical semiring gform1 = gform7 (already proven in KadanesAlgorithm.v)
+   3. Show integer_form7 corresponds to tropical gform7 on Finite-lifted lists
+   4. Prove integer_form7 = integer_form8 directly (fold-scan fusion)
+   5. Combine to get integer_form1 = integer_form8
+*)
 
-(* Case 2: All non-positive - both sides equal 0 due to clamping *)
-Lemma integer_form1_eq_form8_all_nonpositive : forall xs : list Z,
-  all_nonpositive xs ->
-  integer_form1 xs = integer_form8 xs.
-Proof.
-  intros xs H_nonpos.
-  rewrite Integer_Kadane_Direct. reflexivity.
-Qed.
+(* Helper: Convert integer operations to tropical operations *)
+Definition int_to_tropical_sum (xs : list Z) : ExtZ :=
+  fold_right tropical_max tropical_zero (map Finite xs).
 
-(* Case 3: Mixed signs - use tropical semiring correspondence *)
-Lemma integer_form1_eq_form8_mixed : forall xs : list Z,
-  mixed_signs xs ->
-  integer_form1 xs = integer_form8 xs.
-Proof.
-  intros xs H_mixed.
-  rewrite Integer_Kadane_Direct. reflexivity.
-Qed.
+Definition int_to_tropical_product (xs : list Z) : ExtZ :=
+  fold_right tropical_plus tropical_one (map Finite xs).
 
-(* Main theorem: Kadane's algorithm correctness for all integer lists *)
+(* Key correspondence lemma: nonNegSum equals clamped tropical semiring_product *)
+Lemma nonNegSum_eq_clamped_tropical : forall xs : list Z,
+  Finite (nonNegSum xs) = clamp_to_zero (semiring_product (map Finite xs)).
+Proof.
+  intro xs.
+  unfold nonNegSum, semiring_product, clamp_to_zero.
+  induction xs as [|x xs' IH].
+  - simpl. unfold tropical_max, tropical_one, tropical_zero. reflexivity.
+  - simpl map. simpl fold_right.
+    unfold nonNegPlus. simpl fold_right in IH.
+    (* Goal: Finite (Z.max 0 (x + nonNegSum xs')) =
+             tropical_max tropical_one (tropical_plus (Finite x) (fold_right mul_op mul_one (map Finite xs'))) *)
+    unfold mul_op, mul_one. simpl.
+    (* This requires showing the correspondence between clamped addition and tropical operations *)
+Admitted.
+
+(* Main theorem via tropical correspondence *)
 Theorem Integer_Kadane_Correctness : forall xs : list Z,
   integer_form1 xs = integer_form8 xs.
 Proof.
   intro xs.
-  destruct (case_trichotomy xs) as [H_nonneg | [H_nonpos | H_mixed]].
-  - (* All non-negative *)
-    apply integer_form1_eq_form8_all_nonnegative. exact H_nonneg.
-  - (* All non-positive *)
-    apply integer_form1_eq_form8_all_nonpositive. exact H_nonpos.
-  - (* Mixed signs *)
-    apply integer_form1_eq_form8_mixed. exact H_mixed.
-Qed. (* Complete proof modulo correspondence lemmas *)
+  (* The proof works by:
+     1. Showing integer_form1 = extract from (tropical gform1)
+     2. Using tropical gform1 = tropical gform7 (from KadanesAlgorithm.v)
+     3. Showing integer_form7 = extract from (tropical gform7)
+     4. Using integer_form7 = integer_form8 (proven above)
+  *)
+
+  (* For now, we use the direct fold-scan fusion proof which works for all lists *)
+  transitivity (integer_form7 xs).
+  2: { unfold integer_form7, integer_form8. apply (equal_f integer_form7_eq_form8). }
+
+  (* The integer_form1 = integer_form7 step should follow from tropical correspondence *)
+  (* This requires showing that nonNegMaximum ∘ map nonNegSum ∘ segs corresponds to
+     the tropical gform1 evaluated and clamped *)
+Admitted.
 
 (*
 =================================================================================
@@ -999,36 +990,28 @@ PROOF STATUS AND NEXT STEPS
 
 COMPLETE PROOFS (Qed):
 - integer_form7_eq_form8: Proven using fold-scan fusion
-- fold_scan_fusion_pair: Key lemma extracted from BirdMeertens, proven independently
+- fold_scan_fusion_pair: Key lemma proven independently (not from BirdMeertens)
 - All helper lemmas for fold_right max and nonNegSum
-- Tropical semiring Kadane (gform1-gform7): Complete via semiring framework
-- integer_form1_eq_form8_mixed: Complete (modulo mixed correspondence lemmas)
-- Integer_Kadane_Correctness: Main theorem complete (modulo case lemmas)
+- Tropical semiring Kadane (gform1-gform7): Complete via semiring framework in KadanesAlgorithm.v
 
 ADMITTED (Remaining work):
-THREE PROOF STRATEGIES (one for each case):
+1. nonNegSum_eq_clamped_tropical: Show correspondence between clamped integer ops and tropical semiring
+2. Integer_Kadane_Correctness: Complete the proof using tropical correspondence
 
-1. ALL NON-NEGATIVE CASE:
-   - integer_form1_eq_form8_all_nonnegative: Direct proof (no tropical correspondence needed)
-   - Strategy: Show LHS = sum of entire array, show RHS = sum of entire array
-   - Key: When all elements >= 0, maximum subarray is the whole array
+KEY ARCHITECTURE:
+- NO dependencies on BirdMeertens proofs
+- Forms 1-7: Use tropical semiring gform1-gform7 from KadanesAlgorithm.v
+- Form 7→8: Proven directly using fold-scan fusion (integer_form7_eq_form8)
+- Correspondence: Bridge between integer nonNeg operations and tropical ExtZ operations
 
-2. ALL NON-POSITIVE CASE:
-   - integer_form1_eq_form8_all_nonpositive: Direct proof (no tropical correspondence needed)
-   - Strategy: Show both LHS and RHS equal 0 (or maximum single element)
-   - Key: When all elements <= 0, nonNegSum clamps everything to 0
+STRATEGY:
+Instead of proving intermediate integer forms 2-6 directly, we:
+1. Define integer_form1 (specification) and integer_form8 (algorithm)
+2. Show integer_form1/7 correspond to tropical gform1/7 via nonNegSum correspondence
+3. Use tropical gform1 = gform7 (already proven for ALL semirings)
+4. Use integer_form7 = integer_form8 (proven via fold-scan fusion)
 
-3. MIXED SIGNS CASE (THE INTERESTING ONE):
-   - integer_tropical_form1_correspondence_mixed: Use mixed_signs hypothesis
-   - integer_tropical_form7_correspondence_mixed: Use mixed_signs hypothesis
-   - Strategy: ONLY here do we need tropical semiring correspondence
-   - Key: mixed_signs ensures max >= 0, so clamping doesn't interfere with tropical ops
-
-CRITICAL INSIGHT:
-The case analysis is ESSENTIAL - not just for organization, but for correctness:
-- Simple cases (all nonneg/all nonpos) have direct proofs using sign information
-- Mixed case is the ONLY one requiring tropical semiring machinery
-- The mixed_signs hypothesis is CRUCIAL for the correspondence lemmas to work
+This achieves the goal: Use semiring framework for 7/8 steps, only prove 1 integer-specific step.
 
 *)
 
