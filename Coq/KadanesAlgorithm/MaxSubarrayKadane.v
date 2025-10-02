@@ -856,6 +856,87 @@ Proof.
   - apply xs_in_inits.
 Qed.
 
+(* Helper: elements of tails are sublists of the original *)
+Lemma tails_are_suffixes : forall {A : Type} (xs tail : list A),
+  In tail (tails xs) ->
+  forall y, In y tail -> In y xs.
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - (* xs = [] *)
+    intros tail H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_false].
+    + rewrite <- H_eq. intros y H_false. contradiction.
+    + contradiction.
+  - (* xs = x :: xs' *)
+    intros tail H_in y H_y_in.
+    (* Use tails_cons: tails (x :: xs') = (x :: xs') :: tails xs' *)
+    rewrite tails_cons in H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_in_tails_xs'].
+    + (* tail = x :: xs' *)
+      rewrite <- H_eq in H_y_in.
+      exact H_y_in.
+    + (* tail ∈ tails xs' *)
+      (* By induction, y ∈ xs', so y ∈ x :: xs' *)
+      right.
+      apply (IH tail H_in_tails_xs' y H_y_in).
+Qed.
+
+(* Helper: inits give prefixes *)
+Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
+  In ys (inits xs) -> exists suffix, ys ++ suffix = xs.
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - intros ys H_in. simpl in H_in.
+    destruct H_in as [H_eq | H_false].
+    + rewrite <- H_eq. exists []. reflexivity.
+    + contradiction.
+  - intros ys H_in.
+    rewrite inits_cons in H_in.
+    destruct H_in as [H_eq | H_in'].
+    + (* ys = [] *)
+      rewrite <- H_eq. exists (x :: xs'). reflexivity.
+    + (* ys is in map (cons x) (inits xs') *)
+      rewrite in_map_iff in H_in'.
+      destruct H_in' as [prefix [H_eq H_prefix_in]].
+      destruct (IH prefix H_prefix_in) as [suffix H_suffix].
+      rewrite <- H_eq.
+      exists suffix.
+      simpl. f_equal. exact H_suffix.
+Qed.
+
+(* Helper: segments contain only elements from the original list *)
+Lemma seg_elements_in_original : forall {A : Type} (xs seg : list A),
+  In seg (segs xs) ->
+  forall y, In y seg -> In y xs.
+Proof.
+  intros A xs seg H_seg_in y H_y_in.
+  (* seg ∈ segs xs means seg is a contiguous sublist *)
+  (* segs xs = concat (map inits (tails xs)) *)
+  unfold segs, compose in H_seg_in.
+  apply in_concat in H_seg_in.
+  destruct H_seg_in as [inits_list [H_inits_in H_seg_in_inits]].
+  apply in_map_iff in H_inits_in.
+  destruct H_inits_in as [tail [H_inits_eq H_tail_in]].
+  subst inits_list.
+
+  (* seg is an init of tail *)
+  apply inits_are_prefixes in H_seg_in_inits.
+  destruct H_seg_in_inits as [suffix H_eq].
+
+  (* y ∈ seg, and seg ++ suffix = tail *)
+  (* So y ∈ tail *)
+  assert (H_y_in_tail: In y tail).
+  { rewrite <- H_eq. apply in_or_app. left. exact H_y_in. }
+
+  (* tail ∈ tails xs, so y ∈ xs *)
+  apply (tails_are_suffixes xs tail H_tail_in y H_y_in_tail).
+Qed.
+
+(* When all elements >= 0, nonNegSum equals regular sum *)
 Lemma nonNegSum_eq_sum_when_all_nonneg : forall xs : list Z,
   all_nonnegative xs ->
   nonNegSum xs = fold_right Z.add 0 xs.
@@ -901,29 +982,6 @@ Proof.
       apply IH.
       * intros z Hz. apply H_all_nonpos. simpl. right. exact Hz.
       * exact H_in_scan.
-Qed.
-
-Lemma inits_are_prefixes : forall (A : Type) (xs ys : list A),
-  In ys (inits xs) -> exists suffix, ys ++ suffix = xs.
-Proof.
-  intros A xs.
-  induction xs as [|x xs' IH].
-  - intros ys H_in. simpl in H_in.
-    destruct H_in as [H_eq | H_false].
-    + rewrite <- H_eq. exists []. reflexivity.
-    + contradiction.
-  - intros ys H_in.
-    rewrite inits_cons in H_in.
-    destruct H_in as [H_eq | H_in'].
-    + (* ys = [] *)
-      rewrite <- H_eq. exists (x :: xs'). reflexivity.
-    + (* ys is in map (cons x) (inits xs') *)
-      rewrite in_map_iff in H_in'.
-      destruct H_in' as [prefix [H_eq H_prefix_in]].
-      destruct (IH prefix H_prefix_in) as [suffix H_suffix].
-      rewrite <- H_eq.
-      exists suffix.
-      simpl. f_equal. exact H_suffix.
 Qed.
 
 Lemma inits_contains_original : forall {A : Type} (xs : list A),
@@ -1158,19 +1216,30 @@ Proof.
        because seg is a contiguous sublist, and removing nonnegative elements
        decreases the sum. *)
 
-    (* For a rigorous proof, we'd need to:
-       1. Show seg is a contiguous sublist of xs (from segs definition)
-       2. Show that nonNegSum is monotonic when removing nonneg elements
+    (* Simpler approach: When all elements >= 0, both sums equal regular sums,
+       and we can bound the segment sum. *)
 
-       For now, this is a standard property that holds when all elements are >= 0.
-       The detailed proof would involve:
-       - seg ∈ segs xs means seg ∈ inits(tail) for some tail ∈ tails xs
-       - So seg is a prefix of a suffix of xs (contiguous sublist)
-       - When all elements >= 0, nonNegSum equals regular sum (no clamping)
-       - Regular sum is strictly monotonic on sublists when all elements > 0
+    (* First, all elements of seg are also nonnegative (they come from xs) *)
+    assert (H_seg_nonneg: all_nonnegative seg).
+    { intros z H_z_in.
+      (* z ∈ seg, and seg ∈ segs xs, so z ∈ xs *)
+      apply H_all_nonneg.
+      apply (seg_elements_in_original xs seg H_seg_in z).
+      exact H_z_in. }
+
+    (* Convert both to regular sums *)
+    rewrite (nonNegSum_eq_sum_when_all_nonneg seg H_seg_nonneg).
+    rewrite (nonNegSum_eq_sum_when_all_nonneg xs H_all_nonneg).
+
+    (* Now need: fold_right Z.add 0 seg <= fold_right Z.add 0 xs *)
+    (* This is true because seg is a contiguous sublist and all elements >= 0 *)
+
+    (* For the detailed proof, we'd show:
+       - seg is a prefix of some tail of xs (from segs definition)
+       - Removing positive/zero elements from a sum doesn't increase it
     *)
 
-    (* TODO: Complete this proof - requires lemmas about segments and monotonicity *)
+    (* TODO: Prove sum monotonicity on sublists *)
     admit. }
 
   assert (H_lhs: fold_right Z.max 0 (map nonNegSum (segs xs)) = nonNegSum xs).
