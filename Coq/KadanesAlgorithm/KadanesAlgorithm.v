@@ -30,12 +30,7 @@ Forms gform1 through gform7 work for ANY semiring (ℤ, tropical, etc.)!
 - gform5 → gform6: Uses Horner's rule (proven for all semirings)
 - gform6 → gform7: Uses scan-fold relationship
 
-The gform7 → gform8 step (scan-fold fusion) requires additional properties
-that do NOT hold for general semirings. This must be proven separately for
-specific instances using domain-specific arguments.
-
 See companion files:
-- IntegerKadane.v: Demonstrates gform1-gform6 work for integers (ℤ, +, ×)
 - MaxSubarrayKadane.v: Tropical semiring case with clamping arguments for gform7→gform8
 - AlternativeGform8.v: Analysis of why (add_zero, mul_one) is uniquely determined
 *)
