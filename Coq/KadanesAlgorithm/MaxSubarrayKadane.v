@@ -761,6 +761,45 @@ Proof.
       lia.
 Qed.
 
+Lemma nonNegPlus_eq_plus_when_nonneg : forall x y : Z,
+  x >= 0 -> y >= 0 -> nonNegPlus x y = x + y.
+Proof.
+  intros x y Hx Hy.
+  unfold nonNegPlus.
+  apply Z.max_r.
+  lia.
+Qed.
+
+Lemma sum_all_nonneg_is_nonneg : forall xs : list Z,
+  all_nonnegative xs -> fold_right Z.add 0 xs >= 0.
+Proof.
+  intros xs H_all_nonneg.
+  induction xs as [|x xs' IH].
+  - simpl. lia.
+  - simpl.
+    assert (Hx: x >= 0) by (apply H_all_nonneg; left; reflexivity).
+    assert (H_IH: fold_right Z.add 0 xs' >= 0).
+    { apply IH. intros y Hy. apply H_all_nonneg. right. exact Hy. }
+    lia.
+Qed.
+
+Lemma nonNegSum_eq_sum_when_all_nonneg : forall xs : list Z,
+  all_nonnegative xs ->
+  nonNegSum xs = fold_right Z.add 0 xs.
+Proof.
+  intros xs H_all_nonneg.
+  induction xs as [|x xs' IH].
+  - reflexivity.
+  - simpl.
+    assert (H_xs'_nonneg: all_nonnegative xs').
+    { intros y Hy. apply H_all_nonneg. right. exact Hy. }
+    rewrite IH; [| exact H_xs'_nonneg].
+    assert (Hx_nonneg: x >= 0) by (apply H_all_nonneg; left; reflexivity).
+    assert (H_sum_nonneg: fold_right Z.add 0 xs' >= 0) by (apply sum_all_nonneg_is_nonneg; exact H_xs'_nonneg).
+    unfold nonNegPlus.
+    apply Z.max_r. lia.
+Qed.
+
 Lemma scan_right_nonNegPlus_all_nonpositive_is_zeros : forall xs : list Z,
   all_nonpositive xs ->
   forall y, In y (scan_right nonNegPlus 0 xs) -> y = 0.
@@ -1008,10 +1047,38 @@ Lemma integer_form1_eq_form7_all_nonnegative : forall xs : list Z,
   integer_form1 xs = integer_form7 xs.
 Proof.
   intros xs H_all_nonneg.
+  unfold integer_form1, integer_form7, nonNegMaximum, compose.
+
   (* When all elements ≥ 0:
-     - nonNegPlus behaves like regular addition
-     - Maximum subarray is the entire array
-     - Correspondence to tropical is clean *)
+     - nonNegPlus x y = x + y (no clamping since sums are always ≥ 0)
+     - Maximum subarray is the entire array (sum of all elements)
+
+     We can use the tropical semiring correspondence! Since all elements ≥ 0:
+     - All partial sums are ≥ 0
+     - nonNegPlus behaves exactly like regular addition
+     - The tropical gform1 = gform7 equivalence applies directly
+
+     However, for a direct proof without relying on tropical correspondence,
+     we can show both sides compute the same thing by showing the maximum
+     segment is always the entire list when all elements are nonnegative.
+  *)
+
+  (* Strategy: Show both LHS and RHS equal fold_right Z.add 0 xs (sum of entire list)
+
+     For LHS (form1):
+     - Maximum segment of all-nonnegative list is the entire list
+     - nonNegSum xs = sum xs (by nonNegSum_eq_sum_when_all_nonneg)
+
+     For RHS (form7):
+     - scan_right nonNegPlus 0 with all nonneg behaves like scan_right Z.add 0
+     - Maximum value is at the first position (sum of entire list)
+  *)
+
+  (* For now, admit this case. The proof requires showing:
+     1. segs xs contains xs
+     2. xs has the maximum nonNegSum among all segments
+     3. scan_right produces xs's sum as its first (maximum) element
+  *)
 Admitted.
 
 (* Case 2: All non-positive - both sides return 0 *)
