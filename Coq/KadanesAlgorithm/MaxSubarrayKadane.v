@@ -7,6 +7,9 @@ Require Import Coq.ZArith.Int.
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.Init.Datatypes.
 Require Import Coq.ZArith.ZArith.
+Require Import Coq.Logic.Classical_Prop.
+Require Import Coq.Logic.Classical_Pred_Type.
+Require Import Coq.Logic.Decidable.
 Require Import Lia.
 
 Open Scope Z_scope.
@@ -510,8 +513,40 @@ Definition all_nonnegative (xs : list Z) : Prop :=
 Definition all_nonpositive (xs : list Z) : Prop :=
   forall x, In x xs -> x <= 0.
 
+(* Some positive: list contains at least one positive element *)
+Definition some_positive (xs : list Z) : Prop :=
+  exists x, In x xs /\ x > 0.
+
+(* Original mixed_signs definition (for reference) *)
 Definition mixed_signs (xs : list Z) : Prop :=
   ~(all_nonnegative xs) /\ ~(all_nonpositive xs).
+
+(* Dichotomy: every list is either all_nonpositive OR has some_positive *)
+Lemma case_dichotomy : forall xs : list Z,
+  all_nonpositive xs \/ some_positive xs.
+Proof.
+  intro xs.
+  destruct (Classical_Prop.classic (all_nonpositive xs)) as [H_nonpos | H_not_nonpos].
+  - left. exact H_nonpos.
+  - right.
+    unfold all_nonpositive, some_positive in *.
+    (* ~(forall x, In x xs -> x <= 0) means exists x, In x xs /\ x > 0 *)
+    apply Classical_Pred_Type.not_all_ex_not in H_not_nonpos.
+    destruct H_not_nonpos as [x H_x].
+    exists x.
+    (* H_x: ~ (In x xs -> x <= 0) *)
+    (* This is equivalent to: In x xs /\ x > 0 *)
+    assert (H_in: In x xs).
+    { destruct (classic (In x xs)) as [H | H].
+      - exact H.
+      - exfalso. apply H_x. intro. contradiction. }
+    split.
+    + exact H_in.
+    + (* x > 0 from ~(In x xs -> x <= 0) and In x xs *)
+      assert (H_not_le: ~ (x <= 0)).
+      { intro H_le. apply H_x. intro. exact H_le. }
+      lia.
+Qed.
 
 (* We need to show that the tropical horner_op matches the pattern of nonNegPlus *)
 Lemma tropical_horner_matches_nonNegPlus : forall x y : Z,
@@ -936,6 +971,57 @@ Proof.
   apply (tails_are_suffixes xs tail H_tail_in y H_y_in_tail).
 Qed.
 
+(* Helper: prepending nonnegative element increases nonNegSum *)
+Lemma nonNegSum_prepend_le : forall (x : Z) (xs : list Z),
+  x >= 0 ->
+  nonNegSum xs <= nonNegSum (x :: xs).
+Proof.
+  intros x xs Hx.
+  unfold nonNegSum at 2.
+  simpl fold_right.
+  unfold nonNegPlus.
+  (* Goal: nonNegSum xs <= Z.max 0 (x + nonNegSum xs) *)
+  assert (H: nonNegSum xs <= x + nonNegSum xs).
+  { pose proof (nonNegSum_nonneg xs) as H_nonneg.
+    lia. }
+  apply Z.le_trans with (m := x + nonNegSum xs).
+  - exact H.
+  - apply Z.le_max_r.
+Qed.
+
+(* Helper: all elements of scan_right are bounded by first element when all elements >= 0 *)
+Lemma scan_right_bounded_by_first : forall xs : list Z,
+  all_nonnegative xs ->
+  forall y, In y (scan_right nonNegPlus 0 xs) -> y <= nonNegSum xs.
+Proof.
+  intros xs H_all_nonneg.
+  induction xs as [|x xs' IH].
+  - (* xs = [] *)
+    intros y H_in.
+    simpl in H_in.
+    destruct H_in as [H_eq | H_false].
+    + rewrite <- H_eq. simpl. lia.
+    + contradiction.
+  - (* xs = x :: xs' *)
+    intros y H_in.
+    simpl scan_right in H_in.
+    destruct H_in as [H_eq | H_in_xs'].
+    + (* y = nonNegPlus x (nonNegSum xs') = nonNegSum (x :: xs') *)
+      rewrite <- H_eq.
+      unfold nonNegSum at 1. simpl. lia.
+    + (* y ∈ scan_right nonNegPlus 0 xs' *)
+      (* By IH: y <= nonNegSum xs' *)
+      (* And nonNegSum xs' <= nonNegSum (x :: xs') since x >= 0 *)
+      assert (H_y_le_xs': y <= nonNegSum xs').
+      { apply IH.
+        - intros z Hz. apply H_all_nonneg. right. exact Hz.
+        - exact H_in_xs'. }
+      assert (Hx: x >= 0) by (apply H_all_nonneg; left; reflexivity).
+      apply Z.le_trans with (m := nonNegSum xs').
+      * exact H_y_le_xs'.
+      * apply nonNegSum_prepend_le. exact Hx.
+Qed.
+
 (* When all elements >= 0, nonNegSum equals regular sum *)
 Lemma nonNegSum_eq_sum_when_all_nonneg : forall xs : list Z,
   all_nonnegative xs ->
@@ -1172,127 +1258,26 @@ Admitted.
 
 (* ===== CASE-BASED PROOF USING TROPICAL CORRESPONDENCE ===== *)
 
-(* Case 1: All non-negative - straightforward, no clamping needed *)
-Lemma integer_form1_eq_form7_all_nonnegative : forall xs : list Z,
-  all_nonnegative xs ->
+(* Case 1: Some positive - use tropical semiring correspondence *)
+(* This handles BOTH all-nonnegative AND mixed-sign cases *)
+Lemma integer_form1_eq_form7_some_positive : forall xs : list Z,
+  some_positive xs ->
   integer_form1 xs = integer_form7 xs.
 Proof.
-  intros xs H_all_nonneg.
+  intros xs H_some_pos.
   unfold integer_form1, integer_form7, nonNegMaximum, compose.
 
-  (* When all elements ≥ 0:
-     - nonNegPlus x y = x + y (no clamping since sums are always ≥ 0)
-     - Maximum subarray is the entire array (sum of all elements)
+  (* When xs has at least one positive element, the maximum subarray sum is > 0.
+     This is the key case where tropical semiring correspondence applies.
 
-     We can use the tropical semiring correspondence! Since all elements ≥ 0:
-     - All partial sums are ≥ 0
-     - nonNegPlus behaves exactly like regular addition
-     - The tropical gform1 = gform7 equivalence applies directly
-
-     However, for a direct proof without relying on tropical correspondence,
-     we can show both sides compute the same thing by showing the maximum
-     segment is always the entire list when all elements are nonnegative.
+     Strategy:
+     1. The presence of a positive element guarantees max subarray sum ≥ that element > 0
+     2. For segments/scans with sum ≥ 0, nonNegPlus behaves like regular plus
+     3. Use tropical gform1 = gform7 from KadanesAlgorithm.v
+     4. The correspondence holds because the maximum is positive
   *)
 
-  (* Strategy: Show both sides = nonNegSum xs (sum of entire list) *)
-
-  (* For LHS (form1): Show maximum over all segments equals xs's sum *)
-  (* Following the proof pattern from TropicalMaxSegSum.v *)
-
-  assert (H_xs_in_segs: In xs (segs xs)).
-  { apply xs_in_segs. }
-
-  assert (H_in_mapped: In (nonNegSum xs) (map nonNegSum (segs xs))).
-  { apply in_map. exact H_xs_in_segs. }
-
-  (* Show nonNegSum xs is the maximum among all segments *)
-  assert (H_is_max_seg: forall y, In y (map nonNegSum (segs xs)) -> y <= nonNegSum xs).
-  { intros y H_y_in.
-    rewrite in_map_iff in H_y_in.
-    destruct H_y_in as [seg [H_y_eq H_seg_in]].
-    rewrite <- H_y_eq.
-
-    (* Key insight: When all elements >= 0, nonNegSum seg <= nonNegSum xs
-       because seg is a contiguous sublist, and removing nonnegative elements
-       decreases the sum. *)
-
-    (* Simpler approach: When all elements >= 0, both sums equal regular sums,
-       and we can bound the segment sum. *)
-
-    (* First, all elements of seg are also nonnegative (they come from xs) *)
-    assert (H_seg_nonneg: all_nonnegative seg).
-    { intros z H_z_in.
-      (* z ∈ seg, and seg ∈ segs xs, so z ∈ xs *)
-      apply H_all_nonneg.
-      apply (seg_elements_in_original xs seg H_seg_in z).
-      exact H_z_in. }
-
-    (* Convert both to regular sums *)
-    rewrite (nonNegSum_eq_sum_when_all_nonneg seg H_seg_nonneg).
-    rewrite (nonNegSum_eq_sum_when_all_nonneg xs H_all_nonneg).
-
-    (* Now need: fold_right Z.add 0 seg <= fold_right Z.add 0 xs *)
-    (* This is true because seg is a contiguous sublist and all elements >= 0 *)
-
-    (* For the detailed proof, we'd show:
-       - seg is a prefix of some tail of xs (from segs definition)
-       - Removing positive/zero elements from a sum doesn't increase it
-    *)
-
-    (* TODO: Prove sum monotonicity on sublists *)
-    admit. }
-
-  assert (H_lhs: fold_right Z.max 0 (map nonNegSum (segs xs)) = nonNegSum xs).
-  { apply fold_right_max_returns_max with (m := nonNegSum xs).
-    - apply Z.ge_le_iff. apply nonNegSum_nonneg.
-    - exact H_is_max_seg.
-    - exact H_in_mapped. }
-
-  (* For RHS (form7): The scan has nonNegSum xs as maximum *)
-  (* When all elements ≥ 0, scan_right nonNegPlus 0 xs produces sums of suffixes *)
-  (* The maximum is achieved by the full list (first element of scan) *)
-  assert (H_rhs: fold_right Z.max 0 (scan_right nonNegPlus 0 xs) = nonNegSum xs).
-  { (* scan_right f z xs computes: [fold_right f z xs, fold_right f z (tail xs), ...] *)
-    (* So the first element is exactly nonNegSum xs *)
-    (* We need to show nonNegSum xs is the maximum in the scan *)
-
-    (* First, establish that nonNegSum xs is in the scan result *)
-    assert (H_scan_structure: exists ys, scan_right nonNegPlus 0 xs = nonNegSum xs :: ys).
-    { destruct xs as [|x xs'].
-      - simpl. exists []. reflexivity.
-      - (* For x :: xs', scan_right f z (x :: xs') = f x (fold_right f z xs') :: scan_right f z xs' *)
-        (* And fold_right f z (x :: xs') = f x (fold_right f z xs') *)
-        unfold nonNegSum at 1.
-        exists (scan_right nonNegPlus 0 xs').
-        simpl scan_right. reflexivity. }
-
-    destruct H_scan_structure as [ys H_scan_eq].
-    rewrite H_scan_eq.
-    simpl fold_right.
-
-    (* Now show Z.max (nonNegSum xs) (fold_right Z.max 0 ys) = nonNegSum xs *)
-    apply Z.max_l.
-
-    (* Need to show: fold_right Z.max 0 ys <= nonNegSum xs *)
-    (* ys contains sums of proper suffixes, which are all <= nonNegSum xs when all elements >= 0 *)
-
-    (* Key insight: ys = scan_right nonNegPlus 0 xs' (proper suffixes of xs)
-       Each element is a sum of a suffix, and when all elements >= 0,
-       adding more elements (moving from a suffix to the full list) increases the sum.
-       Therefore, all suffix sums <= full list sum. *)
-
-    (* For a complete proof:
-       1. Show ys = scan_right nonNegPlus 0 (tail xs)
-       2. Show each element of scan_right computes sum of a suffix
-       3. When all elements >= 0, suffix sums <= full list sum
-
-       This follows from the monotonicity of nonNegSum when prepending nonnegative elements.
-    *)
-
-    (* TODO: Complete this proof - requires lemmas about scan_right and suffix sums *)
-    admit. }
-
-  rewrite H_lhs. rewrite H_rhs. reflexivity.
+  admit.
 Admitted.
 
 (* Case 2: All non-positive - both sides return 0 *)
@@ -1377,15 +1362,16 @@ Proof.
   *)
 Admitted.
 
-(* Main lemma: form1 = form7 via case analysis *)
+(* Main lemma: form1 = form7 via TWO-WAY case analysis *)
 Lemma integer_form1_eq_form7 : forall xs : list Z,
   integer_form1 xs = integer_form7 xs.
 Proof.
   intro xs.
-  destruct (case_trichotomy xs) as [H_nonneg | [H_nonpos | H_mixed]].
-  - apply integer_form1_eq_form7_all_nonnegative. exact H_nonneg.
-  - apply integer_form1_eq_form7_all_nonpositive. exact H_nonpos.
-  - apply integer_form1_eq_form7_mixed. exact H_mixed.
+  destruct (case_dichotomy xs) as [H_nonpos | H_some_pos].
+  - (* All nonpositive case *)
+    apply integer_form1_eq_form7_all_nonpositive. exact H_nonpos.
+  - (* Some positive case (handles both all-nonnegative and mixed) *)
+    apply integer_form1_eq_form7_some_positive. exact H_some_pos.
 Qed.
 
 (* Main theorem: Kadane correctness via tropical correspondence + case analysis *)
