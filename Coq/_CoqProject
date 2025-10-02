@@ -38,6 +38,5 @@ BirdMeertens/BirdMeertens.v
 BirdMeertens/TailsMonoid.v
 BirdMeertens/Extra.v
 KadanesAlgorithm/KadanesAlgorithm.v
-KadanesAlgorithm/Gform8Exploration.v
 KadanesAlgorithm/AlternativeGform8.v
 KadanesAlgorithm/MaxSubarrayKadane.v
