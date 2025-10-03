@@ -101,17 +101,6 @@ The project proves equivalence through transformational forms:
 
 The project structure allows for cross-language validation of the formal Coq proofs against executable Haskell implementations.
 
-### Historical Note: Tropical Semiring Proof Strategy
-
-**NOTE**: This section describes the historical approach used in the original `BirdMeertens/` proofs. The completed `KadanesAlgorithm/` framework supersedes this by proving the result directly for all semirings.
-
-The original approach dealt with non-semiring clamped operations by:
-1. Recognizing that `nonNegPlus` with zero-clamping doesn't form a proper semiring
-2. Using case-based reasoning (all non-negative, all non-positive, mixed cases)
-3. Bridging to the tropical semiring framework for the mixed case
-
-This is no longer necessary in the generalized framework, which works directly with proper semiring operations.
-
 ### Proof Development Strategy
 **CRITICAL**: When working on complex proofs, use computational verification at each step:
 1. **Write fresh Python scripts** to test each intermediate goal before attempting Coq proof
@@ -186,13 +175,15 @@ The generalized formulation proves equivalence of all 8 forms using only semirin
 2. **gform7 → gform8**: Uses fold-scan fusion law proven with zero assumptions - purely structural
 3. **Main Theorem**: `Generalized_Kadane_Correctness: gform1 = gform8` - proven in `KadanesAlgorithm.v:356`
 
-### Current and Future Work
-The core derivation is complete. Remaining work includes:
-1. Creating specific semiring instances in separate files:
-   - `MaxSubarrayKadane.v` for tropical (max-plus) semiring
-   - Potential future instances: Boolean semiring, other semirings
-2. Connecting instances to `BirdMeertens.v` integer-specific proofs for validation
-3. Exploring dual (fold_left) versions of the algorithm
+### Current Status
+The core derivation is complete. Existing semiring instances:
+1. `KadanesAlgorithm.v` - The main generalized proof for ANY semiring
+2. `TropicalKadane.v` - Tropical (max-plus) semiring instance
+3. `NaturalKadane.v` - Natural numbers semiring instance
+
+Future work could include:
+- Additional semiring instances (Boolean, other domains)
+- Dual (fold_left) versions of the algorithm
 
 ### Benefits of This Approach
 - **Complete Generality**: Works for ANY semiring, not just integers or tropical
