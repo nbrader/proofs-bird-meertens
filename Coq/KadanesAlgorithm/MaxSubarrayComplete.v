@@ -729,22 +729,68 @@ Proof.
   - destruct xs; [contradiction | reflexivity].
 Qed.
 
+(* Helper: fold tropical_mul on Finite = Finite of fold Z.add *)
+Lemma fold_tropical_mul_finite : forall (xs : list Z),
+  fold_right TropicalKadane.tropical_mul (Finite 0) (map Finite xs) = Finite (list_sum xs).
+Proof.
+  intros xs.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl map. simpl fold_right.
+    rewrite IH.
+    unfold TropicalKadane.tropical_mul.
+    simpl list_sum.
+    reflexivity.
+Qed.
+
+(* Helper: fold tropical_add on Finite list starting with init = Finite of fold Z.max *)
+Lemma fold_tropical_add_finite_general : forall (xs : list Z) (init : Z),
+  fold_right TropicalKadane.tropical_add (Finite init) (map Finite xs) =
+  Finite (fold_right Z.max init xs).
+Proof.
+  intros xs init.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - simpl map. simpl fold_right.
+    rewrite IH.
+    unfold TropicalKadane.tropical_add.
+    reflexivity.
+Qed.
+
+(* Specialized version for non-empty lists *)
+Lemma fold_tropical_add_finite : forall (x : Z) (xs : list Z) (init : Z),
+  fold_right TropicalKadane.tropical_add (Finite init) (map Finite (x :: xs)) =
+  Finite (fold_right Z.max init (x :: xs)).
+Proof.
+  intros. apply fold_tropical_add_finite_general.
+Qed.
+
+(* Helper: map Finite commutes with segs *)
+Lemma map_finite_segs_commute : forall (xs : list Z),
+  map (map Finite) (segs xs) = segs (map Finite xs).
+Proof.
+  (* This requires showing that segs commutes with map, which follows
+     from the fact that segs is defined as concat ∘ map inits ∘ tails,
+     and all these operations commute with map.
+
+     Proving this rigorously requires lemmas about how map distributes
+     over concat, inits, and tails.
+  *)
+Admitted.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
   extZ_to_Z (gform1 (A := ExtZ) (map Finite xs)) = max_subarray_sum_spec xs.
 Proof.
-  (* This proof would require showing that:
-     1. map Finite preserves the segment structure
-     2. fold with tropical_mul on Finite values = Finite of (fold with Z.add)
-     3. fold with tropical_add on Finite values = Finite of (fold with Z.max)
-     4. extZ_to_Z ∘ Finite = id
+  (* Strategy:
+     1. Unfold gform1 = semiring_sum ∘ map semiring_product ∘ segs
+     2. Use fold_tropical_mul_finite to connect product to list_sum
+     3. Use fold_tropical_add_finite to connect sum to Z.max
+     4. Use map_finite_segs_commute to rearrange
+     5. Show the result equals max_subarray_sum_spec
 
-     This is a substantial proof that requires careful handling of the
-     relationship between Z and ExtZ operations.
-
-     For now, we focus on completing the main algorithm and leave this
-     as a future refinement.
+     This requires the helper lemmas above, particularly map_finite_segs_commute.
   *)
 Admitted.
 
