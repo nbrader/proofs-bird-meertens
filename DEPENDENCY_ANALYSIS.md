@@ -1,6 +1,8 @@
-# MaxSegSum_Equivalence Dependency Tree Analysis
+# Dependency Tree Analysis - BirdMeertens Integer Proofs
 
-This analysis shows the complete dependency tree for `MaxSegSum_Equivalence` using `Print Assumptions` to trace all admitted proofs and their transitive dependencies.
+**NOTE**: This analysis documents the original `BirdMeertens/` integer-specific proof dependencies.
+
+**IMPORTANT**: The project has achieved a complete generalized semiring-based proof in `Coq/KadanesAlgorithm/KadanesAlgorithm.v` that proves Kadane's algorithm correct for **ANY semiring**. This supersedes the need to complete the integer-specific admitted proofs documented below.
 
 ## Complete Dependency Tree
 

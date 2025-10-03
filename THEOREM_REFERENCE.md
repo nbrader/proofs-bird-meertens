@@ -5,11 +5,13 @@
 
 ---
 
-## 📊 PROJECT GOAL
+## 📊 PROJECT STATUS
 
-**Objective**: Complete all admitted proofs to achieve full verification of Kadane's algorithm correctness through the Bird-Meertens transformation chain.
+**MAJOR ACHIEVEMENT**: The generalized semiring-based proof framework is **COMPLETE**!
 
-**Recent Progress**: Strategic breakthrough using `tails_rec` approach enabled completion of `form6_eq_form7`.
+**Core Result**: `Coq/KadanesAlgorithm/KadanesAlgorithm.v` contains a complete proof that Kadane's algorithm (gform8) equals the specification (gform1) for **ANY semiring** - not just integers or tropical semirings.
+
+**Note**: This file documents the original `BirdMeertens/` integer-specific proofs. The generalized framework in `KadanesAlgorithm/` supersedes this approach by proving the result for all semirings at once.
 
 ---
 

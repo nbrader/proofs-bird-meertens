@@ -1,4 +1,6 @@
-I'm trying to (mostly) faithfully translate into Coq a theorem from the Bird-Meertens Formalism Wikipedia article about the correctness of Kadane's algorithm at solving the Maximum subarray problem.
+This project provides a complete Coq formalization proving the correctness of Kadane's algorithm using a **generalized semiring-based approach**. The main result demonstrates that Kadane's algorithm is fundamentally algebraic, working for ANY semiring through an 8-step derivation using only general semiring properties.
+
+**Key Achievement**: Complete proof that gform1 (specification) = gform8 (Kadane's efficient algorithm) for arbitrary semirings.
 
 This project may have a submodule. When first cloned, you may be required to run a "Submodule Update" such as when using the TortoiseGit context menu.
 
