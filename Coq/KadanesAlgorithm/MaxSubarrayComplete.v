@@ -276,8 +276,50 @@ Lemma max_element_in_list : forall xs,
   xs <> [] ->
   exists x, In x xs /\ max_element xs = x.
 Proof.
-  (* TODO: Prove that max_element actually returns an element from the list *)
-Admitted.
+  intros xs Hall Hne.
+  induction xs as [|y ys IH].
+  - contradiction.
+  - destruct ys as [|z zs].
+    + (* Singleton case *)
+      exists y. split.
+      * left. reflexivity.
+      * simpl. reflexivity.
+    + (* Multiple elements: y :: z :: zs *)
+      simpl in Hall. apply andb_true_iff in Hall.
+      destruct Hall as [Hy Hys].
+      assert (Hne': (z :: zs) <> []) by discriminate.
+      assert (IH' := IH Hys Hne').
+      destruct IH' as [w [Hin_w Heq_w]].
+      (* Case analysis on zs to expose the structure of max_element *)
+      destruct zs as [|z' zs'].
+      * (* zs = [], so z :: zs = [z] and max_element [z] = z *)
+        simpl in Heq_w. subst w.
+        simpl max_element.
+        destruct (Z_le_gt_dec y z) as [Hle | Hgt].
+        -- (* y <= z, so max is z *)
+           exists z. split.
+           ++ right. left. reflexivity.
+           ++ apply Z.max_r. exact Hle.
+        -- (* y > z, so max is y *)
+           exists y. split.
+           ++ left. reflexivity.
+           ++ apply Z.max_l. lia.
+      * (* zs = z' :: zs', so we have y :: z :: z' :: zs' *)
+        (* max_element (y :: z :: z' :: zs') = Z.max y (Z.max z (max_element (z' :: zs'))) *)
+        (* and max_element (z :: z' :: zs') = Z.max z (max_element (z' :: zs')) = w *)
+        assert (Heq_expanded: max_element (y :: z :: z' :: zs') = Z.max y (max_element (z :: z' :: zs'))).
+        { simpl. reflexivity. }
+        rewrite Heq_expanded.
+        destruct (Z_le_gt_dec y (max_element (z :: z' :: zs'))) as [Hle | Hgt].
+        -- (* y <= max_element (z :: z' :: zs'), so max is w *)
+           exists w. split.
+           ++ right. exact Hin_w.
+           ++ rewrite <- Heq_w. apply Z.max_r. exact Hle.
+        -- (* y > max_element (z :: z' :: zs'), so max is y *)
+           exists y. split.
+           ++ left. reflexivity.
+           ++ apply Z.max_l. lia.
+Qed.
 
 (* Lemma: In all-nonpositive lists, any non-empty segment sum is at most the maximum single element *)
 Lemma segment_sum_at_most_max_element : forall xs seg,
