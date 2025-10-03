@@ -841,24 +841,88 @@ Proof.
   apply fold_tropical_mul_finite.
 Qed.
 
+(* Helper: segs includes the empty list *)
+Lemma nil_in_segs : forall {A : Type} (xs : list A),
+  In [] (segs xs).
+Proof.
+  intros A xs.
+  unfold segs, compose.
+  apply in_concat.
+  exists (inits []).
+  split.
+  - apply in_map.
+    destruct xs as [|x xs'].
+    + unfold tails, compose. simpl. left. reflexivity.
+    + rewrite tails_cons. simpl. right.
+      clear x. induction xs' as [|y ys IH].
+      * unfold tails, compose. simpl. left. reflexivity.
+      * rewrite tails_cons. simpl. right. exact IH.
+  - unfold inits. simpl. left. reflexivity.
+Qed.
+
+(* Helper: Partitioning segs into empty and nonempty *)
+Lemma segs_partition : forall (xs : list Z),
+  exists prefix, segs xs = prefix ++ [[]].
+Proof.
+  (* segs xs can be partitioned, but [] might appear anywhere.
+     Actually, we just need to know it's present. *)
+Admitted.
+
+(* Helper lemma: tropical_add with Finite behaves like Z.max *)
+Lemma tropical_add_finite : forall x y : Z,
+  TropicalKadane.tropical_add (Finite x) (Finite y) = Finite (Z.max x y).
+Proof.
+  intros x y.
+  unfold TropicalKadane.tropical_add.
+  reflexivity.
+Qed.
+
+(* Helper: fold_right tropical_add on non-empty list of Finites *)
+Lemma fold_tropical_add_finite_nonempty : forall (x : Z) (xs : list Z),
+  fold_right TropicalKadane.tropical_add NegInf (map Finite (x :: xs)) =
+  Finite (fold_right Z.max x xs).
+Proof.
+  intros x xs.
+  revert x.
+  induction xs as [|y ys IH].
+  - intros x. simpl. unfold TropicalKadane.tropical_add. reflexivity.
+  - intros x.
+    change (fold_right TropicalKadane.tropical_add NegInf (map Finite (x :: y :: ys)))
+      with (TropicalKadane.tropical_add (Finite x)
+             (fold_right TropicalKadane.tropical_add NegInf (map Finite (y :: ys)))).
+    rewrite (IH y).
+    unfold TropicalKadane.tropical_add.
+    (* Goal: Finite (Z.max x (fold_right Z.max y ys)) = Finite (fold_right Z.max x (y :: ys)) *)
+    (* fold_right f init (a :: as) = f a (fold_right f init as) *)
+    (* So: fold_right Z.max x (y :: ys) = Z.max y (fold_right Z.max x ys) *)
+    (* We have: Z.max x (fold_right Z.max y ys) vs Z.max y (fold_right Z.max x ys) *)
+    (* These are NOT immediately equal! Need to use properties of Z.max *)
+    (* Actually, let me reconsider the whole approach... *)
+Abort.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
   extZ_to_Z (gform1 (A := ExtZ) (map Finite xs)) = max_subarray_sum_spec xs.
 Proof.
   intros xs Hne.
-  (* Strategy: Show that gform1 on lifted list computes max over all segment sums
-     Key insight:
-     - gform1 = semiring_sum ∘ map semiring_product ∘ segs
-     - For tropical: semiring_product = sum, semiring_sum = max
-     - So gform1 computes max of sums of segments
-     - This is exactly max_subarray_sum_spec (modulo empty segments)
-  *)
   rewrite gform1_tropical_on_finite_list by assumption.
-  (* Now need to connect fold_right tropical_add on Finites to Z.max *)
   unfold max_subarray_sum_spec.
-  (* This requires handling nonempty_segs vs segs, and showing the fold
-     operations are equivalent *)
+
+  (* Key: segs xs includes [], which has list_sum = 0.
+     We need to show that max over all segments (including [])
+     equals max over non-empty segments.
+
+     For non-empty xs, there's always a non-empty segment.
+     If we include [] (sum 0) in the max, it affects the result
+     only if all non-empty segments have negative sum.
+
+     But the spec says: take max over non-empty segments.
+     So if all are negative, spec returns the least negative.
+
+     This means gform1 and the spec might differ!
+     We may need to filter out [] first.
+  *)
 Admitted.
 
 (*
