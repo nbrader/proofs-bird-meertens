@@ -5,6 +5,8 @@ Import ListNotations.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.ZArith.ZArith.
+Require Import Coq.micromega.Lia.
+Require Import Coq.Bool.Bool.
 
 Open Scope Z_scope.
 
@@ -170,14 +172,88 @@ LEMMAS FOR ALL-NONPOSITIVE CASE
 =================================================================================
 *)
 
+(* Helper: When all elements are nonpositive, extending a segment decreases or maintains the sum *)
+Lemma list_sum_nonpositive_decreases : forall xs x,
+  all_nonpositive xs = true ->
+  x <= 0 ->
+  list_sum (xs ++ [x]) <= list_sum xs.
+Proof.
+  intros xs x Hall Hx.
+  induction xs as [|y ys IH].
+  - simpl. lia.
+  - simpl in *.
+    apply andb_true_iff in Hall. destruct Hall as [Hy Hall'].
+    apply Z.leb_le in Hy.
+    assert (IH' := IH Hall').
+    lia.
+Qed.
+
+(* Helper: Adding a nonpositive element to the front decreases sum *)
+Lemma list_sum_cons_nonpositive : forall x xs,
+  x <= 0 ->
+  all_nonpositive xs = true ->
+  list_sum (x :: xs) <= list_sum xs.
+Proof.
+  intros x xs Hx Hxs.
+  simpl.
+  induction xs as [|y ys IH].
+  - simpl. lia.
+  - simpl in *.
+    apply andb_true_iff in Hxs. destruct Hxs as [Hy Hys].
+    apply Z.leb_le in Hy.
+    lia.
+Qed.
+
+(* Lemma: max_element returns the maximum element in the list *)
+Lemma max_element_is_max : forall xs x,
+  In x xs ->
+  xs <> [] ->
+  x <= max_element xs.
+Proof.
+  intros xs x Hin Hne.
+  induction xs as [|y ys IH].
+  - contradiction.
+  - simpl in Hin. destruct Hin as [Heq | Hin'].
+    + subst. destruct ys.
+      * simpl. lia.
+      * simpl. apply Z.le_max_l.
+    + destruct ys as [|z zs].
+      * contradiction.
+      * simpl. apply Z.max_le_iff. right.
+        apply IH; auto. discriminate.
+Qed.
+
+(* Lemma: In all-nonpositive lists, any segment sum is at most the maximum single element *)
+Lemma segment_sum_at_most_max_element : forall xs seg,
+  all_nonpositive xs = true ->
+  In seg (segs xs) ->
+  xs <> [] ->
+  list_sum seg <= max_element xs.
+Proof.
+  (* TODO: Prove that in all-nonpositive case, any contiguous subarray sum
+     is at most the maximum single element *)
+Admitted.
+
+(* Lemma: The maximum element appears as a singleton segment *)
+Lemma max_element_in_segs : forall xs (x : Z),
+  In x xs ->
+  xs <> [] ->
+  In [x] (segs xs).
+Proof.
+  (* TODO: Prove that [x] is in segs xs when x is in xs *)
+Admitted.
+
 (* Lemma: In all-nonpositive lists, the maximum subarray is a single element *)
 Lemma all_nonpositive_max_is_singleton : forall xs : list Z,
   all_nonpositive xs = true ->
   xs <> [] ->
   max_subarray_sum_spec xs = max_element xs.
 Proof.
-  (* TODO: Prove that when all elements are <= 0,
-     the maximum sum segment is a singleton (the largest element) *)
+  (* TODO: Combine the above lemmas:
+     1. Show max_element is achievable (max_element_in_segs)
+     2. Show no segment sum exceeds max_element (segment_sum_at_most_max_element)
+     3. Therefore max_subarray_sum_spec = max_element
+  *)
 Admitted.
 
 (*
