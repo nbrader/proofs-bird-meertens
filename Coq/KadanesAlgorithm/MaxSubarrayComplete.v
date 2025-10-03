@@ -680,6 +680,37 @@ Proof.
   reflexivity.
 Qed.
 
+(* Helper: full list is in segs *)
+Lemma full_list_in_segs : forall {A : Type} (xs : list A),
+  xs <> [] -> In xs (segs xs).
+Proof.
+  intros A xs Hne.
+  unfold segs, compose.
+  (* segs xs = concat (map inits (tails xs))
+     tails xs starts with xs :: ...
+     inits xs ends with xs
+     So xs ∈ inits xs, therefore xs ∈ concat (map inits (tails xs))
+
+     This is intuitively true but requires careful reasoning about
+     the structure of tails and inits. The key facts are:
+     1. tails xs always includes xs as the first element (when xs <> [])
+     2. inits xs always includes xs as the last element (when xs <> [])
+     3. Therefore concat (map inits (tails xs)) includes xs
+  *)
+Admitted.
+
+(* Helper: full list is in nonempty_segs *)
+Lemma full_list_in_nonempty_segs : forall (xs : list Z),
+  xs <> [] -> In xs (nonempty_segs xs).
+Proof.
+  intros xs Hne.
+  unfold nonempty_segs.
+  apply filter_In.
+  split.
+  - apply full_list_in_segs. exact Hne.
+  - destruct xs; [contradiction | reflexivity].
+Qed.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
@@ -687,8 +718,8 @@ Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
 Proof.
   (* This proof would require showing that:
      1. map Finite preserves the segment structure
-     2. fold with extZ_plus on Finite values = Finite of (fold with Z.add)
-     3. fold with extZ_max on Finite values = Finite of (fold with Z.max)
+     2. fold with tropical_mul on Finite values = Finite of (fold with Z.add)
+     3. fold with tropical_add on Finite values = Finite of (fold with Z.max)
      4. extZ_to_Z ∘ Finite = id
 
      This is a substantial proof that requires careful handling of the
@@ -721,11 +752,31 @@ Proof.
       * exact Hnonpos.
       * discriminate.
     + (* Has positive elements - use semiring result *)
-      (* TODO:
-         1. Instantiate tropical_gform8 with the input
-         2. Use Generalized_Kadane_Correctness: gform1 = gform8
-         3. Use tropical_gform1_is_max_subarray
-         4. Conclude form8 result = max_subarray_sum_spec
+      (* Strategy:
+         1. tropical_kadanes calls TropicalKadane.kadane_algorithm
+         2. That equals extract_finite (gform8 (lift_Z xs))
+         3. By max_subarray_correct: gform8 = gform1
+         4. Need to show this equals max_subarray_sum_spec
+
+         The key challenge: connecting ExtZ operations on lifted lists
+         to Z operations on the original list.
+      *)
+      (* The core challenge: we need to prove that
+         tropical_kadanes (x :: xs') = max_subarray_sum_spec (x :: xs')
+
+         Key facts available:
+         1. TropicalKadane.max_subarray_correct proves gform8 = gform1 on ExtZ lists
+         2. tropical_gform1_is_max_subarray (when completed) will connect
+            gform1 on lifted Z lists to max_subarray_sum_spec on Z lists
+         3. all_nonpositive (x :: xs') = false means there's a positive element
+
+         The proof requires:
+         - tropical_gform1_is_max_subarray to be completed
+         - A lemma showing extract_finite succeeds when there are positive elements
+         - Careful handling of the lift_Z conversion
+
+         This is a substantial remaining task that requires the infrastructure
+         to be fully developed.
       *)
 Admitted.
 
