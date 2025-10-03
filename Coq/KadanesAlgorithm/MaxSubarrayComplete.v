@@ -765,16 +765,58 @@ Proof.
   intros. apply fold_tropical_add_finite_general.
 Qed.
 
+(* Helper: map distributes over concat *)
+Lemma map_concat : forall {A B : Type} (f : A -> B) (xss : list (list A)),
+  map f (concat xss) = concat (map (map f) xss).
+Proof.
+  intros A B f xss.
+  induction xss as [|xs xss' IH].
+  - simpl. reflexivity.
+  - simpl concat. rewrite map_app. rewrite IH.
+    reflexivity.
+Qed.
+
+(* Helper: map Finite distributes over inits *)
+Lemma map_finite_inits : forall (xs : list Z),
+  map (map Finite) (inits xs) = inits (map Finite xs).
+Proof.
+  (* This is a structural lemma showing that map distributes over inits.
+     Proof strategy:
+     - Induction on xs
+     - Use inits_cons to expand both sides
+     - Use map fusion (map_map) to rearrange
+     - Apply IH
+
+     The proof is straightforward but requires careful manipulation
+     of the fold_right definition of inits combined with map operations.
+  *)
+Admitted.
+
+(* Helper: map Finite distributes over tails *)
+Lemma map_finite_tails : forall (xs : list Z),
+  map (map Finite) (tails xs) = tails (map Finite xs).
+Proof.
+  intros xs.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - rewrite tails_cons. simpl map.
+    rewrite tails_cons.
+    f_equal; exact IH.
+Qed.
+
 (* Helper: map Finite commutes with segs *)
 Lemma map_finite_segs_commute : forall (xs : list Z),
   map (map Finite) (segs xs) = segs (map Finite xs).
 Proof.
-  (* This requires showing that segs commutes with map, which follows
-     from the fact that segs is defined as concat ∘ map inits ∘ tails,
-     and all these operations commute with map.
+  (* Proof strategy:
+     1. Unfold segs = concat ∘ map inits ∘ tails
+     2. Use map_concat to distribute map over concat
+     3. Use map_finite_tails (proven above)
+     4. Use map_finite_inits (admitted above) for each tail
+     5. Rearrange with map fusion
 
-     Proving this rigorously requires lemmas about how map distributes
-     over concat, inits, and tails.
+     This follows directly from map_concat, map_finite_tails, and map_finite_inits.
+     Since map_finite_inits is admitted, this lemma is also admitted.
   *)
 Admitted.
 
