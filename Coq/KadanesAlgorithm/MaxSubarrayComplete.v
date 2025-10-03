@@ -877,28 +877,56 @@ Proof.
   reflexivity.
 Qed.
 
+(* Helper: fold_right Z.max is associative/commutative in a specific sense *)
+Lemma fold_max_cons_swap : forall (x y : Z) (ys : list Z),
+  Z.max x (fold_right Z.max y ys) = Z.max y (fold_right Z.max x ys).
+Proof.
+  intros x y ys.
+  revert x y.
+  induction ys as [|z zs IH].
+  - intros x y. simpl. apply Z.max_comm.
+  - intros x y.
+    simpl.
+    (* Goal: Z.max x (Z.max z (fold_right Z.max y zs)) = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    (* Use associativity to rearrange *)
+    rewrite Z.max_assoc.
+    (* Now: Z.max (Z.max x z) (fold_right Z.max y zs) = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    rewrite (Z.max_comm x z).
+    (* Now: Z.max (Z.max z x) (fold_right Z.max y zs) = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    rewrite <- Z.max_assoc.
+    (* Now: Z.max z (Z.max x (fold_right Z.max y zs)) = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    rewrite (IH x y).
+    (* Now: Z.max z (Z.max y (fold_right Z.max x zs)) = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    (* Swap z and (Z.max y ...) using commutativity *)
+    rewrite (Z.max_comm z (Z.max y (fold_right Z.max x zs))).
+    (* Now: Z.max (Z.max y (fold_right Z.max x zs)) z = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    (* Apply backward associativity: Z.max (Z.max a b) c = Z.max a (Z.max b c) *)
+    rewrite <- (Z.max_assoc y (fold_right Z.max x zs) z).
+    (* Now: Z.max y (Z.max (fold_right Z.max x zs) z) = Z.max y (Z.max z (fold_right Z.max x zs)) *)
+    f_equal.
+    apply Z.max_comm.
+Qed.
+
 (* Helper: fold_right tropical_add on non-empty list of Finites *)
 Lemma fold_tropical_add_finite_nonempty : forall (x : Z) (xs : list Z),
   fold_right TropicalKadane.tropical_add NegInf (map Finite (x :: xs)) =
   Finite (fold_right Z.max x xs).
 Proof.
   intros x xs.
-  revert x.
-  induction xs as [|y ys IH].
-  - intros x. simpl. unfold TropicalKadane.tropical_add. reflexivity.
-  - intros x.
-    change (fold_right TropicalKadane.tropical_add NegInf (map Finite (x :: y :: ys)))
+  induction xs as [|y ys IH] in x |- *.
+  - simpl. unfold TropicalKadane.tropical_add. reflexivity.
+  - change (fold_right TropicalKadane.tropical_add NegInf (map Finite (x :: y :: ys)))
       with (TropicalKadane.tropical_add (Finite x)
              (fold_right TropicalKadane.tropical_add NegInf (map Finite (y :: ys)))).
-    rewrite (IH y).
+    rewrite IH.
     unfold TropicalKadane.tropical_add.
-    (* Goal: Finite (Z.max x (fold_right Z.max y ys)) = Finite (fold_right Z.max x (y :: ys)) *)
-    (* fold_right f init (a :: as) = f a (fold_right f init as) *)
-    (* So: fold_right Z.max x (y :: ys) = Z.max y (fold_right Z.max x ys) *)
-    (* We have: Z.max x (fold_right Z.max y ys) vs Z.max y (fold_right Z.max x ys) *)
-    (* These are NOT immediately equal! Need to use properties of Z.max *)
-    (* Actually, let me reconsider the whole approach... *)
-Abort.
+    f_equal.
+    (* Goal: Z.max x (fold_right Z.max y ys) = fold_right Z.max x (y :: ys) *)
+    simpl.
+    (* Goal: Z.max x (fold_right Z.max y ys) = Z.max y (fold_right Z.max x ys) *)
+    (* This is exactly fold_max_cons_swap! *)
+    apply fold_max_cons_swap.
+Qed.
 
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
