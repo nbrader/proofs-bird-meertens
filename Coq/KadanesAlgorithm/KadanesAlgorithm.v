@@ -25,14 +25,15 @@ This file provides a generalized semiring-based formulation of Kadane's algorith
 
 KEY RESULTS:
 
-Forms gform1 through gform7 work for ANY semiring (ℤ, tropical, etc.)!
+All 8 forms (gform1 through gform8) work for ANY semiring!
 - gform1-gform4: Use basic list manipulation and semiring properties
 - gform5 → gform6: Uses Horner's rule (proven for all semirings)
 - gform6 → gform7: Uses scan-fold relationship
+- gform7 → gform8: Uses fold-scan fusion (proven with zero assumptions)
 
-See companion files:
-- MaxSubarrayKadane.v: Tropical semiring case with clamping arguments for gform7→gform8
-- AlternativeGform8.v: Analysis of why (add_zero, mul_one) is uniquely determined
+See companion files for specific semiring instances:
+- TropicalKadane.v: Tropical (max-plus) semiring for maximum subarray problem
+- NaturalKadane.v: Natural number semiring for sum of subarray products
 *)
 
 (*
@@ -386,10 +387,8 @@ The entire derivation uses ONLY:
 3. The fold-scan fusion law (proven with zero assumptions)
 
 This means Kadane's algorithm works for:
-- Tropical semiring (max-plus): Maximum subarray problem
-- Integer semiring: Sum of products
+- Tropical semiring (max-plus): Maximum subarray problem (see TropicalKadane.v)
+- Natural number semiring: Sum of subarray products (see NaturalKadane.v)
 - Boolean semiring: Existence problems
 - Any other semiring structure
-
-See MaxSubarrayKadane.v for the specific tropical semiring instantiation.
 *)
