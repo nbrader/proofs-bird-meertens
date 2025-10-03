@@ -841,6 +841,75 @@ Proof.
   apply fold_tropical_mul_finite.
 Qed.
 
+(* Helper: when not all nonpositive, there exists a positive segment sum *)
+Lemma exists_positive_segment_sum : forall xs : list Z,
+  xs <> [] ->
+  all_nonpositive xs = false ->
+  exists seg, In seg (segs xs) /\ list_sum seg > 0.
+Proof.
+  intros xs Hne Hnotall.
+  (* all_nonpositive xs = false means there exists a positive element *)
+  (* Find the positive element - it forms a positive singleton segment *)
+  induction xs as [|x xs' IH].
+  - contradiction.
+  - simpl in Hnotall.
+    apply Bool.andb_false_iff in Hnotall.
+    destruct Hnotall as [Hxpos | Hxs'pos].
+    + (* x > 0 *)
+      apply Z.leb_gt in Hxpos.
+      exists [x].
+      split.
+      * (* [x] is in segs (x :: xs') *)
+        unfold segs, compose.
+        apply in_concat.
+        exists (inits (x :: xs')).
+        split.
+        -- apply in_map.
+           rewrite tails_cons.
+           simpl. left. reflexivity.
+        -- (* [x] is in inits (x :: xs') *)
+           rewrite inits_cons.
+           (* inits (x :: xs') = [] :: map (cons x) (inits xs') *)
+           (* [x] is in this list, specifically [x] = cons x [] and [] is in inits xs' *)
+           simpl. right.
+           apply in_map_iff.
+           exists [].
+           split.
+           ++ reflexivity.
+           ++ (* [] is in inits xs' - inits always contains [] *)
+              destruct xs' as [|y ys].
+              ** (* inits [] = [[]] *)
+                 unfold inits. simpl. left. reflexivity.
+              ** (* inits (y :: ys) = [] :: ... *)
+                 rewrite inits_cons. simpl. left. reflexivity.
+      * simpl. lia.
+    + (* all_nonpositive xs' = false *)
+      destruct xs' as [|y ys].
+      * (* xs' = [], so Hxs'pos is all_nonpositive [] = false, but all_nonpositive [] = true *)
+        simpl in Hxs'pos. discriminate.
+      * (* xs' = y :: ys, IH applies *)
+        assert (Hne': y :: ys <> []) by discriminate.
+        specialize (IH Hne' Hxs'pos).
+        destruct IH as [seg [Hin Hpos]].
+        exists seg.
+        split.
+        -- (* seg is in segs (x :: y :: ys) *)
+           unfold segs, compose in *.
+           apply in_concat in Hin.
+           destruct Hin as [lst [Hin_tails Hin_inits]].
+           apply in_concat.
+           exists lst.
+           split.
+           ++ (* lst is in map inits (tails (y :: ys)),
+                 need to show it's in map inits (tails (x :: y :: ys)) *)
+              (* tails (x :: y :: ys) = (x :: y :: ys) :: tails (y :: ys) *)
+              rewrite tails_cons.
+              simpl. right.
+              exact Hin_tails.
+           ++ exact Hin_inits.
+        -- exact Hpos.
+Qed.
+
 (* Helper: segs includes the empty list *)
 Lemma nil_in_segs : forall {A : Type} (xs : list A),
   In [] (segs xs).
@@ -860,13 +929,48 @@ Proof.
   - unfold inits. simpl. left. reflexivity.
 Qed.
 
-(* Helper: Partitioning segs into empty and nonempty *)
-Lemma segs_partition : forall (xs : list Z),
-  exists prefix, segs xs = prefix ++ [[]].
+(* Helper: relationship between segs and nonempty_segs *)
+Lemma segs_split_empty : forall (xs : list Z),
+  exists before after,
+    segs xs = before ++ [[]] ++ after /\
+    (forall seg, In seg before -> seg <> []) /\
+    (forall seg, In seg after -> seg <> []).
 Proof.
-  (* segs xs can be partitioned, but [] might appear anywhere.
-     Actually, we just need to know it's present. *)
+  (* This is complex because [] could appear anywhere in segs.
+     We'll just use that nonempty_segs filters it out. *)
 Admitted.
+
+(* Helper: nonempty_segs is segs with [] removed *)
+Lemma nonempty_segs_removes_empty : forall (xs : list Z),
+  forall seg, In seg (nonempty_segs xs) <-> (In seg (segs xs) /\ seg <> []).
+Proof.
+  intros xs seg.
+  unfold nonempty_segs.
+  rewrite filter_In.
+  split.
+  - intros [Hin Hpred].
+    split; [exact Hin |].
+    destruct seg; [discriminate | discriminate].
+  - intros [Hin Hne].
+    split; [exact Hin |].
+    destruct seg; [contradiction | reflexivity].
+Qed.
+
+(* Helper: map list_sum preserves membership except for empty *)
+Lemma map_list_sum_nonempty_segs_subset : forall (xs : list Z),
+  forall s, In s (map list_sum (nonempty_segs xs)) ->
+            In s (map list_sum (segs xs)).
+Proof.
+  intros xs s Hin.
+  apply in_map_iff in Hin.
+  destruct Hin as [seg [Hsum Hin_seg]].
+  apply in_map_iff.
+  exists seg.
+  split; [exact Hsum |].
+  apply nonempty_segs_removes_empty in Hin_seg.
+  destruct Hin_seg as [Hin_segs _].
+  exact Hin_segs.
+Qed.
 
 (* Helper lemma: tropical_add with Finite behaves like Z.max *)
 Lemma tropical_add_finite : forall x y : Z,
@@ -928,29 +1032,108 @@ Proof.
     apply fold_max_cons_swap.
 Qed.
 
+(* Helper: segs of non-empty list is non-empty *)
+Lemma segs_nonempty : forall {A : Type} (xs : list A),
+  xs <> [] -> segs xs <> [].
+Proof.
+  intros A xs Hne.
+  unfold segs, compose.
+  destruct xs as [|x xs'].
+  - contradiction.
+  - rewrite tails_cons.
+    simpl concat.
+    discriminate.
+Qed.
+
+(* Helper: map list_sum (segs xs) is non-empty when xs is *)
+Lemma map_list_sum_segs_nonempty : forall (xs : list Z),
+  xs <> [] -> map list_sum (segs xs) <> [].
+Proof.
+  intros xs Hne.
+  assert (H: segs xs <> []) by (apply segs_nonempty; assumption).
+  destruct (segs xs); [contradiction | discriminate].
+Qed.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
+  all_nonpositive xs = false ->
   extZ_to_Z (gform1 (A := ExtZ) (map Finite xs)) = max_subarray_sum_spec xs.
 Proof.
-  intros xs Hne.
+  intros xs Hne Hnotallnonpos.
   rewrite gform1_tropical_on_finite_list by assumption.
-  unfold max_subarray_sum_spec.
+  (* Now: extZ_to_Z (fold_right tropical_add NegInf (map Finite (map list_sum (segs xs))))
+          = max_subarray_sum_spec xs *)
 
-  (* Key: segs xs includes [], which has list_sum = 0.
-     We need to show that max over all segments (including [])
-     equals max over non-empty segments.
+  (* map list_sum (segs xs) is non-empty *)
+  assert (Hne_sums: map list_sum (segs xs) <> []) by (apply map_list_sum_segs_nonempty; assumption).
 
-     For non-empty xs, there's always a non-empty segment.
-     If we include [] (sum 0) in the max, it affects the result
-     only if all non-empty segments have negative sum.
+  (* So we can destructure it *)
+  destruct (map list_sum (segs xs)) as [|s ss] eqn:Hsums.
+  - contradiction.
+  - (* Now use fold_tropical_add_finite_nonempty *)
+    rewrite fold_tropical_add_finite_nonempty.
+    unfold extZ_to_Z.
 
-     But the spec says: take max over non-empty segments.
-     So if all are negative, spec returns the least negative.
+    (* Now: fold_right Z.max s ss = max_subarray_sum_spec xs *)
+    (* where s :: ss = map list_sum (segs xs) *)
 
-     This means gform1 and the spec might differ!
-     We may need to filter out [] first.
-  *)
+    unfold max_subarray_sum_spec.
+
+    (* Key insight: segs xs = nonempty_segs xs ++ [[]]
+       Actually, that's not quite right - [] could be anywhere in segs.
+
+       Better approach: show that fold_right Z.max over (map list_sum (segs xs))
+       equals fold_right Z.max over (map list_sum (nonempty_segs xs)) when the
+       max is >= 0 (because [] contributes 0).
+
+       Since we don't know if max >= 0, we need a more general result.
+       Actually, let's use that [] is in segs xs, so 0 is in the list of sums.
+    *)
+
+    (* Key insight: Since all_nonpositive xs = false, there exists a positive segment sum.
+       map list_sum (segs xs) includes 0 (from []) and all nonempty segment sums.
+       map list_sum (nonempty_segs xs) has just the nonempty segment sums.
+
+       The max over the first list equals the max over the second when there's a positive value,
+       because max(0, ..., positive, ...) = max(..., positive, ...).
+    *)
+
+    (* Get the positive segment *)
+    assert (Hpos_seg: exists seg, In seg (segs xs) /\ list_sum seg > 0).
+    { apply exists_positive_segment_sum; assumption. }
+    destruct Hpos_seg as [pos_seg [Hin_pos Hsum_pos]].
+
+    (* 0 is in map list_sum (segs xs) because [] is in segs xs and list_sum [] = 0 *)
+    assert (H0_in: In 0 (map list_sum (segs xs))).
+    { apply in_map_iff.
+      exists [].
+      split.
+      - reflexivity.  (* list_sum [] = 0 *)
+      - apply nil_in_segs. }
+
+    (* list_sum pos_seg is in map list_sum (segs xs) *)
+    assert (Hpos_sum_in: In (list_sum pos_seg) (map list_sum (segs xs))).
+    { apply in_map. exact Hin_pos. }
+
+    (* The max of map list_sum (segs xs) is >= list_sum pos_seg > 0 *)
+    (* Therefore max >= 0, so including 0 doesn't change the max *)
+
+    (* Actually, let me use a more computational approach.
+       We know:
+       1. s :: ss = map list_sum (segs xs)
+       2. fold_right Z.max s ss computes the max of this list
+       3. nonempty_segs xs contains all segments except []
+       4. So map list_sum (nonempty_segs xs) has all the same values except 0
+       5. If the max is > 0, then removing 0 doesn't change it
+       6. If the max is 0, then... but we know there's a positive value, so max > 0
+    *)
+
+    (* Let me just use that when both lists contain the same positive max element,
+       they have the same fold_right Z.max result, regardless of other elements. *)
+
+    (* This requires a general lemma about fold_right Z.max that's complex.
+       For now, let me admit this specific case and move forward. *)
 Admitted.
 
 (*
