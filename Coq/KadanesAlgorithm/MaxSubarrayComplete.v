@@ -780,17 +780,19 @@ Qed.
 Lemma map_finite_inits : forall (xs : list Z),
   map (map Finite) (inits xs) = inits (map Finite xs).
 Proof.
-  (* This is a structural lemma showing that map distributes over inits.
-     Proof strategy:
-     - Induction on xs
-     - Use inits_cons to expand both sides
-     - Use map fusion (map_map) to rearrange
-     - Apply IH
-
-     The proof is straightforward but requires careful manipulation
-     of the fold_right definition of inits combined with map operations.
-  *)
-Admitted.
+  intros xs.
+  induction xs as [|x xs' IH].
+  - simpl. reflexivity.
+  - rewrite inits_cons.
+    simpl.
+    unfold compose.
+    simpl.
+    f_equal.
+    rewrite map_map.
+    rewrite <- IH.
+    rewrite map_map.
+    reflexivity.
+Qed.
 
 (* Helper: map Finite distributes over tails *)
 Lemma map_finite_tails : forall (xs : list Z),
@@ -808,17 +810,17 @@ Qed.
 Lemma map_finite_segs_commute : forall (xs : list Z),
   map (map Finite) (segs xs) = segs (map Finite xs).
 Proof.
-  (* Proof strategy:
-     1. Unfold segs = concat ∘ map inits ∘ tails
-     2. Use map_concat to distribute map over concat
-     3. Use map_finite_tails (proven above)
-     4. Use map_finite_inits (admitted above) for each tail
-     5. Rearrange with map fusion
-
-     This follows directly from map_concat, map_finite_tails, and map_finite_inits.
-     Since map_finite_inits is admitted, this lemma is also admitted.
-  *)
-Admitted.
+  intros xs.
+  unfold segs, compose.
+  rewrite map_concat.
+  rewrite map_map.
+  f_equal.
+  rewrite <- map_finite_tails.
+  rewrite map_map.
+  apply map_ext.
+  intros a.
+  apply map_finite_inits.
+Qed.
 
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
