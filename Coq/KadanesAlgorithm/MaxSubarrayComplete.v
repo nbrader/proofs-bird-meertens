@@ -822,20 +822,43 @@ Proof.
   apply map_finite_inits.
 Qed.
 
+(* Helper: Relationship between gform1 on ExtZ and the spec *)
+Lemma gform1_tropical_on_finite_list : forall xs : list Z,
+  xs <> [] ->
+  gform1 (A := ExtZ) (map Finite xs) =
+  fold_right TropicalKadane.tropical_add NegInf (map Finite (map list_sum (segs xs))).
+Proof.
+  intros xs Hne.
+  unfold gform1, compose.
+  unfold semiring_sum, semiring_product.
+  simpl.
+  rewrite <- map_finite_segs_commute.
+  rewrite map_map.
+  f_equal.
+  rewrite map_map.
+  apply map_ext.
+  intros seg.
+  apply fold_tropical_mul_finite.
+Qed.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
   extZ_to_Z (gform1 (A := ExtZ) (map Finite xs)) = max_subarray_sum_spec xs.
 Proof.
-  (* Strategy:
-     1. Unfold gform1 = semiring_sum ∘ map semiring_product ∘ segs
-     2. Use fold_tropical_mul_finite to connect product to list_sum
-     3. Use fold_tropical_add_finite to connect sum to Z.max
-     4. Use map_finite_segs_commute to rearrange
-     5. Show the result equals max_subarray_sum_spec
-
-     This requires the helper lemmas above, particularly map_finite_segs_commute.
+  intros xs Hne.
+  (* Strategy: Show that gform1 on lifted list computes max over all segment sums
+     Key insight:
+     - gform1 = semiring_sum ∘ map semiring_product ∘ segs
+     - For tropical: semiring_product = sum, semiring_sum = max
+     - So gform1 computes max of sums of segments
+     - This is exactly max_subarray_sum_spec (modulo empty segments)
   *)
+  rewrite gform1_tropical_on_finite_list by assumption.
+  (* Now need to connect fold_right tropical_add on Finites to Z.max *)
+  unfold max_subarray_sum_spec.
+  (* This requires handling nonempty_segs vs segs, and showing the fold
+     operations are equivalent *)
 Admitted.
 
 (*
