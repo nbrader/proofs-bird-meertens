@@ -680,6 +680,27 @@ Proof.
   reflexivity.
 Qed.
 
+(* Helper: xs is in inits xs *)
+Lemma full_list_in_inits : forall {A : Type} (xs : list A),
+  In xs (inits xs).
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - simpl. left. reflexivity.
+  - rewrite inits_cons. right. apply in_map_iff.
+    exists xs'. split; [reflexivity | exact IH].
+Qed.
+
+(* Helper: xs is the first element of tails xs (when non-empty) *)
+Lemma full_list_first_in_tails : forall {A : Type} (xs : list A),
+  xs <> [] -> exists rest, tails xs = xs :: rest.
+Proof.
+  intros A xs Hne.
+  destruct xs as [|x xs'].
+  - contradiction.
+  - rewrite tails_cons. eexists. reflexivity.
+Qed.
+
 (* Helper: full list is in segs *)
 Lemma full_list_in_segs : forall {A : Type} (xs : list A),
   xs <> [] -> In xs (segs xs).
@@ -687,17 +708,14 @@ Proof.
   intros A xs Hne.
   unfold segs, compose.
   (* segs xs = concat (map inits (tails xs))
-     tails xs starts with xs :: ...
-     inits xs ends with xs
-     So xs ∈ inits xs, therefore xs ∈ concat (map inits (tails xs))
-
-     This is intuitively true but requires careful reasoning about
-     the structure of tails and inits. The key facts are:
-     1. tails xs always includes xs as the first element (when xs <> [])
-     2. inits xs always includes xs as the last element (when xs <> [])
-     3. Therefore concat (map inits (tails xs)) includes xs
-  *)
-Admitted.
+     We know xs is first in tails xs, and xs is in inits xs *)
+  destruct (full_list_first_in_tails xs Hne) as [rest Htails].
+  rewrite Htails.
+  simpl map. simpl concat.
+  (* Now goal is: In xs (inits xs ++ concat (map inits rest)) *)
+  apply in_or_app. left.
+  apply full_list_in_inits.
+Qed.
 
 (* Helper: full list is in nonempty_segs *)
 Lemma full_list_in_nonempty_segs : forall (xs : list Z),
