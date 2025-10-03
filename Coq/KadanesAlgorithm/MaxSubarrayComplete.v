@@ -54,11 +54,16 @@ Fixpoint list_sum (xs : list Z) : Z :=
   | x :: xs' => x + list_sum xs'
   end.
 
-(* The maximum subarray sum is the maximum sum among all segments *)
+(* Non-empty segments only - filter out empty list *)
+Definition nonempty_segs (xs : list Z) : list (list Z) :=
+  filter (fun seg => match seg with [] => false | _ => true end) (segs xs).
+
+(* The maximum subarray sum is the maximum sum among all NON-EMPTY segments *)
+(* This matches the standard definition which requires at least one element *)
 Definition max_subarray_sum_spec (xs : list Z) : Z :=
-  (* Specification: maximum sum over all contiguous subarrays *)
-  match segs xs with
-  | [] => 0  (* shouldn't happen since segs always returns at least [[]] *)
+  (* Specification: maximum sum over all non-empty contiguous subarrays *)
+  match nonempty_segs xs with
+  | [] => 0  (* only happens when xs = [] *)
   | seg :: rest => fold_right Z.max (list_sum seg) (map list_sum rest)
   end.
 
@@ -223,24 +228,93 @@ Proof.
         apply IH; auto. discriminate.
 Qed.
 
-(* Lemma: In all-nonpositive lists, any segment sum is at most the maximum single element *)
+(* Helper: all_nonpositive is preserved by taking sublists *)
+Lemma all_nonpositive_sublist : forall xs seg,
+  all_nonpositive xs = true ->
+  In seg (nonempty_segs xs) ->
+  all_nonpositive seg = true.
+Proof.
+  intros xs seg Hall Hin.
+  (* TODO: Need to show that segments inherit the all_nonpositive property *)
+  (* This follows from segs being defined as contiguous subarrays *)
+Admitted.
+
+(* Helper: In a nonpositive list, the sum is at most any single element *)
+Lemma sum_le_max_in_nonpositive : forall seg x,
+  all_nonpositive seg = true ->
+  In x seg ->
+  list_sum seg <= x.
+Proof.
+  intros seg x Hall Hin.
+  induction seg as [|y ys IH].
+  - contradiction.
+  - simpl in Hin. destruct Hin as [Heq | Hin'].
+    + (* x = y, the head element *)
+      subst. simpl.
+      simpl in Hall. apply andb_true_iff in Hall. destruct Hall as [Hy Hys].
+      apply Z.leb_le in Hy.
+      (* list_sum ys <= 0 since all elements are nonpositive *)
+      assert (Hsum: list_sum ys <= 0).
+      { clear IH. induction ys as [|z zs IHys].
+        - simpl. lia.
+        - simpl. simpl in Hys. apply andb_true_iff in Hys.
+          destruct Hys as [Hz Hzs]. apply Z.leb_le in Hz.
+          assert (IHys' := IHys Hzs). lia.
+      }
+      lia.
+    + (* x is in the tail *)
+      simpl in Hall. apply andb_true_iff in Hall. destruct Hall as [Hy Hys].
+      apply Z.leb_le in Hy.
+      simpl.
+      assert (IH' := IH Hys Hin').
+      lia.
+Qed.
+
+(* Lemma: max_element xs is actually an element of xs *)
+Lemma max_element_in_list : forall xs,
+  all_nonpositive xs = true ->
+  xs <> [] ->
+  exists x, In x xs /\ max_element xs = x.
+Proof.
+  (* TODO: Prove that max_element actually returns an element from the list *)
+Admitted.
+
+(* Lemma: In all-nonpositive lists, any non-empty segment sum is at most the maximum single element *)
 Lemma segment_sum_at_most_max_element : forall xs seg,
   all_nonpositive xs = true ->
-  In seg (segs xs) ->
+  In seg (nonempty_segs xs) ->
   xs <> [] ->
   list_sum seg <= max_element xs.
 Proof.
-  (* TODO: Prove that in all-nonpositive case, any contiguous subarray sum
-     is at most the maximum single element *)
+  intros xs seg Hall Hin Hne.
+  (* Since seg is in nonempty_segs, it's not empty *)
+  unfold nonempty_segs in Hin.
+  apply filter_In in Hin. destruct Hin as [Hin_segs Hnonemp].
+  destruct seg as [|x xs'].
+  - (* seg = [] contradicts Hnonemp *)
+    simpl in Hnonemp. discriminate.
+  - (* seg = x :: xs', a nonempty segment *)
+    (* TODO: Complex proof requiring:
+       1. Segments inherit all_nonpositive property
+       2. Elements of segments are elements of original list
+       3. Combine sum_le_max_in_nonpositive with max_element_is_max
+    *)
 Admitted.
 
 (* Lemma: The maximum element appears as a singleton segment *)
 Lemma max_element_in_segs : forall xs (x : Z),
   In x xs ->
   xs <> [] ->
-  In [x] (segs xs).
+  In [x] (nonempty_segs xs).
 Proof.
-  (* TODO: Prove that [x] is in segs xs when x is in xs *)
+  intros xs x Hin Hne.
+  unfold nonempty_segs.
+  apply filter_In. split.
+  - (* [x] is in segs xs *)
+    (* TODO: Prove that [x] is in segs xs when x is in xs *)
+    admit.
+  - (* [x] is nonempty *)
+    simpl. reflexivity.
 Admitted.
 
 (* Lemma: In all-nonpositive lists, the maximum subarray is a single element *)
