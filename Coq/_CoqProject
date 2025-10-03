@@ -40,3 +40,4 @@ BirdMeertens/Extra.v
 KadanesAlgorithm/KadanesAlgorithm.v
 KadanesAlgorithm/TropicalKadane.v
 KadanesAlgorithm/NaturalKadane.v
+KadanesAlgorithm/MaxSubarrayComplete.v
