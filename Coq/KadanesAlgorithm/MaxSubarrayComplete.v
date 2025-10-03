@@ -228,16 +228,6 @@ Proof.
         apply IH; auto. discriminate.
 Qed.
 
-(* Helper: all_nonpositive is preserved by taking sublists *)
-Lemma all_nonpositive_sublist : forall xs seg,
-  all_nonpositive xs = true ->
-  In seg (nonempty_segs xs) ->
-  all_nonpositive seg = true.
-Proof.
-  intros xs seg Hall Hin.
-  (* TODO: Need to show that segments inherit the all_nonpositive property *)
-  (* This follows from segs being defined as contiguous subarrays *)
-Admitted.
 
 (* Helper: In a nonpositive list, the sum is at most any single element *)
 Lemma sum_le_max_in_nonpositive : forall seg x,
@@ -321,6 +311,120 @@ Proof.
            ++ apply Z.max_l. lia.
 Qed.
 
+(* Helper: Elements in inits are elements of the original list *)
+Lemma elem_in_init_in_list : forall (xs init : list Z) (y : Z),
+  In init (inits xs) ->
+  In y init ->
+  In y xs.
+Proof.
+  intros xs init y Hin_init Hin_y.
+  generalize dependent init.
+  generalize dependent y.
+  induction xs as [|x xs' IH].
+  - intros y init Hin_init Hin_y.
+    unfold inits in Hin_init. simpl in Hin_init.
+    destruct Hin_init as [Heq | []].
+    subst init. contradiction.
+  - intros y init Hin_init Hin_y.
+    rewrite inits_cons in Hin_init.
+    simpl in Hin_init. destruct Hin_init as [Heq | Hin'].
+    + subst init. contradiction.
+    + apply in_map_iff in Hin'.
+      destruct Hin' as [init' [Heq Hin'']].
+      subst init. simpl in Hin_y. destruct Hin_y as [Heq | Hin_y'].
+      * left. exact Heq.
+      * right. apply (IH y init' Hin'' Hin_y').
+Qed.
+
+(* Helper: Elements in tails are elements of the original list *)
+Lemma elem_in_tail_in_list : forall (xs tail : list Z) (y : Z),
+  In tail (tails xs) ->
+  In y tail ->
+  In y xs.
+Proof.
+  intros xs tail y Hin_tail Hin_y.
+  generalize dependent tail.
+  generalize dependent y.
+  induction xs as [|x xs' IH].
+  - intros y tail Hin_tail Hin_y.
+    unfold tails, compose in Hin_tail. simpl in Hin_tail.
+    destruct Hin_tail as [Heq | []].
+    subst tail. contradiction.
+  - intros y tail Hin_tail Hin_y.
+    rewrite tails_cons in Hin_tail.
+    simpl in Hin_tail. destruct Hin_tail as [Heq | Hin'].
+    + subst tail. exact Hin_y.
+    + simpl. right. apply (IH y tail Hin' Hin_y).
+Qed.
+
+(* Helper: Elements in segments are elements of the original list *)
+Lemma elem_in_seg_in_list : forall (xs seg : list Z) (y : Z),
+  In seg (segs xs) ->
+  In y seg ->
+  In y xs.
+Proof.
+  intros xs seg y Hin_seg Hin_y.
+  unfold segs, compose in Hin_seg.
+  apply in_concat in Hin_seg.
+  destruct Hin_seg as [inits_tail [Hin_map Hin_inits]].
+  apply in_map_iff in Hin_map.
+  destruct Hin_map as [tail [Heq Hin_tail]].
+  subst inits_tail.
+  (* y is in an init of tail, so y is in tail *)
+  assert (Hin_y_tail: In y tail).
+  { apply (elem_in_init_in_list tail seg y Hin_inits Hin_y). }
+  (* tail is in tails xs, so y is in xs *)
+  apply (elem_in_tail_in_list xs tail y Hin_tail Hin_y_tail).
+Qed.
+
+(* Helper: All elements of xs are <= 0 *)
+Lemma all_elem_nonpositive : forall xs y,
+  all_nonpositive xs = true ->
+  In y xs ->
+  y <= 0.
+Proof.
+  intros xs y Hall Hin.
+  induction xs as [|x xs' IH].
+  - contradiction.
+  - unfold all_nonpositive in Hall. simpl in Hall.
+    apply andb_true_iff in Hall. destruct Hall as [Hx Hall'].
+    apply Z.leb_le in Hx.
+    simpl in Hin. destruct Hin as [Heq | Hin'].
+    + subst. exact Hx.
+    + apply (IH Hall' Hin').
+Qed.
+
+(* Helper lemma: If all elements of a list are in xs and xs is all_nonpositive, then the list is all_nonpositive *)
+Lemma all_elem_in_implies_nonpositive : forall xs seg,
+  all_nonpositive xs = true ->
+  (forall y, In y seg -> In y xs) ->
+  all_nonpositive seg = true.
+Proof.
+  intros xs seg Hall Hsub.
+  induction seg as [|z zs IH].
+  - reflexivity.
+  - unfold all_nonpositive. simpl. apply andb_true_iff. split.
+    + apply Z.leb_le.
+      assert (Hin_z: In z xs).
+      { apply Hsub. left. reflexivity. }
+      apply (all_elem_nonpositive xs z Hall Hin_z).
+    + apply IH.
+      intros y Hin_y.
+      apply Hsub. right. exact Hin_y.
+Qed.
+
+(* Helper: Sublists of all_nonpositive lists are all_nonpositive *)
+Lemma all_nonpositive_sublist : forall xs seg,
+  all_nonpositive xs = true ->
+  In seg (segs xs) ->
+  all_nonpositive seg = true.
+Proof.
+  intros xs seg Hall Hin.
+  apply (all_elem_in_implies_nonpositive xs seg Hall).
+  intros y Hin_y.
+  apply (elem_in_seg_in_list xs seg y Hin Hin_y).
+Qed.
+
 (* Lemma: In all-nonpositive lists, any non-empty segment sum is at most the maximum single element *)
 Lemma segment_sum_at_most_max_element : forall xs seg,
   all_nonpositive xs = true ->
@@ -336,12 +440,79 @@ Proof.
   - (* seg = [] contradicts Hnonemp *)
     simpl in Hnonemp. discriminate.
   - (* seg = x :: xs', a nonempty segment *)
-    (* TODO: Complex proof requiring:
-       1. Segments inherit all_nonpositive property
-       2. Elements of segments are elements of original list
-       3. Combine sum_le_max_in_nonpositive with max_element_is_max
-    *)
-Admitted.
+    (* seg inherits all_nonpositive from xs *)
+    assert (Hseg_np: all_nonpositive (x :: xs') = true).
+    { apply (all_nonpositive_sublist xs (x :: xs') Hall Hin_segs). }
+    (* x is in xs *)
+    assert (Hx_in: In x xs).
+    { apply (elem_in_seg_in_list xs (x :: xs') x Hin_segs). left. reflexivity. }
+    (* Sum of seg <= x (by sum_le_max_in_nonpositive) *)
+    assert (Hsum_x: list_sum (x :: xs') <= x).
+    { apply (sum_le_max_in_nonpositive (x :: xs') x Hseg_np). left. reflexivity. }
+    (* x <= max_element xs (by max_element_is_max) *)
+    assert (Hx_max: x <= max_element xs).
+    { apply (max_element_is_max xs x Hx_in Hne). }
+    (* Combine the two inequalities *)
+    lia.
+Qed.
+
+(* Helper: [] is always in inits *)
+Lemma nil_in_inits : forall (A : Type) (xs : list A),
+  In [] (inits xs).
+Proof.
+  intros A xs.
+  induction xs as [|x xs' IH].
+  - unfold inits. simpl. left. reflexivity.
+  - rewrite inits_cons. left. reflexivity.
+Qed.
+
+(* Helper: [x] is in inits of any list starting with x *)
+Lemma singleton_in_inits : forall (x : Z) xs,
+  In [x] (inits (x :: xs)).
+Proof.
+  intros x xs.
+  rewrite inits_cons.
+  simpl. right.
+  apply in_map_iff.
+  exists []. split.
+  - reflexivity.
+  - apply nil_in_inits.
+Qed.
+
+(* Helper: If y::ys is in tails xs, then [y] is in segs xs *)
+Lemma singleton_from_tail : forall (y : Z) ys xs,
+  In (y :: ys) (tails xs) ->
+  In [y] (segs xs).
+Proof.
+  intros y ys xs Hin.
+  unfold segs, compose.
+  apply in_concat.
+  exists (inits (y :: ys)).
+  split.
+  - apply in_map. exact Hin.
+  - apply singleton_in_inits.
+Qed.
+
+(* Helper: If x is in xs, then there exists a tail in tails xs starting with x *)
+Lemma elem_in_some_tail : forall (x : Z) xs,
+  In x xs ->
+  exists ys, In (x :: ys) (tails xs).
+Proof.
+  intros x xs Hin.
+  induction xs as [|y ys IH].
+  - contradiction.
+  - simpl in Hin. destruct Hin as [Heq | Hin'].
+    + (* x = y *)
+      subst. exists ys.
+      rewrite tails_cons.
+      left. reflexivity.
+    + (* x is in ys *)
+      destruct (IH Hin') as [zs Hin_tail].
+      exists zs.
+      rewrite tails_cons.
+      right.
+      exact Hin_tail.
+Qed.
 
 (* Lemma: The maximum element appears as a singleton segment *)
 Lemma max_element_in_segs : forall xs (x : Z),
@@ -353,11 +524,11 @@ Proof.
   unfold nonempty_segs.
   apply filter_In. split.
   - (* [x] is in segs xs *)
-    (* TODO: Prove that [x] is in segs xs when x is in xs *)
-    admit.
+    destruct (elem_in_some_tail x xs Hin) as [ys Hin_tail].
+    apply (singleton_from_tail x ys xs Hin_tail).
   - (* [x] is nonempty *)
     simpl. reflexivity.
-Admitted.
+Qed.
 
 (* Lemma: In all-nonpositive lists, the maximum subarray is a single element *)
 Lemma all_nonpositive_max_is_singleton : forall xs : list Z,
