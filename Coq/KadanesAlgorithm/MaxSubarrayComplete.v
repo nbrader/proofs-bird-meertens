@@ -1158,31 +1158,21 @@ Proof.
       * exact Hnonpos.
       * discriminate.
     + (* Has positive elements - use semiring result *)
-      (* Strategy:
-         1. tropical_kadanes calls TropicalKadane.kadane_algorithm
-         2. That equals extract_finite (gform8 (lift_Z xs))
-         3. By max_subarray_correct: gform8 = gform1
-         4. Need to show this equals max_subarray_sum_spec
+      unfold tropical_kadanes.
 
-         The key challenge: connecting ExtZ operations on lifted lists
-         to Z operations on the original list.
-      *)
-      (* The core challenge: we need to prove that
-         tropical_kadanes (x :: xs') = max_subarray_sum_spec (x :: xs')
+      (* Strategy: We want to show
+         match TropicalKadane.kadane_algorithm (x :: xs') with | Some z => z | None => 0 end
+           = max_subarray_sum_spec (x :: xs')
 
-         Key facts available:
-         1. TropicalKadane.max_subarray_correct proves gform8 = gform1 on ExtZ lists
-         2. tropical_gform1_is_max_subarray (when completed) will connect
-            gform1 on lifted Z lists to max_subarray_sum_spec on Z lists
-         3. all_nonpositive (x :: xs') = false means there's a positive element
+         TropicalKadane.kadane_algorithm uses gform8 which equals gform1.
+         tropical_gform1_is_max_subarray connects gform1 to max_subarray_sum_spec
+         (when completed).
 
-         The proof requires:
-         - tropical_gform1_is_max_subarray to be completed
-         - A lemma showing extract_finite succeeds when there are positive elements
-         - Careful handling of the lift_Z conversion
+         The main remaining work is showing that the result is Finite (Some z, not None)
+         and that the pattern match gives the right value.
 
-         This is a substantial remaining task that requires the infrastructure
-         to be fully developed.
+         For now, we admit this, as the infrastructure is in place but requires
+         completing the fold_right Z.max lemma.
       *)
 Admitted.
 
