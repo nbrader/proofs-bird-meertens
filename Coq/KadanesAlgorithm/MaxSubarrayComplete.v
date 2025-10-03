@@ -530,18 +530,131 @@ Proof.
     simpl. reflexivity.
 Qed.
 
+(* Helper: fold_right Z.max when maximum element is in the list *)
+Lemma fold_max_achieves_bound : forall (xs : list Z) (m init : Z),
+  In m xs ->
+  (forall x, In x xs -> x <= m) ->
+  init <= m ->
+  fold_right Z.max init xs = m.
+Proof.
+  intros xs m init Hin_m Hall_le Hinit_le.
+  induction xs as [|x xs' IH].
+  - contradiction.
+  - simpl in Hin_m. destruct Hin_m as [Heq | Hin'].
+    + (* m = x, so x is the max *)
+      subst x. simpl.
+      assert (Hfold_le: fold_right Z.max init xs' <= m).
+      { assert (Hall_xs': forall z, In z xs' -> z <= m).
+        { intros z Hin_z. apply Hall_le. simpl. right. exact Hin_z. }
+        clear IH Hall_le. induction xs' as [|y ys IH'].
+        - simpl. exact Hinit_le.
+        - simpl. apply Z.max_lub.
+          + apply Hall_xs'. left. reflexivity.
+          + apply IH'.
+            intros z Hin_z. apply Hall_xs'. right. exact Hin_z. }
+      lia.
+    + (* m is in xs' *)
+      simpl.
+      assert (Hfold_xs': fold_right Z.max init xs' = m).
+      { apply IH.
+        - exact Hin'.
+        - intros y Hin_y. apply Hall_le. right. exact Hin_y. }
+      rewrite Hfold_xs'.
+      assert (Hx_le: x <= m).
+      { apply Hall_le. left. reflexivity. }
+      lia.
+Qed.
+
 (* Lemma: In all-nonpositive lists, the maximum subarray is a single element *)
 Lemma all_nonpositive_max_is_singleton : forall xs : list Z,
   all_nonpositive xs = true ->
   xs <> [] ->
   max_subarray_sum_spec xs = max_element xs.
 Proof.
-  (* TODO: Combine the above lemmas:
-     1. Show max_element is achievable (max_element_in_segs)
-     2. Show no segment sum exceeds max_element (segment_sum_at_most_max_element)
-     3. Therefore max_subarray_sum_spec = max_element
-  *)
-Admitted.
+  intros xs Hall Hne.
+  unfold max_subarray_sum_spec.
+  destruct (nonempty_segs xs) as [|seg segs'] eqn:Hsegs.
+  - (* nonempty_segs xs = [] - contradicts xs <> [] *)
+    (* If xs <> [], then at least singleton segments exist *)
+    exfalso.
+    assert (Hmax_elem: exists x, In x xs).
+    { destruct xs as [|x xs']; [contradiction | exists x; left; reflexivity]. }
+    destruct Hmax_elem as [x Hx_in].
+    assert (Hsing: In [x] (nonempty_segs xs)).
+    { apply (max_element_in_segs xs x Hx_in Hne). }
+    rewrite Hsegs in Hsing. contradiction.
+  - (* nonempty_segs xs = seg :: segs' *)
+    (* Show that max_element is the maximum over all segment sums *)
+    (* First, get max_element in the segments *)
+    assert (Hmax_in: exists x, In x xs /\ max_element xs = x).
+    { apply (max_element_in_list xs Hall Hne). }
+    destruct Hmax_in as [x_max [Hx_max_in Hx_max_eq]].
+    assert (Hsing_in: In [x_max] (nonempty_segs xs)).
+    { apply (max_element_in_segs xs x_max Hx_max_in Hne). }
+    (* list_sum [x_max] = x_max *)
+    assert (Hsum_sing: list_sum [x_max] = x_max).
+    { simpl. lia. }
+    (* Every segment sum <= max_element *)
+    assert (Hall_le: forall s, In s (nonempty_segs xs) -> list_sum s <= max_element xs).
+    { intros s Hs_in.
+      apply (segment_sum_at_most_max_element xs s Hall Hs_in Hne). }
+    (* Therefore fold_right Z.max over segment sums = max_element *)
+    rewrite Hx_max_eq.
+    (* Need to show that x_max is the maximum in the list of sums *)
+    (* Since [x_max] is in nonempty_segs and its sum is x_max *)
+    (* and all other sums are <= x_max, the fold_right Z.max gives x_max *)
+    (* Establish bounds before rewriting *)
+    assert (Hx_max_in_sums: In x_max (map list_sum (nonempty_segs xs))).
+    { apply in_map_iff.
+      exists [x_max]. split.
+      - exact Hsum_sing.
+      - exact Hsing_in. }
+    assert (Hall_sums_le: forall s, In s (map list_sum (nonempty_segs xs)) -> s <= x_max).
+    { intros s Hin_s.
+      apply in_map_iff in Hin_s.
+      destruct Hin_s as [seg' [Heq_s Hin_seg']].
+      subst s.
+      assert (Hle_max: list_sum seg' <= max_element xs).
+      { apply Hall_le. exact Hin_seg'. }
+      rewrite Hx_max_eq in Hle_max.
+      exact Hle_max. }
+    (* Now apply the helper lemma *)
+    (* Goal is already about seg :: segs' from the destruct at line 587 *)
+    (* But hypotheses still refer to nonempty_segs xs - need to rewrite *)
+    rewrite Hsegs in Hx_max_in_sums, Hall_sums_le.
+    (* After simpl: Z.max (list_sum seg) (fold_right Z.max (list_sum seg) (map list_sum segs')) = x_max *)
+    simpl.
+    simpl in Hx_max_in_sums, Hall_sums_le.
+    (* Now we have: In x_max (list_sum seg :: map list_sum segs') *)
+    (* and: forall s, In s (list_sum seg :: map list_sum segs') -> s <= x_max *)
+    (* Need to show: Z.max (list_sum seg) (fold_right Z.max (list_sum seg) (map list_sum segs')) = x_max *)
+
+    (* Need to show: fold_right Z.max (list_sum seg) (map list_sum segs') = x_max *)
+    (* We know x_max is in the list of sums and is an upper bound *)
+    (* Case analysis: is x_max = list_sum seg, or is x_max in the tail? *)
+    destruct Hx_max_in_sums as [Heq_seg | Hin_tail].
+    + (* x_max = list_sum seg *)
+      rewrite <- Heq_seg.
+      (* Need to show: fold_right Z.max (list_sum seg) (map list_sum segs') = list_sum seg *)
+      (* Since all elements in map list_sum segs' are <= list_sum seg *)
+      assert (Hall_tail_le: forall y, In y (map list_sum segs') -> y <= list_sum seg).
+      { intros y Hy.
+        assert (Hy_le_xmax: y <= x_max).
+        { apply Hall_sums_le. right. exact Hy. }
+        lia. }
+      clear - Hall_tail_le.
+      induction (map list_sum segs') as [|z zs IH].
+      * simpl. reflexivity.
+      * simpl.
+        rewrite IH.
+        -- apply Z.max_r. apply Hall_tail_le. left. reflexivity.
+        -- intros y Hy. apply Hall_tail_le. right. exact Hy.
+    + (* x_max is in map list_sum segs' *)
+      apply fold_max_achieves_bound.
+      * exact Hin_tail.
+      * intros y Hy. apply Hall_sums_le. right. exact Hy.
+      * apply Hall_sums_le. left. reflexivity.
+Qed.
 
 (*
 =================================================================================
@@ -549,12 +662,41 @@ LEMMAS FOR CONNECTING GFORM1 TO SPECIFICATION
 =================================================================================
 *)
 
+(* Helper lemma: Finite distributes over Z.max *)
+Lemma finite_max_dist : forall x y : Z,
+  Finite (Z.max x y) = TropicalKadane.tropical_add (Finite x) (Finite y).
+Proof.
+  intros x y.
+  unfold TropicalKadane.tropical_add.
+  reflexivity.
+Qed.
+
+(* Helper lemma: Finite distributes over addition *)
+Lemma finite_plus_dist : forall x y : Z,
+  Finite (x + y) = TropicalKadane.tropical_mul (Finite x) (Finite y).
+Proof.
+  intros x y.
+  unfold TropicalKadane.tropical_mul.
+  reflexivity.
+Qed.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
-  (* TODO: Connect the tropical semiring gform1 to max_subarray_sum_spec
-     This requires working with ExtZ and converting back to Z *)
-  True.
+  xs <> [] ->
+  extZ_to_Z (gform1 (A := ExtZ) (map Finite xs)) = max_subarray_sum_spec xs.
 Proof.
+  (* This proof would require showing that:
+     1. map Finite preserves the segment structure
+     2. fold with extZ_plus on Finite values = Finite of (fold with Z.add)
+     3. fold with extZ_max on Finite values = Finite of (fold with Z.max)
+     4. extZ_to_Z ∘ Finite = id
+
+     This is a substantial proof that requires careful handling of the
+     relationship between Z and ExtZ operations.
+
+     For now, we focus on completing the main algorithm and leave this
+     as a future refinement.
+  *)
 Admitted.
 
 (*
