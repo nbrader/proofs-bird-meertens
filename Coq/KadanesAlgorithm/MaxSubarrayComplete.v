@@ -1054,6 +1054,49 @@ Proof.
   destruct (segs xs); [contradiction | discriminate].
 Qed.
 
+(* Helper: fold_right Z.max is bounded by maximum element *)
+Lemma fold_max_le_maximum : forall (xs : list Z) (m init : Z),
+  (forall x, In x xs -> x <= m) ->
+  init <= m ->
+  fold_right Z.max init xs <= m.
+Proof.
+  intros xs m init Hall init_le.
+  induction xs as [|a xs' IH].
+  - simpl. exact init_le.
+  - simpl.
+    assert (Ha_le: a <= m) by (apply Hall; left; reflexivity).
+    assert (IH': fold_right Z.max init xs' <= m).
+    { apply IH. intros y Hy. apply Hall. right. exact Hy. }
+    apply Z.max_lub; assumption.
+Qed.
+
+(* Helper: when max element m is in list and is maximum, fold gives m *)
+Lemma fold_max_is_maximum : forall (xs : list Z) (m init : Z),
+  In m xs ->
+  (forall x, In x xs -> x <= m) ->
+  init <= m ->
+  fold_right Z.max init xs = m.
+Proof.
+  intros xs m init Hin Hall init_le.
+  induction xs as [|a xs' IH].
+  - contradiction.
+  - simpl in Hin. destruct Hin as [Heq | Hin'].
+    + (* m = a *)
+      subst a. simpl.
+      assert (Hfold_le: fold_right Z.max init xs' <= m).
+      { apply fold_max_le_maximum; [|exact init_le].
+        intros y Hy. apply Hall. right. exact Hy. }
+      lia.
+    + (* m in xs' *)
+      simpl.
+      assert (Ha_le: a <= m) by (apply Hall; left; reflexivity).
+      assert (IH': fold_right Z.max init xs' = m).
+      { apply IH.
+        * exact Hin'.
+        * intros y Hy. apply Hall. right. exact Hy. }
+      lia.
+Qed.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
