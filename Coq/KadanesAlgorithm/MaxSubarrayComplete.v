@@ -1539,22 +1539,36 @@ Proof.
       * discriminate.
     + (* Has positive elements - use semiring result *)
       unfold tropical_kadanes.
+      unfold KadanesAlgorithm.TropicalKadane.kadane_algorithm.
+      unfold KadanesAlgorithm.TropicalKadane.extract_finite.
+      unfold KadanesAlgorithm.TropicalKadane.max_subarray_sum.
+      unfold KadanesAlgorithm.TropicalKadane.lift_Z.
 
-      (* Strategy: We want to show
-         match TropicalKadane.kadane_algorithm (x :: xs') with | Some z => z | None => 0 end
-           = max_subarray_sum_spec (x :: xs')
+      (* We have: match gform8 (map Finite (x :: xs')) with ... end
+         We know gform8 = gform1 by Generalized_Kadane_Correctness
+         And tropical_gform1_is_max_subarray connects gform1 to max_subarray_sum_spec *)
 
-         TropicalKadane.kadane_algorithm uses gform8 which equals gform1.
-         tropical_gform1_is_max_subarray connects gform1 to max_subarray_sum_spec
-         (when completed).
+      rewrite <- Generalized_Kadane_Correctness.
 
-         The main remaining work is showing that the result is Finite (Some z, not None)
-         and that the pattern match gives the right value.
+      (* Now show: match gform1 (map Finite (x :: xs')) with | NegInf => None | Finite z => Some z end = Some ... *)
+      (* and that extracting from Some gives max_subarray_sum_spec *)
 
-         For now, we admit this, as the infrastructure is in place but requires
-         completing the fold_right Z.max lemma.
-      *)
-Admitted.
+      (* tropical_gform1_is_max_subarray tells us:
+         extZ_to_Z (gform1 (map Finite (x :: xs'))) = max_subarray_sum_spec (x :: xs') *)
+
+      assert (H := tropical_gform1_is_max_subarray (x :: xs')).
+      assert (Hne: x :: xs' <> []) by discriminate.
+      specialize (H Hne Hnonpos).
+
+      (* extZ_to_Z and extract_finite differ, but we can relate them *)
+      unfold extZ_to_Z in H.
+      destruct (gform1 (map Finite (x :: xs'))) eqn:Hgform.
+      * (* Case: gform1 = NegInf *)
+        (* This shouldn't happen when there's a positive element *)
+        simpl. simpl in H. symmetry. symmetry in H. exact H.
+      * (* Case: gform1 = Finite z *)
+        simpl. simpl in H. symmetry. symmetry in H. exact H.
+Qed.
 
 (*
 =================================================================================
