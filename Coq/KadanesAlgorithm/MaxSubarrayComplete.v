@@ -931,15 +931,17 @@ Proof.
 Qed.
 
 (* Helper: relationship between segs and nonempty_segs *)
-Lemma segs_split_empty : forall (xs : list Z),
+(* Note: The empty list [] appears MULTIPLE times in segs xs (once per tail),
+   so we cannot split segs into before ++ [[]] ++ after with only one [].
+   This lemma is unused and has an incorrect statement. We remove it. *)
+(* Lemma segs_split_empty : forall (xs : list Z),
   exists before after,
     segs xs = before ++ [[]] ++ after /\
     (forall seg, In seg before -> seg <> []) /\
     (forall seg, In seg after -> seg <> []).
 Proof.
-  (* This is complex because [] could appear anywhere in segs.
-     We'll just use that nonempty_segs filters it out. *)
-Admitted.
+  (* This statement is incorrect - [] appears multiple times in segs *)
+Admitted. *)
 
 (* Helper: nonempty_segs is segs with [] removed *)
 Lemma nonempty_segs_removes_empty : forall (xs : list Z),
