@@ -33,7 +33,6 @@ FreeMonoid/SemiringLemmas.v
 FreeMonoid/TypeCategory.v
 BirdMeertens/Lemmas.v
 BirdMeertens/MajorLemmas.v
-BirdMeertens/TropicalMaxSegSum.v
 BirdMeertens/BirdMeertens.v
 BirdMeertens/TailsMonoid.v
 BirdMeertens/Extra.v
