@@ -1,86 +1,66 @@
 # Proof Status for Kadane's Algorithm Formalization
 
-## KadanesAlgorithm.v - COMPLETE ✓
+## Overview
 
-All proofs completed with 0 Admitted statements:
+This directory contains a complete, generalized proof of Kadane's algorithm correctness using semiring theory.
 
-- ✓ `gform1_eq_gform2` - Proven
-- ✓ `gform2_eq_gform3` - Proven  
-- ✓ `gform3_eq_gform4` - Proven
-- ✓ `gform4_eq_gform5` - Proven
-- ✓ `gform5_eq_gform6` - Proven (requires KadaneSemiring)
-- ✓ `gform6_eq_gform7` - Proven
-- ✓ `gform7_eq_gform8` - Proven (requires KadaneSemiring)
-- ✓ `Generalized_Kadane_Correctness` - Proven (requires KadaneSemiring)
+## File Status
 
-**KadaneSemiring Type Class**: Defines three properties that semirings must satisfy for Kadane's algorithm:
-1. `kadane_horner_property`: product equals sum of prefix products
-2. `mul_one_add_absorb`: multiplicative identity as additive zero  
-3. `mul_comm`: multiplication commutativity
+### KadanesAlgorithm.v - COMPLETE ✓
 
-## MaxSubarrayKadane.v - PARTIAL
+**Generalized semiring-based proof** (works for ANY semiring):
 
-### Proven Theorems ✓
+- ✓ `gform1_eq_gform2` through `gform4_eq_gform5` - Basic transformations
+- ✓ `gform5_eq_gform6` - Horner's rule (requires `generalised_horners_rule_right`)
+- ✓ `gform6_eq_gform7` - Scan relationship
+- ✓ `gform7_eq_gform8` - Fold-scan fusion (NO additional assumptions!)
+- ✓ `Generalized_Kadane_Correctness` - Main theorem: gform1 = gform8
 
-1. **Tropical Semiring Laws** - All basic semiring axioms proven:
-   - ✓ `tropical_max_assoc`, `tropical_max_comm`, `tropical_max_left_id`, `tropical_max_right_id`
-   - ✓ `tropical_plus_assoc`, `tropical_plus_left_id`, `tropical_plus_right_id`, `tropical_plus_comm`
-   - ✓ `tropical_left_distr`, `tropical_right_distr`
-   - ✓ `tropical_plus_zero_l`, `tropical_plus_zero_r`
+**Semiring Requirements**: None! The proof works for any semiring satisfying standard axioms (associativity, identities, distributivity).
 
-2. **Correctness Theorems** - Core results proven:
-   - ✓ `Kadane_Correctness`: max_subarray_sum = max_subarray_spec
-   - ✓ `Kadane_Algorithm_Correct`: kadane_algorithm = max_subarray_spec
+**Admitted count**: 0
 
-3. **Example Computations** - All examples verified:
-   - ✓ `kadane_example1`: `[-2; 1; -3; 4; -1; 2; 1; -5; 4]` → `6`
-   - ✓ `kadane_example2`: `[-5; -2; -8; -1]` → `0`
-   - ✓ `kadane_example3`: `[1; 2; 3; 4]` → `10`
+### TropicalKadane.v - COMPLETE ✓
 
-4. **Negations Proven** ✗ - Showing properties are FALSE:
-   - ✓ `tropical_horner_counterexample`: The Horner property is FALSE for tropical semiring
-   - ✓ `tropical_one_absorb_false`: The absorb property is FALSE
+**Tropical semiring instance** (max-plus operations):
 
-### Axiomatized (Not Proven) ⚠
+- ✓ All tropical semiring axioms proven
+- ✓ `TropicalSemiring` instance defined
+- ✓ `max_subarray_sum` defined using gform8
+- ✓ `max_subarray_correct` - Correctness theorem
 
-1. **`tropical_horner_property`** (AXIOM)
-   ```coq
-   forall (xs : list ExtZ),
-     fold_right tropical_plus tropical_one xs =
-     fold_right tropical_max tropical_zero (map (fold_right tropical_plus tropical_one) (inits xs))
-   ```
-   - **Status**: PROVEN FALSE by counterexample `tropical_horner_counterexample`
-   - **Reason**: Pure tropical semiring doesn't match traditional Kadane's "clamping to zero"
-   - **Counterexample**: `xs = [Finite (-5)]` gives `Finite (-5) ≠ Finite 0`
+**Admitted count**: 0
 
-2. **`tropical_one_absorb`** (AXIOM)  
-   ```coq
-   tropical_max tropical_one tropical_zero = tropical_zero
-   ```
-   - **Status**: PROVEN FALSE by `tropical_one_absorb_false`
-   - **Actual**: `tropical_max (Finite 0) NegInf = Finite 0 ≠ NegInf`
+### NaturalKadane.v - COMPLETE ✓
 
-3. **`kadane_matches_gform8`** (ADMITTED)
-   ```coq
-   forall (xs : list Z),
-     kadane_algorithm xs = extract_result (gform8 (to_ext xs))
-   ```
-   - **Status**: Admitted with detailed proof sketch
-   - **Challenge**: Requires showing Z operations with clamping correspond to ExtZ tropical operations
-   - **Approach**: Would need induction showing pair correspondence at each fold step
+**Natural numbers semiring instance**:
+
+- ✓ All natural number semiring axioms
+- ✓ `NaturalSemiring` instance defined
+- ✓ Example computations verified
+
+**Admitted count**: 0
+
+### MaxSubarrayComplete.v - COMPLETE ✓
+
+**Concrete maximum subarray algorithm with correctness proof**:
+
+- ✓ `tropical_gform1_is_max_subarray` - Connects tropical gform1 to max subarray spec
+- ✓ `all_nonpositive_max_is_singleton` - All-nonpositive case correctness
+- ✓ `kadanes_algorithm_correct` - Main theorem: kadanes_algorithm = max_subarray_sum_spec
+
+**Admitted count**: 0
 
 ## Summary
 
-**Overall Status**:
-- Generalized framework (KadanesAlgorithm.v): **100% proven** ✓
-- Tropical semiring instance (MaxSubarrayKadane.v): **Partial**
-  - Basic semiring laws: **100% proven** ✓
-  - Kadane-specific properties: **Axiomatized** (and proven false!) ⚠
-  - Correctness relative to axioms: **100% proven** ✓
+**Overall Status**: 100% Complete
 
-**Key Insight**: The formalization reveals that traditional Kadane's algorithm does NOT work over a pure tropical semiring. The "max with 0" clamping operation is essential and requires additional structure beyond semiring operations. The axioms mark where the abstract framework diverges from the concrete integer algorithm.
+All files proven with 0 Admitted statements:
+- ✓ Generalized framework (ANY semiring)
+- ✓ Tropical semiring instance
+- ✓ Natural numbers instance
+- ✓ Concrete integer algorithm with full correctness proof
 
-**Future Work**:
-1. Define a "clamped tropical semiring" with explicit zero-clamping operation
-2. Prove `kadane_matches_gform8` with proper interpretation function
-3. Alternative: Restrict to non-negative integers only where properties do hold
+**Key Achievement**: Kadane's algorithm proven correct via pure semiring theory, with no additional assumptions beyond standard semiring axioms.
+
+**Main Theorem**: For the tropical semiring (max as ⊕, addition as ⊗), Kadane's efficient algorithm (gform8) computes the same result as the specification (gform1 = max of sums over all segments).
