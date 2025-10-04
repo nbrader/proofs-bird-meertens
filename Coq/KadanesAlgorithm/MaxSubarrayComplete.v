@@ -2,6 +2,7 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Program.Combinators.
 Require Import Coq.Lists.List.
 Import ListNotations.
+Require Import Coq.Sorting.Permutation.
 
 Require Import Coq.ZArith.BinInt.
 Require Import Coq.ZArith.ZArith.
@@ -1111,6 +1112,67 @@ Proof.
       lia.
 Qed.
 
+(* Helper: 0 is in map list_sum (segs xs) *)
+Lemma zero_in_segs_sums : forall (xs : list Z),
+  In 0 (map list_sum (segs xs)).
+Proof.
+  intro xs.
+  apply in_map_iff.
+  exists [].
+  split.
+  - reflexivity.
+  - apply nil_in_segs.
+Qed.
+
+(* Helper: Every nonempty segment sum appears in all segment sums *)
+Lemma nonempty_sums_subset_all_sums : forall (xs : list Z) (n : Z),
+  In n (map list_sum (nonempty_segs xs)) ->
+  In n (map list_sum (segs xs)).
+Proof.
+  intros xs n Hin.
+  apply in_map_iff in Hin.
+  destruct Hin as [seg [Hsum Hin_seg]].
+  apply in_map_iff.
+  exists seg.
+  split; [exact Hsum |].
+  apply nonempty_segs_removes_empty in Hin_seg.
+  destruct Hin_seg as [Hin_segs _].
+  exact Hin_segs.
+Qed.
+
+(* Helper: If x > 0 is in a list and y <= x for all y in list, then fold >= x *)
+Lemma fold_max_positive_element : forall (xs : list Z) (x init : Z),
+  In x xs ->
+  x > 0 ->
+  (forall y, In y xs -> y <= x) ->
+  init <= x ->
+  fold_right Z.max init xs >= x.
+Proof.
+  intros xs x init Hin Hpos Hall init_le.
+  assert (Hfold_eq: fold_right Z.max init xs = x).
+  { apply fold_max_is_maximum; assumption. }
+  rewrite Hfold_eq.
+  lia.
+Qed.
+
+(* Helper: fold_right Z.max always returns an element from the nonempty list *)
+Lemma fold_max_in_list : forall (init : Z) (xs : list Z),
+  In (fold_right Z.max init xs) (init :: xs).
+Proof.
+  intros init xs.
+  induction xs as [|x xs' IH].
+  - simpl. left. reflexivity.
+  - simpl.
+    destruct (Z.max_spec x (fold_right Z.max init xs')) as [[Hle Hmax]|[Hle Hmax]];
+      rewrite Hmax.
+    + (* max = fold_right Z.max init xs', which is in init :: xs' by IH *)
+      simpl in IH. destruct IH as [Heq|Hin].
+      * left. exact Heq.
+      * right. right. exact Hin.
+    + (* max = x *)
+      right. left. reflexivity.
+Qed.
+
 (* Lemma: gform1 from tropical semiring computes the maximum subarray sum *)
 Lemma tropical_gform1_is_max_subarray : forall xs : list Z,
   xs <> [] ->
@@ -1257,28 +1319,193 @@ Proof.
       (* Cleaner approach: Show that the maximum element is the same in both lists,
          and apply fold_max_is_maximum to both. *)
 
-      (* Let m = fold_right Z.max s ss (the max over segs sums) *)
+      (* Strategy: The maximum value in both lists is the same, call it m.
+         We'll show both folds equal m by proving:
+         1. m is in both lists
+         2. m is >= all elements in both lists
+         Then apply fold_max_is_maximum to each *)
+
+      (* First, establish what we're comparing *)
+      set (all_sums := s :: ss).
+      set (nonempty_sums := list_sum seg :: map list_sum rest).
+
+      (* We have all_sums = map list_sum (segs xs) by Hsums *)
+      assert (Hall_sums_eq: all_sums = map list_sum (segs xs)) by (unfold all_sums; symmetry; exact Hsums).
+
+      (* And nonempty_sums = map list_sum (nonempty_segs xs) *)
+      assert (Hnonempty_sums_eq: nonempty_sums = map list_sum (nonempty_segs xs)).
+      { unfold nonempty_sums.
+        rewrite Hnonempty.
+        reflexivity. }
+
+      (* Let m = fold_right Z.max s ss (the max over all_sums) *)
       set (m := fold_right Z.max s ss).
 
       (* We have m > 0 *)
       assert (Hm_pos: m > 0) by (unfold m; exact Hfold_pos).
 
-      (* m is an element of s :: ss *)
-      (* Actually, m might not be in the list - it's the maximum.
-         But we know there exists a positive element (list_sum pos_seg) in the list,
-         and m >= that element, so m > 0. *)
+      (* Since list_sum pos_seg is in all_sums and m >= it, and m is the fold value *)
+      (* Also, list_sum pos_seg is a nonempty segment sum *)
+      assert (Hpos_ne: pos_seg <> []).
+      { intro Hcontra. subst. simpl in Hsum_pos. lia. }
 
-      (* The hard part is showing that m is also the max of the nonempty sums.
-         Key facts:
-         1. All nonempty sums appear in all sums (proven via Hsubset above)
-         2. The only difference is that all sums also contains 0
-         3. m is the max of all sums, and m > 0
-         4. Therefore m must also be the max of nonempty sums (since any element > m
-            would be in nonempty sums and thus in all sums, contradicting m being max) *)
+      assert (Hpos_in_nonempty: In (list_sum pos_seg) nonempty_sums).
+      { rewrite Hnonempty_sums_eq.
+        apply in_map_iff.
+        exists pos_seg.
+        split; [reflexivity |].
+        apply nonempty_segs_removes_empty.
+        split; [exact Hin_pos | exact Hpos_ne]. }
 
-      (* This proof is getting quite involved. The key missing lemma is about
-         the relationship between fold_right Z.max over two lists where one is
-         the other with 0 added, and the max is > 0. *)
+      (* Now I'll show that m is also the maximum of nonempty_sums *)
+      (* Claim: fold_right Z.max (list_sum seg) (map list_sum rest) = m *)
+
+      (* Key insight: m is the max of all_sums. All elements of nonempty_sums are in all_sums.
+         So m >= all elements of nonempty_sums. Also, since m > 0 and 0 is in all_sums,
+         m must come from some nonempty segment (since only [] gives 0).
+         Therefore m is in nonempty_sums. *)
+
+      (* The maximum value must come from a nonempty segment since m > 0 and only [] sums to 0 *)
+      assert (Hm_from_nonempty: exists seg_m, In seg_m (nonempty_segs xs) /\ list_sum seg_m = m).
+      { (* Since m is the max of all_sums and m > 0, it can't be the sum of [] *)
+        (* We know m is the fold of all_sums. We need to find which segment gives this maximum. *)
+        (* Key: m must be in all_sums (it's the max of a nonempty list) *)
+        (* Since m > 0 and list_sum [] = 0, the segment with sum m must be nonempty *)
+
+        (* First, show that m is actually in all_sums *)
+        (* Actually, this is tricky - fold_right Z.max doesn't guarantee m is IN the list,
+           only that it's >= all elements. But we know list_sum pos_seg is in the list
+           and m >= list_sum pos_seg. *)
+
+        (* Different approach: We know m = fold_right Z.max s ss where s :: ss = map list_sum (segs xs).
+           This means m is either s or the max of ss. Either way, m is in s :: ss. *)
+
+        (* Let me use a helper: the fold equals one of the elements when the list is nonempty *)
+        assert (Hm_in_all: In m all_sums).
+        { unfold m, all_sums.
+          apply fold_max_in_list. }
+
+        (* Now m is in all_sums = map list_sum (segs xs) *)
+        rewrite Hall_sums_eq in Hm_in_all.
+        apply in_map_iff in Hm_in_all.
+        destruct Hm_in_all as [seg_m [Hsum_m Hin_m]].
+
+        (* seg_m is a segment with sum m. Since m > 0, seg_m <> [] *)
+        assert (Hseg_ne: seg_m <> []).
+        { intro Hcontra. subst. simpl in Hsum_m. lia. }
+
+        (* Therefore seg_m is in nonempty_segs xs *)
+        exists seg_m.
+        split.
+        - apply nonempty_segs_removes_empty. split; assumption.
+        - exact Hsum_m. }
+
+      (* Now use this to complete the proof *)
+      destruct Hm_from_nonempty as [seg_m [Hin_seg_m Hsum_m]].
+
+      (* m is in nonempty_sums *)
+      assert (Hm_in_nonempty: In m nonempty_sums).
+      { rewrite Hnonempty_sums_eq.
+        apply in_map_iff.
+        exists seg_m.
+        split.
+        - rewrite <- Hsum_m. reflexivity.
+        - exact Hin_seg_m. }
+
+      (* Now both folds equal m by showing:
+         1. m is in both lists
+         2. m >= all elements in both lists *)
+
+      (* m >= all elements in all_sums (by definition of fold_right Z.max) *)
+      assert (Hm_max_all: forall y, In y all_sums -> y <= m).
+      { intros y Hy.
+        unfold m, all_sums in *.
+        (* fold_right Z.max s ss >= all elements of s :: ss *)
+        simpl in Hy. destruct Hy as [Heq | Hin].
+        - (* y = s *)
+          subst.
+          destruct ss as [|s' ss'].
+          + simpl. unfold m. simpl. lia.
+          + unfold m. simpl.
+            (* y <= Z.max s' (fold_right Z.max y ss') *)
+            (* Since fold_right Z.max y ss' >= y, and Z.max takes the larger of s' and fold....,
+               the result is >= y *)
+            transitivity (fold_right Z.max y ss').
+            * clear. induction ss' as [|s'' ss'' IH].
+              -- simpl. lia.
+              -- simpl. transitivity (fold_right Z.max y ss'').
+                 ++ exact IH.
+                 ++ apply Z.le_max_r.
+            * apply Z.le_max_r.
+        - (* y is in ss *)
+          assert (Hge: fold_right Z.max s ss >= y).
+          { apply fold_max_ge_element with (init := s).
+            exact Hin. }
+          lia. }
+
+      (* m >= all elements in nonempty_sums (since nonempty_sums ⊆ all_sums) *)
+      assert (Hm_max_nonempty: forall z, In z nonempty_sums -> z <= m).
+      { intros z Hz.
+        apply Hm_max_all.
+        rewrite Hnonempty_sums_eq in Hz.
+        rewrite Hall_sums_eq.
+        apply nonempty_sums_subset_all_sums.
+        exact Hz. }
+
+      (* Therefore fold_right Z.max (list_sum seg) (map list_sum rest) = m *)
+
+      (* First, show that fold_right Z.max (list_sum seg) (map list_sum rest) = m *)
+      assert (Hfold_nonempty_eq_m: fold_right Z.max (list_sum seg) (map list_sum rest) = m).
+      { (* We know In m nonempty_sums *)
+        unfold nonempty_sums in Hm_in_nonempty.
+        simpl in Hm_in_nonempty.
+        destruct Hm_in_nonempty as [Heq_m | Hin_m].
+        - (* Case 1: m = list_sum seg *)
+          (* Then fold_right Z.max (list_sum seg) (map list_sum rest) = list_sum seg = m *)
+          (* Since m >= all elements in nonempty_sums and m = list_sum seg, we have
+             fold_right Z.max (list_sum seg) (map list_sum rest) = list_sum seg *)
+          symmetry in Heq_m.
+          rewrite <- Heq_m.
+          (* Goal: fold_right Z.max (list_sum seg) (map list_sum rest) = list_sum seg *)
+          assert (Hfold_le: fold_right Z.max (list_sum seg) (map list_sum rest) <= list_sum seg).
+          { apply fold_max_le_maximum.
+            - intros z Hz.
+              assert (Hz_le_m: z <= m).
+              { apply Hm_max_nonempty.
+                unfold nonempty_sums. simpl. right. exact Hz. }
+              (* Heq_m : m = list_sum seg, so z <= m = list_sum seg *)
+              lia.
+            - lia. }
+          (* Since fold_right ... <= list_sum seg, and it's also >= list_sum seg (by fold property), they're equal *)
+          (* fold_right Z.max init xs always returns a value >= init *)
+          (* This follows because fold_right Z.max init (x::xs) = Z.max x (fold_right Z.max init xs) >= init *)
+          destruct (map list_sum rest) as [|r rs] eqn:Hrest_eq.
+          + (* rest is empty, so fold_right Z.max (list_sum seg) [] = list_sum seg *)
+            simpl. reflexivity.
+          + (* rest is nonempty, so fold_right Z.max (list_sum seg) (r::rs) = Z.max r (fold...) >= list_sum seg *)
+            (* We have Hfold_le, and also the fold >= list_sum seg by Z.max properties *)
+            simpl.
+            assert (Hfold_ge_seg: Z.max r (fold_right Z.max (list_sum seg) rs) >= list_sum seg).
+            { admit. }
+            simpl in Hfold_le.
+            apply Z.le_antisymm.
+            * rewrite Heq_m.
+              exact Hfold_le.
+            * apply Z.ge_le_iff.
+              rewrite Heq_m.
+              exact Hfold_ge_seg.
+        - (* Case 2: m is in map list_sum rest *)
+          apply fold_max_is_maximum.
+          + exact Hin_m.
+          + intros z Hz. apply Hm_max_nonempty.
+            unfold nonempty_sums. simpl. right. exact Hz.
+          + apply Hm_max_nonempty.
+            unfold nonempty_sums. simpl. left. reflexivity. }
+
+      (* Now we have both folds equal m *)
+      unfold m in Hfold_nonempty_eq_m.
+      symmetry.
+      exact Hfold_nonempty_eq_m.
 Admitted.
 
 (*
