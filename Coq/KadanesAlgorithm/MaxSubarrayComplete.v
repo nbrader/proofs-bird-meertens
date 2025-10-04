@@ -152,10 +152,6 @@ LEMMAS FOR ALL-NONPOSITIVE CASE
 =================================================================================
 *)
 
-(* Helper: When all elements are nonpositive, extending a segment decreases or maintains the sum *)
-
-(* Helper: Adding a nonpositive element to the front decreases sum *)
-
 (* Lemma: max_element returns the maximum element in the list *)
 Lemma max_element_is_max : forall xs x,
   In x xs ->
@@ -676,8 +672,6 @@ Proof.
     reflexivity.
 Qed.
 
-(* Helper: fold tropical_add on Finite list starting with init = Finite of fold Z.max *)
-
 (* Specialized version for non-empty lists *)
 
 (* Helper: map distributes over concat *)
@@ -844,7 +838,6 @@ Proof.
   - unfold inits. simpl. left. reflexivity.
 Qed.
 
-(* Helper: relationship between segs and nonempty_segs *)
 (* Note: The empty list [] appears MULTIPLE times in segs xs (once per tail),
    so we cannot split segs into before ++ [[]] ++ after with only one [].
    This lemma is unused and has an incorrect statement. We remove it. *)
@@ -856,8 +849,6 @@ Qed.
 Proof.
   (* This statement is incorrect - [] appears multiple times in segs *)
 Admitted. *)
-
-(* Helper: nonempty_segs is segs with [] removed *)
 Lemma nonempty_segs_removes_empty : forall (xs : list Z),
   forall seg, In seg (nonempty_segs xs) <-> (In seg (segs xs) /\ seg <> []).
 Proof.
@@ -872,8 +863,6 @@ Proof.
     split; [exact Hin |].
     destruct seg; [contradiction | reflexivity].
 Qed.
-
-(* Helper: map list_sum preserves membership except for empty *)
 
 (* Helper lemma: tropical_add with Finite behaves like Z.max *)
 
@@ -1007,8 +996,6 @@ Proof.
       lia.
 Qed.
 
-(* Helper: 0 is in map list_sum (segs xs) *)
-
 (* Helper: Every nonempty segment sum appears in all segment sums *)
 Lemma nonempty_sums_subset_all_sums : forall (xs : list Z) (n : Z),
   In n (map list_sum (nonempty_segs xs)) ->
@@ -1024,8 +1011,6 @@ Proof.
   destruct Hin_seg as [Hin_segs _].
   exact Hin_segs.
 Qed.
-
-(* Helper: If x > 0 is in a list and y <= x for all y in list, then fold >= x *)
 
 (* Helper: fold_right Z.max always returns an element from the nonempty list *)
 Lemma fold_max_in_list : forall (init : Z) (xs : list Z),
