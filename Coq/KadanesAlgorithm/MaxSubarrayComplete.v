@@ -1486,7 +1486,15 @@ Proof.
             (* We have Hfold_le, and also the fold >= list_sum seg by Z.max properties *)
             simpl.
             assert (Hfold_ge_seg: Z.max r (fold_right Z.max (list_sum seg) rs) >= list_sum seg).
-            { admit. }
+            { (* Z.max r x >= x for any r and x, and fold_right Z.max (list_sum seg) rs >= list_sum seg *)
+              (* By fold property: fold_right Z.max init xs >= init *)
+              assert (Hfold_init: forall init xs, fold_right Z.max init xs >= init).
+              { clear. intros init xs. induction xs as [|x xs' IH].
+                - simpl. lia.
+                - simpl. assert (H := Z.le_max_r x (fold_right Z.max init xs')). lia. }
+              assert (H1: fold_right Z.max (list_sum seg) rs >= list_sum seg).
+              { apply Hfold_init. }
+              assert (H2 := Z.le_max_r r (fold_right Z.max (list_sum seg) rs)). lia. }
             simpl in Hfold_le.
             apply Z.le_antisymm.
             * rewrite Heq_m.
@@ -1506,7 +1514,7 @@ Proof.
       unfold m in Hfold_nonempty_eq_m.
       symmetry.
       exact Hfold_nonempty_eq_m.
-Admitted.
+Qed.
 
 (*
 =================================================================================
