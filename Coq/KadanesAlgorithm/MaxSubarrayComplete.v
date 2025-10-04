@@ -1425,3 +1425,33 @@ Key theorems:
   - all_nonpositive_max_is_singleton: all-nonpositive optimal subarray is a singleton
   - kadanes_algorithm_correct: kadanes_algorithm = max_subarray_sum_spec
 *)
+
+(*
+=================================================================================
+EXAMPLE USAGE
+=================================================================================
+*)
+
+(* Example 1: Array with positive sum *)
+Example kadane_example1 : kadanes_algorithm [(-2) ; 1 ; (-3) ; 4 ; (-1) ; 2 ; 1 ; (-5) ; 4] = 6.
+Proof. reflexivity. Qed.
+
+(* Example 2: All negative array *)
+Example kadane_example2 : kadanes_algorithm [(-2) ; (-3) ; (-1) ; (-5)] = (-1).
+Proof. reflexivity. Qed.
+
+(* Example 3: Mixed with zero *)
+Example kadane_example3 : kadanes_algorithm [(-1) ; 0 ; (-2) ; 3 ; 1 ; (-1)] = 4.
+Proof. reflexivity. Qed.
+
+(* Example 4: All positive *)
+Example kadane_example4 : kadanes_algorithm [1 ; 2 ; 3 ; 4] = 10.
+Proof. reflexivity. Qed.
+
+(* Example 5: Single element *)
+Example kadane_example5 : kadanes_algorithm [5] = 5.
+Proof. reflexivity. Qed.
+
+(* Example 6: Empty array *)
+Example kadane_example6 : kadanes_algorithm [] = 0.
+Proof. reflexivity. Qed.
