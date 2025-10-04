@@ -20,25 +20,29 @@ Require Import CoqUtilLib.FunctionLemmas.
 
 (*
 =================================================================================
-COMPLETE KADANE'S ALGORITHM WITH CORRECTNESS PROOF
+KADANE'S ALGORITHM: CORRECTNESS PROOF VIA TROPICAL SEMIRING
 =================================================================================
 
-This file defines a complete, practical version of Kadane's algorithm that:
-1. Handles all-nonpositive inputs by returning the maximum single element
-2. Handles inputs with positive elements using the semiring-based algorithm
-3. Is PROVEN CORRECT by connecting gform8 (efficient) to gform1 (specification)
+This file proves that Kadane's algorithm correctly computes the maximum subarray sum.
 
-APPROACH:
-✓ Proved that gform1 (from tropical semiring) matches the plain-English spec
-✓ Used the proven equivalence gform1 = gform8 from KadanesAlgorithm.v
-✓ Handled the all-nonpositive case separately (max single element)
-✓ Combined both cases into a complete algorithm with full correctness proof
+ALGORITHM:
+  kadanes_algorithm : list Z → Z
+  Computes the maximum sum among all non-empty contiguous subarrays.
 
-RESULT:
-The efficient algorithm is proven to correctly compute:
-  "the maximum sum among all contiguous subarrays"
+SPECIFICATION:
+  max_subarray_sum_spec : list Z → Z
+  The maximum value of list_sum over all non-empty segments.
 
-STATUS: All proofs complete (0 Admitted statements)
+MAIN THEOREM:
+  kadanes_algorithm = max_subarray_sum_spec
+
+PROOF STRUCTURE:
+  The algorithm handles two cases:
+  1. All-nonpositive inputs: Returns the maximum single element
+  2. Otherwise: Uses the tropical semiring formulation (gform8)
+
+  The proof connects the efficient algorithm (gform8) to the specification
+  via the generalized semiring framework from KadanesAlgorithm.v.
 *)
 
 (*
@@ -47,87 +51,60 @@ SPECIFICATION
 =================================================================================
 *)
 
-(* A segment (contiguous subarray) is a portion of the list between indices i and j *)
-(* We use the existing segs function which generates all contiguous subarrays *)
-
-(* Helper: standard list sum *)
+(* Sum of a list of integers *)
 Fixpoint list_sum (xs : list Z) : Z :=
   match xs with
   | [] => 0
   | x :: xs' => x + list_sum xs'
   end.
 
-(* Non-empty segments only - filter out empty list *)
+(* Non-empty segments (contiguous subarrays) of a list *)
 Definition nonempty_segs (xs : list Z) : list (list Z) :=
   filter (fun seg => match seg with [] => false | _ => true end) (segs xs).
 
-(* The maximum subarray sum is the maximum sum among all NON-EMPTY segments *)
-(* This matches the standard definition which requires at least one element *)
+(* Maximum subarray sum: max { sum(seg) | seg ∈ nonempty_segs(xs) } *)
 Definition max_subarray_sum_spec (xs : list Z) : Z :=
-  (* Specification: maximum sum over all non-empty contiguous subarrays *)
   match nonempty_segs xs with
-  | [] => 0  (* only happens when xs = [] *)
+  | [] => 0
   | seg :: rest => fold_right Z.max (list_sum seg) (map list_sum rest)
   end.
 
 (*
 =================================================================================
-CONVERSION BETWEEN ExtZ AND Z
+TROPICAL SEMIRING CONVERSION
 =================================================================================
 *)
 
-(* Convert ExtZ to Z - NegInf maps to a very negative value or 0 for practical purposes *)
+(* Extract integer from ExtZ (extended integers with -∞) *)
 Definition extZ_to_Z (x : ExtZ) : Z :=
   match x with
-  | NegInf => 0  (* For max subarray, empty subarray has sum 0 *)
+  | NegInf => 0
   | Finite z => z
   end.
 
-(* Convert Z to ExtZ *)
 Definition Z_to_extZ (z : Z) : ExtZ := Finite z.
 
-(*
-=================================================================================
-CONNECTING TO TROPICAL SEMIRING GFORM8
-=================================================================================
-*)
-
-(* Use the kadane_algorithm from TropicalKadane.v which is proven correct *)
-(* It returns option Z, so we need to handle the None case *)
+(* Extract result from TropicalKadane's option type *)
 Definition tropical_kadanes (xs : list Z) : Z :=
   match KadanesAlgorithm.TropicalKadane.kadane_algorithm xs with
   | Some z => z
-  | None => 0  (* Empty list case *)
+  | None => 0
   end.
 
 (*
 =================================================================================
-PROVING GFORM1 MATCHES THE SPECIFICATION
+KADANE'S ALGORITHM
 =================================================================================
 *)
 
-(* We prove that gform1 from the tropical semiring formulation
-   actually computes the maximum subarray sum. This is established by
-   the theorem tropical_gform1_is_max_subarray below, which shows:
-   1. semiring_sum with ExtZ max operation gives us the maximum
-   2. semiring_product with ExtZ addition gives us the sum
-   3. The composition computes max sum over all segments
-*)
-
-(*
-=================================================================================
-COMPLETE ALGORITHM WITH CASE HANDLING
-=================================================================================
-*)
-
-(* Check if all elements are nonpositive *)
+(* Test if all elements are ≤ 0 *)
 Fixpoint all_nonpositive (xs : list Z) : bool :=
   match xs with
   | [] => true
   | x :: xs' => (x <=? 0) && all_nonpositive xs'
   end.
 
-(* For all-nonpositive case: return maximum single element *)
+(* Maximum element in a list *)
 Fixpoint max_element (xs : list Z) : Z :=
   match xs with
   | [] => 0
@@ -135,43 +112,38 @@ Fixpoint max_element (xs : list Z) : Z :=
   | x :: xs' => Z.max x (max_element xs')
   end.
 
-(* The complete algorithm *)
+(* Kadane's algorithm: maximum subarray sum *)
 Definition kadanes_algorithm (xs : list Z) : Z :=
   match xs with
   | [] => 0
   | _ =>
       if all_nonpositive xs
       then max_element xs
-      else tropical_kadanes xs  (* Use the tropical semiring algorithm *)
+      else tropical_kadanes xs
   end.
 
 (*
 =================================================================================
-CORRECTNESS PROOF STRATEGY
+CORRECTNESS PROOF
 =================================================================================
 
-The main theorem kadanes_algorithm_correct proves:
-  ∀ xs : list Z, kadanes_algorithm xs = max_subarray_sum_spec xs
+Main theorem:
+  kadanes_algorithm = max_subarray_sum_spec
 
-PROOF STRATEGY (implemented below):
+Proof by cases on the input list:
 
-1. Case: xs = []
-   ✓ Trivial: both return 0
+1. Empty list: Both sides return 0
 
-2. Case: all_nonpositive xs = true
-   ✓ Proved max_element xs equals the maximum single element
-   ✓ Proved maximum subarray in all-nonpositive case is a single element
-   ✓ Therefore max_element xs = max_subarray_sum_spec xs
+2. All elements ≤ 0: The maximum subarray is a singleton containing the
+   maximum element (adding more elements decreases the sum)
 
-3. Case: all_nonpositive xs = false (has positive elements)
-   ✓ Used gform8 from TropicalKadane.v (the efficient algorithm)
-   ✓ Used proven equivalence: gform1 = gform8 from Generalized_Kadane_Correctness
-   ✓ Proved gform1 xs = max_subarray_sum_spec xs via tropical_gform1_is_max_subarray
-   ✓ Concluded: gform8 xs = max_subarray_sum_spec xs
+3. Has positive elements: The tropical semiring formulation (gform8) computes
+   the correct result. This follows from:
+   - gform8 = gform1 (proven in KadanesAlgorithm.v)
+   - gform1 computes max_subarray_sum_spec (proven below)
 
-Key insight: gform1 (specification form) IS the same as our plain-English spec
-- it's "sum of products over all segments" which for tropical semiring means
-"max of sums over all segments" = maximum subarray sum!
+The key: In the tropical semiring, "sum of products" becomes "max of sums",
+so gform1 directly expresses the maximum subarray specification.
 *)
 
 (*
@@ -1548,50 +1520,35 @@ Proof.
       unfold KadanesAlgorithm.TropicalKadane.max_subarray_sum.
       unfold KadanesAlgorithm.TropicalKadane.lift_Z.
 
-      (* We have: match gform8 (map Finite (x :: xs')) with ... end
-         We know gform8 = gform1 by Generalized_Kadane_Correctness
-         And tropical_gform1_is_max_subarray connects gform1 to max_subarray_sum_spec *)
-
+      (* Use gform8 = gform1 *)
       rewrite <- Generalized_Kadane_Correctness.
 
-      (* Now show: match gform1 (map Finite (x :: xs')) with | NegInf => None | Finite z => Some z end = Some ... *)
-      (* and that extracting from Some gives max_subarray_sum_spec *)
-
-      (* tropical_gform1_is_max_subarray tells us:
-         extZ_to_Z (gform1 (map Finite (x :: xs'))) = max_subarray_sum_spec (x :: xs') *)
-
+      (* Apply tropical_gform1_is_max_subarray *)
       assert (H := tropical_gform1_is_max_subarray (x :: xs')).
       assert (Hne: x :: xs' <> []) by discriminate.
       specialize (H Hne Hnonpos).
 
-      (* extZ_to_Z and extract_finite differ, but we can relate them *)
+      (* Match on gform1 to extract the result *)
       unfold extZ_to_Z in H.
       destruct (gform1 (map Finite (x :: xs'))) eqn:Hgform.
-      * (* Case: gform1 = NegInf *)
-        (* This shouldn't happen when there's a positive element *)
-        simpl. simpl in H. symmetry. symmetry in H. exact H.
-      * (* Case: gform1 = Finite z *)
-        simpl. simpl in H. symmetry. symmetry in H. exact H.
+      * simpl. simpl in H. symmetry. symmetry in H. exact H.
+      * simpl. simpl in H. symmetry. symmetry in H. exact H.
 Qed.
 
 (*
 =================================================================================
-COMPLETION STATUS
+SUMMARY
 =================================================================================
 
-This file is now COMPLETE with all proofs finished:
+This file proves Kadane's algorithm correct via the tropical semiring framework.
 
-✓ Defined conversion between ExtZ and Z (extZ_to_Z, Z_to_extZ)
-✓ Extracted form8 implementation from TropicalKadane.v (tropical_kadanes)
-✓ Proved tropical_gform1_is_max_subarray showing the tropical semiring computes
-  the maximum subarray sum correctly
-✓ Proved all_nonpositive_max_is_singleton showing that for all-nonpositive
-  inputs, the optimal subarray is a single maximum element
-✓ Proved kadanes_algorithm_correct - the main correctness theorem
+The proof leverages the generalized semiring-based derivation from
+KadanesAlgorithm.v, requiring only an "interpretation" proof that tropical
+semiring operations (max as ⊕, addition as ⊗) correctly compute maximum
+subarray sums.
 
-The beauty of this approach: We leverage the fully general semiring proof
-and only prove the "interpretation" - that the tropical semiring operations
-actually compute what we want (max of sums).
-
-All proofs: 0 Admitted statements.
+Key theorems:
+  - tropical_gform1_is_max_subarray: gform1 computes max subarray sum
+  - all_nonpositive_max_is_singleton: all-nonpositive optimal subarray is a singleton
+  - kadanes_algorithm_correct: kadanes_algorithm = max_subarray_sum_spec
 *)
