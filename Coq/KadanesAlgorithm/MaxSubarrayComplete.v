@@ -677,18 +677,6 @@ Proof.
 Qed.
 
 (* Helper: fold tropical_add on Finite list starting with init = Finite of fold Z.max *)
-Lemma fold_tropical_add_finite_general : forall (xs : list Z) (init : Z),
-  fold_right TropicalKadane.tropical_add (Finite init) (map Finite xs) =
-  Finite (fold_right Z.max init xs).
-Proof.
-  intros xs init.
-  induction xs as [|x xs' IH].
-  - simpl. reflexivity.
-  - simpl map. simpl fold_right.
-    rewrite IH.
-    unfold TropicalKadane.tropical_add.
-    reflexivity.
-Qed.
 
 (* Specialized version for non-empty lists *)
 
