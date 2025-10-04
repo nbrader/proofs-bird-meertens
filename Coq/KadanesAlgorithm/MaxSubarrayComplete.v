@@ -153,36 +153,8 @@ LEMMAS FOR ALL-NONPOSITIVE CASE
 *)
 
 (* Helper: When all elements are nonpositive, extending a segment decreases or maintains the sum *)
-Lemma list_sum_nonpositive_decreases : forall xs x,
-  all_nonpositive xs = true ->
-  x <= 0 ->
-  list_sum (xs ++ [x]) <= list_sum xs.
-Proof.
-  intros xs x Hall Hx.
-  induction xs as [|y ys IH].
-  - simpl. lia.
-  - simpl in *.
-    apply andb_true_iff in Hall. destruct Hall as [Hy Hall'].
-    apply Z.leb_le in Hy.
-    assert (IH' := IH Hall').
-    lia.
-Qed.
 
 (* Helper: Adding a nonpositive element to the front decreases sum *)
-Lemma list_sum_cons_nonpositive : forall x xs,
-  x <= 0 ->
-  all_nonpositive xs = true ->
-  list_sum (x :: xs) <= list_sum xs.
-Proof.
-  intros x xs Hx Hxs.
-  simpl.
-  induction xs as [|y ys IH].
-  - simpl. lia.
-  - simpl in *.
-    apply andb_true_iff in Hxs. destruct Hxs as [Hy Hys].
-    apply Z.leb_le in Hy.
-    lia.
-Qed.
 
 (* Lemma: max_element returns the maximum element in the list *)
 Lemma max_element_is_max : forall xs x,
@@ -638,22 +610,8 @@ LEMMAS FOR CONNECTING GFORM1 TO SPECIFICATION
 *)
 
 (* Helper lemma: Finite distributes over Z.max *)
-Lemma finite_max_dist : forall x y : Z,
-  Finite (Z.max x y) = TropicalKadane.tropical_add (Finite x) (Finite y).
-Proof.
-  intros x y.
-  unfold TropicalKadane.tropical_add.
-  reflexivity.
-Qed.
 
 (* Helper lemma: Finite distributes over addition *)
-Lemma finite_plus_dist : forall x y : Z,
-  Finite (x + y) = TropicalKadane.tropical_mul (Finite x) (Finite y).
-Proof.
-  intros x y.
-  unfold TropicalKadane.tropical_mul.
-  reflexivity.
-Qed.
 
 (* Helper: xs is in inits xs *)
 Lemma full_list_in_inits : forall {A : Type} (xs : list A),
@@ -733,12 +691,6 @@ Proof.
 Qed.
 
 (* Specialized version for non-empty lists *)
-Lemma fold_tropical_add_finite : forall (x : Z) (xs : list Z) (init : Z),
-  fold_right TropicalKadane.tropical_add (Finite init) (map Finite (x :: xs)) =
-  Finite (fold_right Z.max init (x :: xs)).
-Proof.
-  intros. apply fold_tropical_add_finite_general.
-Qed.
 
 (* Helper: map distributes over concat *)
 Lemma map_concat : forall {A B : Type} (f : A -> B) (xss : list (list A)),
@@ -934,29 +886,8 @@ Proof.
 Qed.
 
 (* Helper: map list_sum preserves membership except for empty *)
-Lemma map_list_sum_nonempty_segs_subset : forall (xs : list Z),
-  forall s, In s (map list_sum (nonempty_segs xs)) ->
-            In s (map list_sum (segs xs)).
-Proof.
-  intros xs s Hin.
-  apply in_map_iff in Hin.
-  destruct Hin as [seg [Hsum Hin_seg]].
-  apply in_map_iff.
-  exists seg.
-  split; [exact Hsum |].
-  apply nonempty_segs_removes_empty in Hin_seg.
-  destruct Hin_seg as [Hin_segs _].
-  exact Hin_segs.
-Qed.
 
 (* Helper lemma: tropical_add with Finite behaves like Z.max *)
-Lemma tropical_add_finite : forall x y : Z,
-  TropicalKadane.tropical_add (Finite x) (Finite y) = Finite (Z.max x y).
-Proof.
-  intros x y.
-  unfold TropicalKadane.tropical_add.
-  reflexivity.
-Qed.
 
 (* Helper: fold_right Z.max is associative/commutative in a specific sense *)
 Lemma fold_max_cons_swap : forall (x y : Z) (ys : list Z),
@@ -1089,16 +1020,6 @@ Proof.
 Qed.
 
 (* Helper: 0 is in map list_sum (segs xs) *)
-Lemma zero_in_segs_sums : forall (xs : list Z),
-  In 0 (map list_sum (segs xs)).
-Proof.
-  intro xs.
-  apply in_map_iff.
-  exists [].
-  split.
-  - reflexivity.
-  - apply nil_in_segs.
-Qed.
 
 (* Helper: Every nonempty segment sum appears in all segment sums *)
 Lemma nonempty_sums_subset_all_sums : forall (xs : list Z) (n : Z),
@@ -1117,19 +1038,6 @@ Proof.
 Qed.
 
 (* Helper: If x > 0 is in a list and y <= x for all y in list, then fold >= x *)
-Lemma fold_max_positive_element : forall (xs : list Z) (x init : Z),
-  In x xs ->
-  x > 0 ->
-  (forall y, In y xs -> y <= x) ->
-  init <= x ->
-  fold_right Z.max init xs >= x.
-Proof.
-  intros xs x init Hin Hpos Hall init_le.
-  assert (Hfold_eq: fold_right Z.max init xs = x).
-  { apply fold_max_is_maximum; assumption. }
-  rewrite Hfold_eq.
-  lia.
-Qed.
 
 (* Helper: fold_right Z.max always returns an element from the nonempty list *)
 Lemma fold_max_in_list : forall (init : Z) (xs : list Z),
