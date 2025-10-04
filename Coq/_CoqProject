@@ -41,3 +41,4 @@ KadanesAlgorithm/TropicalKadane.v
 KadanesAlgorithm/NaturalKadane.v
 KadanesAlgorithm/MaxSubarrayComplete.v
 KadanesAlgorithm/FunctionCompositionKadane.v
+KadanesAlgorithm/LogSemiringKadane.v
