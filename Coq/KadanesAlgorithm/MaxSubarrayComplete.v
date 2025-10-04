@@ -605,10 +605,6 @@ LEMMAS FOR CONNECTING GFORM1 TO SPECIFICATION
 =================================================================================
 *)
 
-(* Helper lemma: Finite distributes over Z.max *)
-
-(* Helper lemma: Finite distributes over addition *)
-
 (* Helper: xs is in inits xs *)
 Lemma full_list_in_inits : forall {A : Type} (xs : list A),
   In xs (inits xs).
@@ -671,8 +667,6 @@ Proof.
     simpl list_sum.
     reflexivity.
 Qed.
-
-(* Specialized version for non-empty lists *)
 
 (* Helper: map distributes over concat *)
 Lemma map_concat : forall {A B : Type} (f : A -> B) (xss : list (list A)),
@@ -863,8 +857,6 @@ Proof.
     split; [exact Hin |].
     destruct seg; [contradiction | reflexivity].
 Qed.
-
-(* Helper lemma: tropical_add with Finite behaves like Z.max *)
 
 (* Helper: fold_right Z.max is associative/commutative in a specific sense *)
 Lemma fold_max_cons_swap : forall (x y : Z) (ys : list Z),
