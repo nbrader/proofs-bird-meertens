@@ -3,12 +3,11 @@ Require Import Coq.Program.Combinators.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Require Import BirdMeertens.ListFunctions.
-Require Import BirdMeertens.FunctionLemmas.
+Require Import CoqUtilLib.ListFunctions.
+Require Import CoqUtilLib.FunctionLemmas.
 Require Import BirdMeertens.TailsMonoid.
 Require Import BirdMeertens.MajorLemmas.
 Require Import BirdMeertens.Lemmas.
-Require Import CoqUtilLib.ListFunctions.
 
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.

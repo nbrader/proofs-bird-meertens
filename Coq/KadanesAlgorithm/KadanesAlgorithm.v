@@ -13,7 +13,6 @@ Require Import FreeMonoid.StructSemiring.
 Require Import FreeMonoid.SemiringLemmas.
 Require Import BirdMeertens.MajorLemmas.
 Require Import BirdMeertens.Lemmas.
-Require Import BirdMeertens.ListFunctions.
 Require Import CoqUtilLib.ListFunctions.
 
 (*

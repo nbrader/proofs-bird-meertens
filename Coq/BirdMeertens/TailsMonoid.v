@@ -7,7 +7,7 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Require Import FreeMonoid.StructMonoid.
 Require Import FreeMonoid.MonoidHom.
 Require Import FreeMonoid.MonoidFree.
-Require Import BirdMeertens.ListFunctions.
+Require Import CoqUtilLib.ListFunctions.
 
 Open Scope Z_scope.
 
