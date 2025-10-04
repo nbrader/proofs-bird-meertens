@@ -2563,21 +2563,6 @@ Proof.
 Qed.
 
 (* Helper lemma: fold_right Z.max always returns a non-negative result *)
-Lemma fold_max_nonneg : forall l : list Z,
-  0 <= fold_right Z.max 0 l.
-Proof.
-  intro l.
-  induction l as [|x xs IH].
-  - (* Base case: empty list *)
-    simpl. apply Z.le_refl.
-  - (* Inductive case: x :: xs *)
-    simpl.
-    (* Goal: 0 <= Z.max x (fold_right Z.max 0 xs) *)
-    (* Since fold_right Z.max 0 xs >= 0 by IH, and Z.max includes this value *)
-    apply Z.le_trans with (fold_right Z.max 0 xs).
-    + exact IH.
-    + apply Z.le_max_r.
-Qed.
 
 (* Simple helper lemma: nonNegSum of empty list is 0 *)
 Lemma nonNegSum_nil : nonNegSum [] = 0.
@@ -2677,14 +2662,6 @@ Proof.
 Qed.
 
 (* Helper lemma: nonNegPlus is commutative *)
-Lemma nonNegPlus_comm : forall x y : Z,
-  nonNegPlus x y = nonNegPlus y x.
-Proof.
-  intros x y.
-  unfold nonNegPlus.
-  rewrite Z.add_comm.
-  reflexivity.
-Qed.
 
 (* Helper lemma: fold_right preserves non-negativity for Z.max *)
 Lemma fold_right_max_preserves_nonneg : forall l : list Z,
