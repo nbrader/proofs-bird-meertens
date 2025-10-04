@@ -1,116 +1,63 @@
 # Dependency Tree Analysis - BirdMeertens Integer Proofs
 
-**NOTE**: This analysis documents the original `BirdMeertens/` integer-specific proof dependencies.
+**NOTE**: This documents the `BirdMeertens/` integer-specific proof (now complete).
 
-**IMPORTANT**: The project has achieved a complete generalized semiring-based proof in `Coq/KadanesAlgorithm/KadanesAlgorithm.v` that proves Kadane's algorithm correct for **ANY semiring**. This supersedes the need to complete the integer-specific admitted proofs documented below.
+**For generalized proof**: See `Coq/KadanesAlgorithm/KadanesAlgorithm.v` which proves Kadane's algorithm correct for **ANY semiring**.
 
-## Complete Dependency Tree
+## Dependency Tree
 
 ```
-MaxSegSum_Equivalence (omitting standard axiom: functional_extensionality_dep)
-├── form5_eq_form6 [ADMITTED]
-│   └── generalised_horners_rule [ADMITTED] ⭐ LEAF
-├── form6_eq_form7 [COMPLETED - ends with Qed] ✅ USES TAILS_REC DIRECTLY
-└── form7_eq_form8 [ADMITTED]
-    └── fold_scan_fusion [ADMITTED] ⭐ LEAF
+MaxSegSum_Equivalence [COMPLETED - Qed] ✅
+├── form1_eq_form2 through form4_eq_form5 [ALL Qed] ✅
+├── form5_eq_form6 [Qed] ✅
+│   └── nonneg_tropical_fold_right_returns_max [Qed] ✅
+├── form6_eq_form7 [Qed] ✅
+│   └── scan_right_tails_rec_fold [Qed] ✅
+└── form7_eq_form8 [Qed] ✅
+    └── fold_scan_fusion_pair [Qed] ✅
 ```
 
-## Detailed Analysis
+**Status**: All proofs complete with 0 Admitted statements
 
-### Level 1: Direct Dependencies of MaxSegSum_Equivalence
+## Key Theorems
 
-**From `Print Assumptions MaxSegSum_Equivalence` (omitting standard axiom functional_extensionality_dep):**
+### Supporting Lemmas (All Proven)
 
-1. **`form5_eq_form6`** - ADMITTED theorem
-2. **`form7_eq_form8`** - ADMITTED theorem  
-3. **`ListFunctions.tails_rec_equiv`** - ADMITTED theorem (through form6_eq_form7)
+1. **`nonneg_tropical_fold_right_returns_max`** (Horner's rule)
+   - Fold equivalence over inits using tropical operations
+   - Used by: `form5_eq_form6`
 
-### Level 2 & 3: Transitive Dependencies
+2. **`fold_scan_fusion_pair`** (Fold-scan fusion)
+   - Scan-fold relationship theorem
+   - Used by: `form7_eq_form8`
 
-#### form5_eq_form6 Dependencies
-**From `Print Assumptions form5_eq_form6`:**
-- **`generalised_horners_rule`** - ADMITTED theorem ⭐ LEAF
+3. **`scan_right_tails_rec_fold`** (Scan-tails relationship)
+   - Core scan-tails theorem
+   - Used by: `form6_eq_form7`
 
-#### form7_eq_form8 Dependencies  
-**From `Print Assumptions form7_eq_form8`:**
-- **`fold_scan_fusion`** - ADMITTED theorem ⭐ LEAF
+### Form Transformations (All Proven)
 
-#### form6_eq_form7 Dependencies Path
-**Dependency Chain:**
-1. **`form6_eq_form7`** - COMPLETED (BirdMeertens.v:77, ends with Qed)
-2. **`scan_right_tails_fold`** - ADMITTED theorem (ListFunctions.v:283)
-3. **`tails_rec_equiv`** - ADMITTED theorem ⭐ LEAF (ListFunctions.v:173)
+- **`form1_eq_form2`** through **`form4_eq_form5`**: Basic transformations
+- **`form5_eq_form6`**: Horner's rule transformation
+- **`form6_eq_form7`**: Scan-tails relationship
+- **`form7_eq_form8`**: Fold-scan fusion
+- **`MaxSegSum_Equivalence`**: Main theorem (form1 = form8)
 
-**From `Print Assumptions form6_eq_form7` (omitting standard axiom functional_extensionality_dep):**
-- **`ListFunctions.tails_rec_equiv`** - ADMITTED theorem
+## Proof Architecture
 
-**From `Print Assumptions scan_right_tails_fold`:**
-- **`tails_rec_equiv`** - ADMITTED theorem
+### Structure
+- **Level 1**: Supporting lemmas (Horner's rule, fold-scan fusion, scan-tails)
+- **Level 2**: Form transformations (form1-form8)
+- **Level 3**: Main theorem (MaxSegSum_Equivalence)
 
-**From `Print Assumptions tails_rec_equiv`:**
-- **No further dependencies** - This is a base structural axiom
+### Techniques
+- Tropical semiring operations
+- Scan-tails recursion strategy
+- Fold-scan fusion law
+- Function extensionality
 
-## Critical Path Analysis
+## Status Summary
 
-### Key Admitted Theorems
-
-1. **`generalised_horners_rule`** ⭐ **LEAF DEPENDENCY**
-   - Location: `Lemmas.v:237` 
-   - Type: Mathematical theorem about fold equivalences over inits
-   - Status: Complex inductive proof required
-
-2. **`fold_scan_fusion`** ⭐ **LEAF DEPENDENCY**  
-   - Location: `Lemmas.v:409`
-   - Type: Advanced scan-fold relationship theorem
-   - Status: Sophisticated algebraic proof required
-
-3. **`form5_eq_form6`** 
-   - Location: `BirdMeertens.v:62`
-   - Depends on: `generalised_horners_rule`
-   - Type: High-level form transformation
-
-4. **`form7_eq_form8`**
-   - Location: `BirdMeertens.v:90` 
-   - Depends on: `fold_scan_fusion`
-   - Type: High-level form transformation
-
-## ✅ STRATEGIC BYPASS
-- **`ListFunctions.tails_rec_equiv`** - **STRATEGICALLY BYPASSED** 
-  - **Strategy**: Rephrased `form6` to use `tails_rec` directly instead of `tails`
-  - **Impact**: Bypassed complex structural equivalence proof requirement for form6_eq_form7
-  - **Result**: `form6_eq_form7` completed using `scan_right_tails_rec_fold`
-
-## Completion Strategy
-
-### Priority 1: Leaf Dependencies (⭐)
-These are the foundational theorems that don't depend on other admitted proofs:
-
-1. **`generalised_horners_rule`** - Mathematical foundation
-2. **`fold_scan_fusion`** - Algebraic foundation  
-3. **`tails_rec_equiv`** - Structural foundation
-
-### Priority 2: Dependent Theorems
-Once the leaf dependencies are proven:
-
-4. **`form5_eq_form6`** - Can be completed using `generalised_horners_rule`
-5. **`form7_eq_form8`** - Can be completed using `fold_scan_fusion`
-
-## Impact Analysis
-
-- **Blocking Effect**: Several admitted theorems must be resolved to complete `MaxSegSum_Equivalence`
-- **Critical Path**: Leaf dependencies are the fundamental blockers
-- **Dependency Depth**: Maximum depth is 2 levels (MaxSegSum_Equivalence → form → base theorem)
-- **Parallel Opportunities**: Leaf dependencies can be worked on independently
-
-## Current Status
-
-- **Major Progress**: Strategic breakthrough with `form6_eq_form7` completion
-- **Remaining Work**: Several admitted theorems requiring proof completion
-- **Estimated Complexity**: High - remaining theorems involve sophisticated mathematical results
-
-## Recommendations
-
-1. **Focus on leaf dependencies first** - they unblock multiple downstream theorems
-2. **Consider `tails_rec_equiv`** as potentially the most tractable structural proof
-3. **Mathematical theorems** (`generalised_horners_rule`, `fold_scan_fusion`) may require domain expertise
-4. **Use FreeMonoid library** - could provide theoretical framework for fold-related proofs
+- **Completion**: 100%
+- **Admitted count**: 0
+- **Main result**: Kadane's algorithm (form8) ≡ specification (form1)

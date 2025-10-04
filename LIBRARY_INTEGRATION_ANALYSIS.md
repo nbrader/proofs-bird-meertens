@@ -52,16 +52,12 @@ Date of Completion: 2025-10-03
 
 ### Proof Improvements
 
-**✅ Enhanced `generalised_horners_rule`**:
+**✅ Completed `nonneg_tropical_fold_right_returns_max`** (formerly generalised_horners_rule):
 - Restructured proof with proper lemma ordering
 - Added `inits_cons` helper lemma
-- Clarified inductive case breakdown  
-- Identified key remaining challenge (max/nonNegPlus distribution)
-- **Status**: Compiles successfully, 90% complete
-
-**🔄 Remaining Work**:
-- Key lemma needed: `Z.max` distribution over `nonNegPlus` fold operations
-- FreeMonoid library could provide theoretical framework for completion
+- Clarified inductive case breakdown
+- Proved using tropical semiring operations
+- **Status**: Complete with Qed
 
 ## Code Duplication Analysis
 
@@ -159,27 +155,31 @@ Require Import BirdMeertens.ListFunctionsExtensions.
 - [x] One proof significantly improved (`generalised_horners_rule`)
 - [x] Build system properly configured
 
-### 🔄 In Progress  
-- [ ] Complete `generalised_horners_rule` using FreeMonoid theory
-- [ ] Resolve ListFunctions duplication
-- [ ] Leverage monoid framework for other admitted proofs
+### ✅ Completed
+- [x] Libraries compile successfully with main project
+- [x] No naming conflicts in current setup
+- [x] `nonneg_tropical_fold_right_returns_max` proven using tropical operations
+- [x] `fold_scan_fusion_pair` proven with Qed
+- [x] All BirdMeertens integer-specific proofs complete (0 Admitted)
+- [x] Build system properly configured
+- [x] Generalized semiring proof complete in KadanesAlgorithm/
 
-### 📋 Future Work
-- [ ] Refactor to eliminate code duplication
+### 📋 Future Improvements
+- [ ] Refactor to eliminate ListFunctions duplication
 - [ ] Create BirdMeertens-specific extension modules
-- [ ] Apply FreeMonoid theory to `fold_scan_fusion`
+- [ ] Further leverage FreeMonoid theory for additional generalizations
 - [ ] Document usage patterns for future development
 
 ## Conclusion
 
-The library integration is **functionally successful** but reveals **significant code organization opportunities**. The FreeMonoid library shows particular promise for completing remaining monoid-related proofs, while CoqUtilLib provides a solid foundation that could be better leveraged through proper refactoring.
+The library integration was **successful**. The FreeMonoid library's semiring infrastructure enabled the complete generalized proof in `KadanesAlgorithm/KadanesAlgorithm.v`, proving Kadane's algorithm correct for ANY semiring.
 
-**Immediate Action Items**:
-1. Complete `generalised_horners_rule` using FreeMonoid `mconcat` theory
-2. Plan ListFunctions consolidation strategy  
-3. Document import patterns for consistent usage
+**Achievements**:
+1. ✅ All BirdMeertens integer-specific proofs complete (0 Admitted)
+2. ✅ Generalized semiring-based proof complete
+3. ✅ FreeMonoid's `StructSemiring` successfully applied to Kadane's algorithm
 
-**Long-term Goals**:  
-1. Eliminate code duplication through proper module hierarchy
-2. Leverage full potential of FreeMonoid theory for remaining proofs
-3. Create clean, maintainable codebase structure
+**Remaining Improvements**:
+1. Code organization: Consolidate duplicated ListFunctions
+2. Module structure: Better separation of general vs. domain-specific code
+3. Documentation: Usage patterns for library integration

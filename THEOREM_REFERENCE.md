@@ -19,20 +19,18 @@
 
 **Core equivalence chain proving Kadane's algorithm correctness:**
 
-### ✅ COMPLETED
+### ✅ ALL FORMS PROVEN
 - **`form1_eq_form2`** - Simple reflexivity (segs = concat ∘ map inits ∘ tails)
-- **`form2_eq_form3`** - Function composition reordering 
+- **`form2_eq_form3`** - Function composition reordering
 - **`form3_eq_form4`** - Fold promotion application
 - **`form4_eq_form5`** - Map distribution properties
-- **`form6_eq_form7`** 🎯 - **PURE PROOF** using tails_rec strategy (scan_right relationship)
+- **`form5_eq_form6`** - Horner's rule transformation
+- **`form6_eq_form7`** - Scan-tails relationship
+- **`form7_eq_form8`** - Fold-scan fusion
 
-### 🚫 ADMITTED (Remaining Work)
-- **`form5_eq_form6`** - Requires `generalised_horners_rule`
-- **`form7_eq_form8`** - Requires `fold_scan_fusion`
-
-### 🏆 MAIN THEOREM
+### 🏆 MAIN THEOREM (PROVEN)
 - **`MaxSegSum_Equivalence`** - **form1 = form8** (Kadane's correctness)
-  - **Goal**: Complete all admitted proofs to achieve full verification
+  - **Status**: Complete with Qed (0 Admitted statements)
 
 ---
 
@@ -80,25 +78,26 @@
 
 ---
 
-## 🚫 ADMITTED THEOREMS (Critical Blockers)
+## 🎓 KEY SUPPORTING THEOREMS
 
-**These 3 theorems are the only remaining blockers:**
+**Major lemmas proven to support the form transformations:**
 
 ### 🔬 MATHEMATICAL FOUNDATIONS
-1. **`generalised_horners_rule`** ⭐ **LEAF DEPENDENCY**
-   - **Type**: Complex mathematical theorem about fold equivalences over inits
-   - **Blocks**: `form5_eq_form6`
-   - **Complexity**: Very high - requires deep inductive reasoning
+1. **`nonneg_tropical_fold_right_returns_max`** (formerly generalised_horners_rule)
+   - **Type**: Fold equivalence over inits using tropical operations
+   - **Used in**: `form5_eq_form6`
+   - **Status**: Proven with Qed
 
-2. **`fold_scan_fusion`** ⭐ **LEAF DEPENDENCY**  
-   - **Type**: Advanced scan-fold algebraic relationship
-   - **Blocks**: `form7_eq_form8`
-   - **Complexity**: High - sophisticated algebraic proof
+2. **`fold_scan_fusion_pair`** (fold-scan fusion law)
+   - **Type**: Relationship between fold and scan operations
+   - **Used in**: `form7_eq_form8`
+   - **Status**: Proven with Qed
 
-### 🔗 STRUCTURAL (Optional)
-3. **`tails_rec_equiv`** - Equivalence: `tails xs = tails_rec xs`
-   - **Status**: No longer needed due to strategic refactoring!
-   - **Note**: Could be proven for completeness but not required
+### 🔗 SCAN-TAILS RELATIONSHIP
+3. **`scan_right_tails_rec_fold`** - Core scan-tails theorem
+   - **Statement**: `scan_right f i xs = map (fold_right f i) (tails_rec xs)`
+   - **Used in**: `form6_eq_form7`
+   - **Status**: Proven with Qed
 
 ---
 
@@ -109,40 +108,42 @@
 ### By Mathematical Operation
 - **Max operations**: `max_idempotent`, `max_add_distributes`, `nonNegPlus_distributes_over_max`
 - **Addition/Plus**: `nonNegPlus_comm`, `nonNegPlus_zero_left/right`, `max_add_distributes`
-- **Fold operations**: `fold_promotion`, `fold_left_nil`, `fold_right_nil`, `generalised_horners_rule`
-- **Scan operations**: `scan_right_tails_rec_fold`, `scan_right_singleton/nil`
+- **Fold operations**: `fold_promotion`, `fold_left_nil`, `fold_right_nil`, `nonneg_tropical_fold_right_returns_max`
+- **Scan operations**: `scan_right_tails_rec_fold`, `scan_right_singleton/nil`, `fold_scan_fusion_pair`
 
-### By List Function  
-- **tails**: `tails_nil`, `tails_singleton`, `tails_rec_equiv`, `scan_right_tails_rec_fold`
-- **inits**: `inits_cons`, `generalised_horners_rule` 
+### By List Function
+- **tails**: `tails_nil`, `tails_singleton`, `scan_right_tails_rec_fold`
+- **inits**: `inits_cons`, `nonneg_tropical_fold_right_returns_max`
 - **map**: `map_promotion`, `fold_promotion`
 - **concat**: `app_concat`, `fold_promotion`
 
-### By Proof Technique
-- **Pure proofs**: Most lemmas in Lemmas.v, form1-4 transformations, form6_eq_form7
-- **Inductive proofs**: `scan_right_tails_rec_fold`, `inits_cons`
-- **Reflexivity**: `form1_eq_form2`
-- **Function extensionality**: `form6_eq_form7`, form transformations
+### By Proof Status
+- **All proofs complete**: BirdMeertens integer-specific proof has 0 Admitted statements
+- **Generalized proof**: See KadanesAlgorithm/ for semiring-based framework
+- **Alternative approach**: See TropicalMaxSegSum.v for tropical semiring formulation
 
 ---
 
-## 💡 STRATEGIC INSIGHTS FOR PROOF DEVELOPMENT
+## 💡 PROOF ARCHITECTURE
 
-### 🎯 Recently Proven (High Value)
-- **`form6_eq_form7`** - Now pure, demonstrates tails_rec strategy
-- **`nonNegPlus_distributes_over_max`** - Complex case analysis completed
-- **`scan_right_tails_rec_fold`** - Core relationship proven via induction
+### 🎯 Key Proven Theorems
+- **`form6_eq_form7`** - Pure proof using tails_rec strategy
+- **`nonNegPlus_distributes_over_max`** - Distributivity via case analysis
+- **`scan_right_tails_rec_fold`** - Core scan-tails relationship
+- **`nonneg_tropical_fold_right_returns_max`** - Horner's rule for tropical operations
+- **`fold_scan_fusion_pair`** - Fold-scan fusion law
 
-### 🔑 Key Utilities Available
-- **`inits_cons`** - Essential for induction on inits
-- **`nonNegPlus_distributes_over_max`** - Distributivity when needed
-- **`map_promotion`**, **`fold_promotion`** - Function composition properties
+### 🔑 Reusable Lemmas
+- **`inits_cons`** - Induction helper for inits
+- **`nonNegPlus_distributes_over_max`** - Distributivity property
+- **`map_promotion`**, **`fold_promotion`** - Function composition
 
-### ⚡ Strategic Approach
-- **Focus on leaf dependencies**: `generalised_horners_rule`, `fold_scan_fusion`
-- **Use tails_rec strategy**: Prefer recursive definitions over complex fold_right equivalences  
-- **Leverage pure proofs**: Build on the 26 completed theorems as foundations
+### ⚡ Proof Techniques Used
+- **Tails recursion strategy**: Enabled pure proofs avoiding fold_right complexity
+- **Case analysis**: For distributivity and arithmetic properties
+- **Induction**: For scan-tails and Horner's rule theorems
+- **Function extensionality**: For form equivalences
 
 ---
 
-*This reference catalog contains all proven theorems as of the tails_rec breakthrough. Use Ctrl+F to search by theorem name, mathematical property, or list operation.*
+*This reference catalog documents the BirdMeertens integer-specific proof (complete with 0 Admitted). Use Ctrl+F to search by theorem name, mathematical property, or list operation.*
