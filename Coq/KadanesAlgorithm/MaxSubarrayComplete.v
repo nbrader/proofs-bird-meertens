@@ -1070,6 +1070,20 @@ Proof.
     apply Z.max_lub; assumption.
 Qed.
 
+(* Helper: fold_right Z.max over list containing x gives >= x *)
+Lemma fold_max_ge_element : forall (xs : list Z) (x init : Z),
+  In x xs ->
+  fold_right Z.max init xs >= x.
+Proof.
+  intros xs x init Hin.
+  induction xs as [|a xs' IH].
+  - contradiction.
+  - simpl in Hin. simpl. destruct Hin as [Heq | Hin'].
+    + subst. lia.
+    + assert (IH': fold_right Z.max init xs' >= x) by (apply IH; exact Hin').
+      lia.
+Qed.
+
 (* Helper: when max element m is in list and is maximum, fold gives m *)
 Lemma fold_max_is_maximum : forall (xs : list Z) (m init : Z),
   In m xs ->
@@ -1172,11 +1186,99 @@ Proof.
        6. If the max is 0, then... but we know there's a positive value, so max > 0
     *)
 
-    (* Let me just use that when both lists contain the same positive max element,
-       they have the same fold_right Z.max result, regardless of other elements. *)
+    (* Strategy: Find the maximum segment sum m, show it's > 0, and use fold_max_is_maximum *)
 
-    (* This requires a general lemma about fold_right Z.max that's complex.
-       For now, let me admit this specific case and move forward. *)
+    (* The maximum of map list_sum (segs xs) is some value m *)
+    (* We know list_sum pos_seg > 0 is in the list, so m >= list_sum pos_seg > 0 *)
+
+    (* First, show that fold_right Z.max s ss >= list_sum pos_seg *)
+    (* Since list_sum pos_seg is in s :: ss, the fold >= it *)
+    assert (Hfold_ge: fold_right Z.max s ss >= list_sum pos_seg).
+    { assert (Hin': In (list_sum pos_seg) (s :: ss)) by (rewrite <- Hsums; exact Hpos_sum_in).
+      simpl in Hin'. destruct Hin' as [Heq | Hin_ss].
+      * subst.
+        (* After subst, s = list_sum pos_seg, so we need:
+           fold_right Z.max (list_sum pos_seg) ss >= list_sum pos_seg *)
+        clear Hpos_sum_in. clear H0_in. clear Hsum_pos. clear Hin_pos. clear Hsums. clear Hne_sums.
+        clear Hnotallnonpos. clear Hne. clear xs.
+        (* Now prove the general fact *)
+        induction ss as [|s' ss' IH].
+        -- (* ss = [] *)
+           simpl. lia.
+        -- (* ss = s' :: ss' *)
+           (* Goal: Z.max s' (fold_right Z.max (list_sum pos_seg) ss') >= list_sum pos_seg *)
+           simpl.
+           (* By IH, fold_right Z.max (list_sum pos_seg) ss' >= list_sum pos_seg *)
+           (* So Z.max s' (fold ...) >= fold ... >= list_sum pos_seg *)
+           assert (Hfold: fold_right Z.max (list_sum pos_seg) ss' >= list_sum pos_seg) by exact IH.
+           lia.
+      * apply fold_max_ge_element. exact Hin_ss. }
+
+    (* So fold_right Z.max s ss > 0 *)
+    assert (Hfold_pos: fold_right Z.max s ss > 0) by lia.
+
+    (* Now we need to show this equals max_subarray_sum_spec xs *)
+    (* For nonempty_segs, we have a similar structure *)
+    destruct (nonempty_segs xs) as [|seg rest] eqn:Hnonempty.
+    + (* nonempty_segs xs = [] - impossible since xs <> [] *)
+      exfalso.
+      assert (Hfull: In xs (nonempty_segs xs)).
+      { apply full_list_in_nonempty_segs. exact Hne. }
+      rewrite Hnonempty in Hfull. contradiction.
+    + (* nonempty_segs xs = seg :: rest *)
+      simpl.
+
+      (* Both folds compute the maximum. Since they're over related lists
+         (one has 0 added, one doesn't), and the max is > 0, they should be equal.
+
+         The key: the maximum segment sum appears in both lists (since it's non-empty,
+         it's in nonempty_segs, and all nonempty_segs are in segs).
+
+         By fold_max_is_maximum, if the same maximum m appears in both lists,
+         both folds equal m.
+      *)
+
+      (* Key insight: We need to prove that
+           fold_right Z.max s ss = fold_right Z.max (list_sum seg) (map list_sum rest)
+         where s :: ss = map list_sum (segs xs)
+         and   seg :: rest = nonempty_segs xs *)
+
+      (* Rewrite to use the equation *)
+      assert (Heq_sums: s :: ss = map list_sum (segs xs)) by (symmetry; exact Hsums).
+      assert (Heq_nonempty: seg :: rest = nonempty_segs xs) by (symmetry; exact Hnonempty).
+
+      (* The key observation: Every element in map list_sum (nonempty_segs xs) is in
+         map list_sum (segs xs), and the only additional element in the latter is 0.
+         Since fold_right Z.max s ss > 0, adding 0 to the list doesn't change the max. *)
+
+      (* Actually, let me prove this more carefully using a permutation-like argument.
+         The issue is that segs xs and nonempty_segs xs differ by exactly [] *)
+
+      (* Cleaner approach: Show that the maximum element is the same in both lists,
+         and apply fold_max_is_maximum to both. *)
+
+      (* Let m = fold_right Z.max s ss (the max over segs sums) *)
+      set (m := fold_right Z.max s ss).
+
+      (* We have m > 0 *)
+      assert (Hm_pos: m > 0) by (unfold m; exact Hfold_pos).
+
+      (* m is an element of s :: ss *)
+      (* Actually, m might not be in the list - it's the maximum.
+         But we know there exists a positive element (list_sum pos_seg) in the list,
+         and m >= that element, so m > 0. *)
+
+      (* The hard part is showing that m is also the max of the nonempty sums.
+         Key facts:
+         1. All nonempty sums appear in all sums (proven via Hsubset above)
+         2. The only difference is that all sums also contains 0
+         3. m is the max of all sums, and m > 0
+         4. Therefore m must also be the max of nonempty sums (since any element > m
+            would be in nonempty sums and thus in all sums, contradicting m being max) *)
+
+      (* This proof is getting quite involved. The key missing lemma is about
+         the relationship between fold_right Z.max over two lists where one is
+         the other with 0 added, and the max is > 0. *)
 Admitted.
 
 (*
