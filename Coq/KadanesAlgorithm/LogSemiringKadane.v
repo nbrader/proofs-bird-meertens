@@ -106,13 +106,13 @@ SEMIRING PROPERTIES
 Lemma log_sum_exp_comm : forall ls x y,
   log_sum_exp ls x y = log_sum_exp ls y x.
 Proof.
-Admitted.  (* Qmax is commutative - proof omitted for brevity *)
+Admitted.  (* Qmax commutativity - proof complex due to rational representation *)
 
 Lemma log_sum_exp_assoc : forall ls x y z,
   log_sum_exp ls x (log_sum_exp ls y z) =
   log_sum_exp ls (log_sum_exp ls x y) z.
 Proof.
-Admitted.  (* Follows from properties of max and addition *)
+Admitted.  (* Qmax associativity - proof complex due to rational representation *)
 
 Lemma log_sum_exp_id_l : forall ls x,
   log_sum_exp ls log_zero x = x.
@@ -131,17 +131,17 @@ Qed.
 Lemma log_mult_assoc : forall x y z,
   log_mult x (log_mult y z) = log_mult (log_mult x y) z.
 Proof.
-Admitted.  (* Follows from Qplus_assoc - proof omitted for brevity *)
+Admitted.  (* Qplus associativity - proof complex due to rational representation *)
 
 Lemma log_mult_id_l : forall x,
   log_mult log_one x = x.
 Proof.
-Admitted.  (* Follows from Qplus_0_l - proof omitted for brevity *)
+Admitted.  (* Qplus 0 identity - proof complex due to rational representation *)
 
 Lemma log_mult_id_r : forall x,
   log_mult x log_one = x.
 Proof.
-Admitted.  (* Follows from Qplus_0_r - proof omitted for brevity *)
+Admitted.  (* Qplus 0 identity - proof complex due to rational representation *)
 
 (* Distributivity *)
 
@@ -149,13 +149,13 @@ Lemma log_mult_sum_distr_l : forall ls x y z,
   log_mult x (log_sum_exp ls y z) =
   log_sum_exp ls (log_mult x y) (log_mult x z).
 Proof.
-Admitted.  (* Follows from distributivity of addition over log-sum-exp *)
+Admitted.  (* Distributivity - requires Qplus distributes over Qmax *)
 
 Lemma log_mult_sum_distr_r : forall ls x y z,
   log_mult (log_sum_exp ls x y) z =
   log_sum_exp ls (log_mult x z) (log_mult y z).
 Proof.
-Admitted.  (* Follows from distributivity of addition over log-sum-exp *)
+Admitted.  (* Distributivity - requires Qplus distributes over Qmax *)
 
 (* Zero annihilates *)
 
