@@ -6,7 +6,7 @@ This directory contains a complete, generalized proof of Kadane's algorithm corr
 
 ## File Status
 
-### KadanesAlgorithm.v - COMPLETE ✓
+### KadanesAlgorithm.v
 
 **Generalized semiring-based proof** (works for ANY semiring):
 
@@ -23,9 +23,7 @@ This directory contains a complete, generalized proof of Kadane's algorithm corr
 - ✓ `max_subarray_sum` defined using gform8
 - ✓ `max_subarray_correct` - Correctness theorem
 
-**Admitted count**: 0
-
-### NaturalKadane.v - COMPLETE ✓
+### NaturalKadane.v
 
 **Natural numbers semiring instance**:
 
@@ -33,9 +31,7 @@ This directory contains a complete, generalized proof of Kadane's algorithm corr
 - ✓ `NaturalSemiring` instance defined
 - ✓ Example computations verified
 
-**Admitted count**: 0
-
-### MaxSubarrayComplete.v - COMPLETE ✓
+### MaxSubarrayComplete.v
 
 **Concrete maximum subarray algorithm with correctness proof**:
 
@@ -43,11 +39,7 @@ This directory contains a complete, generalized proof of Kadane's algorithm corr
 - ✓ `all_nonpositive_max_is_singleton` - All-nonpositive case correctness
 - ✓ `kadanes_algorithm_correct` - Main theorem: kadanes_algorithm = max_subarray_sum_spec
 
-**Admitted count**: 0
-
 ## Summary
-
-**Overall Status**: 100% Complete
 
 All files proven with 0 Admitted statements:
 - ✓ Generalized framework (ANY semiring)
