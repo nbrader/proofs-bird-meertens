@@ -13,7 +13,7 @@ This directory contains a complete, generalized proof of Kadane's algorithm corr
 - ✓ `gform1_eq_gform2` through `gform4_eq_gform5` - Basic transformations
 - ✓ `gform5_eq_gform6` - Horner's rule (requires `generalised_horners_rule_right`)
 - ✓ `gform6_eq_gform7` - Scan relationship
-- ✓ `gform7_eq_gform8` - Fold-scan fusion (NO additional assumptions!)
+- ✓ `gform7_eq_gform8` - Fold-scan fusion
 - ✓ `Generalized_Kadane_Correctness` - Main theorem: gform1 = gform8
 
 **Semiring Requirements**: None! The proof works for any semiring satisfying standard axioms (associativity, identities, distributivity).
