@@ -16,12 +16,6 @@ This directory contains a complete, generalized proof of Kadane's algorithm corr
 - ✓ `gform7_eq_gform8` - Fold-scan fusion
 - ✓ `Generalized_Kadane_Correctness` - Main theorem: gform1 = gform8
 
-**Semiring Requirements**: None! The proof works for any semiring satisfying standard axioms (associativity, identities, distributivity).
-
-**Admitted count**: 0
-
-### TropicalKadane.v - COMPLETE ✓
-
 **Tropical semiring instance** (max-plus operations):
 
 - ✓ All tropical semiring axioms proven
